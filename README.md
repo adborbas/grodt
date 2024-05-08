@@ -1,6 +1,6 @@
 # Grodt
 
-Grodt is a [Vapor](https://github.com/vapor/vapor) best personal finance REST API. It uses the [Alphavantage API](https://www.alphavantage.co/) to get quotes and currency exchange rates.
+Grodt is a [Vapor](https://github.com/vapor/vapor) based personal finance REST API. It uses the [Alphavantage API](https://www.alphavantage.co/) to get quotes and currency exchange rates.
 
 ## Run locally
 
