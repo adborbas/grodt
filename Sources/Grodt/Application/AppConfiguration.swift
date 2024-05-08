@@ -54,6 +54,9 @@ struct AppConfiguration {
         guard let alphavantageAPIKey = try await Environment.secret(path: ".alphavantagekey",
                                                                     fileIO: app.fileio,
                                                                     on: app.eventLoopGroup.next()).get() else {
+            if app.environment == .testing {
+                return ""
+            }
             fatalError("Required `.alphavantagekey` secret file is missing.")
         }
         return alphavantageAPIKey
