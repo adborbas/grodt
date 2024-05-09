@@ -1,4 +1,5 @@
 import Fluent
+import Foundation
 
 protocol TransactionsRepository {
     func transaction(for id: UUID) async throws -> Transaction?
