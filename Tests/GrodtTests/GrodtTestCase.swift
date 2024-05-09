@@ -64,14 +64,14 @@ class GrodtControllerTestCase: GrodtTestCase {
     
     private func authHeader() async throws -> (String, String) {
         let login = try await app.sendRequest(.POST, "login", headers: HTTPHeaders([AuthorizationHeader.basic(email: user.email, password: "password").value]))
-        let token = try login.content.decode(UserToken.self)
-        return AuthorizationHeader.bearer(token: token).value
+        let response = try login.content.decode(LoginResponseDTO.self)
+        return AuthorizationHeader.bearer(token: response.value).value
     }
 }
 
 fileprivate enum AuthorizationHeader {
     case basic(email: String, password: String)
-    case bearer(token: UserToken)
+    case bearer(token: String)
     
     var value: (String, String) {
         switch self {
@@ -79,7 +79,7 @@ fileprivate enum AuthorizationHeader {
             let basicAuthToken = "\(email):\(password)"
             return ("Authorization", "Basic \(basicAuthToken.data(using: .utf8)!.base64EncodedString())")
         case .bearer(let token):
-            return ("Authorization", "Bearer \(token.value)")
+            return ("Authorization", "Bearer \(token)")
         }
     }
 }
