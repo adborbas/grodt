@@ -38,7 +38,7 @@ class PortfolioDTOMapper {
         )
     }
     
-    func performance(for portfolio: Portfolio) async throws -> PerformanceDTO {
+    func performance(for portfolio: Portfolio) async throws -> PortfolioPerformanceDTO {
         let financials = Financials()
         try await portfolio.transactions.concurrentForEach { transaction in
             let inAmount = transaction.numberOfShares * transaction.pricePerShareAtPurchase + transaction.fees
@@ -53,7 +53,7 @@ class PortfolioDTOMapper {
         let profit: Decimal = moneyOut - moneyIn
         let totalReturn: Decimal = moneyIn == 0 ? 0 : profit / moneyIn
         
-        return PerformanceDTO(moneyIn: moneyIn, moneyOut: moneyOut, profit: profit, totalReturn: totalReturn)
+        return PortfolioPerformanceDTO(moneyIn: moneyIn, moneyOut: moneyOut, profit: profit, totalReturn: totalReturn)
     }
 }
 
