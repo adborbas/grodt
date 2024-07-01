@@ -3,6 +3,7 @@ import AlphaSwiftage
 
 protocol PriceService {
     func price(for ticker: String) async throws -> Decimal
+    func historicalPrice(for ticker: String, on date: YearMonthDayDate) async throws -> Decimal
 }
 
 class CachedPriceService: PriceService {
@@ -30,6 +31,10 @@ class CachedPriceService: PriceService {
         }
         
         return try await fetchAndCreatePrice(for: ticker)
+    }
+    
+    func historicalPrice(for ticker: String, on date: YearMonthDayDate) async throws -> Decimal {
+        return 1
     }
     
     private func fetchAndCreatePrice(for ticker: String) async throws -> Decimal {

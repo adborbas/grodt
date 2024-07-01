@@ -6,6 +6,8 @@ protocol PortfolioRepository {
     func portfolio(for userID: User.IDValue, with id: Portfolio.IDValue) async throws -> Portfolio?
     func create(_ portfolio: Portfolio) async throws -> Portfolio
     func delete(for userID: User.IDValue, with id: Portfolio.IDValue) async throws
+    func historicalPerformance(with id: Portfolio.IDValue) async throws -> HistoricalPortfolioPerformance
+    func updateHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws
 }
 
 class PostgresPortfolioRepository: PortfolioRepository {
@@ -30,7 +32,7 @@ class PostgresPortfolioRepository: PortfolioRepository {
     
     func portfolio(for userID: User.IDValue, with id: Portfolio.IDValue) async throws -> Portfolio? {
         try await allPortfolios(for: userID)
-            .first { $0.id == id }
+            .first { $0.id == id }!
     }
     
     func create(_ portfolio: Portfolio) async throws -> Portfolio {
@@ -56,5 +58,20 @@ class PostgresPortfolioRepository: PortfolioRepository {
         }
         
         try await portfolio.delete(on: database)
+    }
+    
+    func historicalPerformance(with id: Portfolio.IDValue) async throws -> HistoricalPortfolioPerformance {
+        guard let portfolioWithPerformance = try await Portfolio.query(on: database)
+            .filter(\Portfolio.$id == id)
+            .with(\.$historicalPerformance)
+            .first() else {
+            throw FluentError.noResults
+        }
+        
+        return portfolioWithPerformance.$historicalPerformance.wrappedValue ?? HistoricalPortfolioPerformance(portfolioID: id, datedPerformance: [])
+    }
+    
+    func updateHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws {
+        try await historicalPerformance.update(on: database)
     }
 }

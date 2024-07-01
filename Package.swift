@@ -11,7 +11,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
         .package(url: "https://github.com/JohnSundell/CollectionConcurrencyKit.git", from: "0.1.0"),
-        .package(url: "https://github.com/adborbas/alphaswiftage.git", from: "0.4.0"),
+        .package(url: "https://github.com/adborbas/alphaswiftage.git", from: "0.5.0"),
         .package(url: "https://github.com/vapor/fluent-sqlite-driver.git", from: "4.0.0")
     ],
     targets: [

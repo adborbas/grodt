@@ -19,6 +19,9 @@ final class Portfolio: Model {
     @Children(for: \.$portfolio)
     var transactions: [Transaction]
     
+    @OptionalChild(for: \.$portfolio)
+    var historicalPerformance: HistoricalPortfolioPerformance?
+    
     required init() { }
     
     init(id: UUID? = nil,
@@ -29,6 +32,12 @@ final class Portfolio: Model {
         self.$user.id = userID
         self.name = name
         self.currency = currency
+    }
+}
+
+extension Portfolio {
+    var earliestTransaction: Transaction? {
+        return transactions.sorted { $0.purchaseDate < $1.purchaseDate }.first
     }
 }
 

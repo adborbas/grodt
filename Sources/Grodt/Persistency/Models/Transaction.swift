@@ -34,6 +34,10 @@ class Transaction: Model {
     @Field(key: Keys.pricePerShareAtPurchase)
     var pricePerShareAtPurchase: Decimal
     
+    var totalCost: Decimal {
+        return pricePerShareAtPurchase * numberOfShares + fees
+    }
+    
     required init() { }
     
     init(id: UUID? = nil,

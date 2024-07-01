@@ -48,14 +48,28 @@ class PortfolioDTOMapper {
             await financials.addMoneyOut(outAmount)
         }
         
-        let moneyIn = await financials.moneyIn
-        let moneyOut = await financials.moneyOut
-        let profit: Decimal = moneyOut - moneyIn
-        let totalReturn: Decimal = moneyIn == 0 ? 0 : profit / moneyIn
-        
-        return PortfolioPerformanceDTO(moneyIn: moneyIn, moneyOut: moneyOut, profit: profit, totalReturn: totalReturn)
+        return await PortfolioPerformanceDTO(moneyIn: financials.moneyIn, moneyOut: financials.moneyOut, profit: financials.profit, totalReturn: financials.totalReturn)
+    }
+    
+    func timeSeriesPerformance(from historicalPerformance: HistoricalPortfolioPerformance) async -> PortfolioPerformanceTimeSeriesDTO {
+        let values: [DatedPortfolioPerformanceDTO] = await historicalPerformance.$datedPerformance.wrappedValue.concurrentMap { datedPerformance in
+                let financials = Financials()
+                await financials.addMoneyIn(datedPerformance.moneyIn)
+                await financials.addMoneyOut(datedPerformance.moneyOut)
+                return await DatedPortfolioPerformanceDTO(date: datedPerformance.date,
+                                                    moneyIn: financials.moneyIn,
+                                                    moneyOut: financials.moneyOut,
+                                                    profit: financials.profit,
+                                                    totalReturn: financials.totalReturn)
+            
+        }.sorted { lhs, rhs in
+            lhs.date < lhs.date
+        }
+        return PortfolioPerformanceTimeSeriesDTO(values: values)
     }
 }
+
+
 
 fileprivate actor Financials {
     var moneyIn: Decimal = 0
@@ -67,5 +81,13 @@ fileprivate actor Financials {
     
     func addMoneyOut(_ amount: Decimal) {
         moneyOut += amount
+    }
+    
+    var profit: Decimal {
+        return moneyOut - moneyIn
+    }
+    
+    var totalReturn: Decimal {
+        return moneyIn == 0 ? 0 : profit / moneyIn
     }
 }
