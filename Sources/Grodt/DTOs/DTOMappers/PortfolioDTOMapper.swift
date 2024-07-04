@@ -45,22 +45,22 @@ class PortfolioDTOMapper {
             await financials.addMoneyIn(inAmount)
             
             let outAmount = try await transaction.numberOfShares * self.priceService.price(for: transaction.ticker)
-            await financials.addMoneyOut(outAmount)
+            await financials.addValue(outAmount)
         }
         
-        return await PortfolioPerformanceDTO(moneyIn: financials.moneyIn, moneyOut: financials.moneyOut, profit: financials.profit, totalReturn: financials.totalReturn)
+        return await PortfolioPerformanceDTO(moneyIn: financials.moneyIn, moneyOut: financials.value, profit: financials.profit, totalReturn: financials.totalReturn)
     }
     
     func timeSeriesPerformance(from historicalPerformance: HistoricalPortfolioPerformance) async -> PortfolioPerformanceTimeSeriesDTO {
         let values: [DatedPortfolioPerformanceDTO] = await historicalPerformance.$datedPerformance.wrappedValue.concurrentMap { datedPerformance in
-                let financials = Financials()
-                await financials.addMoneyIn(datedPerformance.moneyIn)
-                await financials.addMoneyOut(datedPerformance.moneyOut)
-                return await DatedPortfolioPerformanceDTO(date: datedPerformance.date,
-                                                    moneyIn: financials.moneyIn,
-                                                    moneyOut: financials.moneyOut,
-                                                    profit: financials.profit,
-                                                    totalReturn: financials.totalReturn)
+            let financials = Financials()
+            await financials.addMoneyIn(datedPerformance.moneyIn)
+            await financials.addValue(datedPerformance.value)
+            return await DatedPortfolioPerformanceDTO(date: datedPerformance.date.date,
+                                                      moneyIn: financials.moneyIn,
+                                                      moneyOut: financials.value,
+                                                      profit: financials.profit,
+                                                      totalReturn: financials.totalReturn)
             
         }.sorted { lhs, rhs in
             lhs.date < lhs.date
@@ -69,22 +69,20 @@ class PortfolioDTOMapper {
     }
 }
 
-
-
-fileprivate actor Financials {
+actor Financials {
     var moneyIn: Decimal = 0
-    var moneyOut: Decimal = 0
+    var value: Decimal = 0
     
     func addMoneyIn(_ amount: Decimal) {
         moneyIn += amount
     }
     
-    func addMoneyOut(_ amount: Decimal) {
-        moneyOut += amount
+    func addValue(_ amount: Decimal) {
+        value += amount
     }
     
     var profit: Decimal {
-        return moneyOut - moneyIn
+        return value - moneyIn
     }
     
     var totalReturn: Decimal {

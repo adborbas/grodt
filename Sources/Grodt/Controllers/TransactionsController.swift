@@ -2,6 +2,7 @@ import Vapor
 
 protocol TransactionsControllerDelegate: AnyObject {
     func transactionCreated(_ transaction: Transaction) async throws
+    func transactionDeleted(_ transaction: Transaction) async throws
 }
 
 class HistoricalPortfolioPerformanceUpdater: TransactionsControllerDelegate {
@@ -21,69 +22,58 @@ class HistoricalPortfolioPerformanceUpdater: TransactionsControllerDelegate {
     }
     
     func transactionCreated(_ transaction: Transaction) async throws {
-        let currentPerformances = try await portfolioRepository.historicalPerformance(with: transaction.portfolio.id!)
-        let indexOfExistingPerformance = currentPerformances.datedPerformance.firstIndex { perf in perf.date == YearMonthDayDate(transaction.purchaseDate) }
-        
-        // compute performance of transaction
-            // money_in = transaction.pricePerShareAtPurchase * transaction.numberOfShares + fees
-            // money_out; if date today ? money_in MARK AS NEED UPDATE : get quote for ticker and compute performance
-        
-        
-        // !!!need to update all values since transaction and today!!!!
-        let moneyIn = transaction.totalCost
-        let currentValue = moneyIn
-        
-        if let indexOfExistingPerformance = indexOfExistingPerformance {
-            let oldPerformance = currentPerformances.datedPerformance[indexOfExistingPerformance]
-            let newPerformance = DatedPortfolioPerformance(moneyIn: oldPerformance.moneyIn + moneyIn,
-                                                           value: oldPerformance.value + currentValue,
-                                                           date: oldPerformance.date)
-            
-            currentPerformances.datedPerformance[indexOfExistingPerformance] = newPerformance
-            try await portfolioRepository.updateHistoricalPerformance(currentPerformances)
-        } else {
-            let newPerformance = DatedPortfolioPerformance(moneyIn: moneyIn,
-                                                           value: currentValue,
-                                                           date: YearMonthDayDate(transaction.purchaseDate))
-            currentPerformances.datedPerformance.append(newPerformance)
-            try await portfolioRepository.updateHistoricalPerformance(currentPerformances)
-        }
+        let portfolio = try await portfolioRepository.expandPortfolio(on: transaction)
+        try await recalculateHistoricalPerformance(of: portfolio)
+    }
+    
+    func transactionDeleted(_ transaction: Transaction) async throws {
+        let portfolio = try await portfolioRepository.expandPortfolio(on: transaction)
+        try await recalculateHistoricalPerformance(of: portfolio)
     }
     
     func recalculateHistoricalPerformance(of portfolio: Portfolio) async throws {
         var datedPerformance = [DatedPortfolioPerformance]()
         guard let earliestTransaction = portfolio.earliestTransaction else { return }
         let dates = dateRangeUntilToday(from: earliestTransaction.purchaseDate)
-        dates.forEach { datedPerformance.append(portfolioPerformance(for: $0)) }
         
-        portfolio.historicalPerformance?.datedPerformance = datedPerformance
-        try await portfolioRepository.updateHistoricalPerformance(portfolio.historicalPerformance!)
-    }
-    
-    private func portfolioPerformance(for date: YearMonthDayDate) -> DatedPortfolioPerformance {
-        port
+        for date in dates {
+            let transactionsUntilDate = portfolio.transactions.filter { YearMonthDayDate($0.purchaseDate) <= date }
+            
+            let financialsForDate = Financials()
+            try await transactionsUntilDate.concurrentForEach { transaction in
+                let inAmount = transaction.numberOfShares * transaction.pricePerShareAtPurchase + transaction.fees
+                await financialsForDate.addMoneyIn(inAmount)
+                
+                let value = try await transaction.numberOfShares * self.priceService.price(for: transaction.ticker, on: date)
+                await financialsForDate.addValue(value)
+            }
+            
+            let performanceForDate = DatedPortfolioPerformance(
+                moneyIn: await financialsForDate.moneyIn,
+                value: await financialsForDate.value,
+                date: date
+            )
+            datedPerformance.append(performanceForDate)
+        }
         
-//        let  = portfolio.transactions.grouped { YearMonthDayDate($0.purchaseDate) }
-//        transactionsByDate.forEach { (date: YearMonthDayDate, transactions: [Transaction]) in
-//            var moneyIn: Decimal = 0
-//            var value: Decimal = 0
-//            transactions.forEach { transaction in
-//                moneyIn += transaction.totalCost
-//                value += priceService.historicalPrice(for: transaction.ticker, on: tr)
-//            }
-//        }
+        if let perf = portfolio.historicalPerformance {
+            perf.datedPerformance = datedPerformance
+            try await portfolioRepository.updateHistoricalPerformance(perf)
+        } else {
+            let historicalPerformance = HistoricalPortfolioPerformance(portfolioID: portfolio.id!, datedPerformance: datedPerformance)
+            try await portfolioRepository.createHistoricalPerformance(historicalPerformance)
+        }
     }
     
     private func dateRangeUntilToday(from startDate: Date) -> [YearMonthDayDate] {
         var dates: [YearMonthDayDate] = []
         var currentDate = startDate
-        let today = Date()
         let calendar = Calendar.current
+        let today = Date()
         
         while currentDate <= today {
             let ymdDate = YearMonthDayDate(currentDate)
             dates.append(ymdDate)
-            // Increment by one day
             currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
         }
         
@@ -91,11 +81,11 @@ class HistoricalPortfolioPerformanceUpdater: TransactionsControllerDelegate {
     }
 }
 
-struct TransactionsController: RouteCollection {
+class TransactionsController: RouteCollection {
     private let transactionsRepository: TransactionsRepository
     private let currencyRepository: CurrencyRepository
     private let dataMapper: TransactionDTOMapper
-    weak var delegate: TransactionsControllerDelegate?
+    var delegate: TransactionsControllerDelegate? // TODO: Weak
     
     init(transactionsRepository: TransactionsRepository,
          currencyRepository: CurrencyRepository,
@@ -154,6 +144,7 @@ struct TransactionsController: RouteCollection {
         }
         
         try await transaction.delete(on: req.db)
+        try await delegate?.transactionDeleted(transaction)
         return .ok
     }
 }

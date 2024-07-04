@@ -39,7 +39,7 @@ extension HistoricalPortfolioPerformance {
             try await database.schema(HistoricalPortfolioPerformance.schema)
                 .id()
                 .field(Keys.portfolioID, .uuid, .required, .references(Portfolio.schema, "id"))
-                .field(Keys.datedPerformance, .array(of: .custom(DatedPortfolioPerformance.self)), .required)
+                .field(Keys.datedPerformance, .array(of: .json), .required)
                 .create()
         }
         

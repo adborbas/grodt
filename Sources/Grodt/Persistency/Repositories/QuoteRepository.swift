@@ -7,6 +7,10 @@ protocol QuoteRepository {
     func create(_ quote: Quote) async throws
     
     func update(_ quote: Quote) async throws
+    
+    func historicalQuote(for ticker: String) async throws -> HistoricalQuote?
+    
+    func create(_ historicalQuote: HistoricalQuote) async throws
 }
 
 class PostgresQuoteRepository: QuoteRepository {
@@ -28,5 +32,15 @@ class PostgresQuoteRepository: QuoteRepository {
     
     func update(_ quote: Quote) async throws {
         try await quote.update(on: database)
+    }
+    
+    func historicalQuote(for ticker: String) async throws -> HistoricalQuote? {
+        return try await HistoricalQuote.query(on: database)
+            .filter(\HistoricalQuote.$symbol == ticker)
+            .first()
+    }
+    
+    func create(_ historicalQuote: HistoricalQuote) async throws {
+        try await historicalQuote.save(on: database)
     }
 }

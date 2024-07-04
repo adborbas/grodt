@@ -8,6 +8,9 @@ protocol PortfolioRepository {
     func delete(for userID: User.IDValue, with id: Portfolio.IDValue) async throws
     func historicalPerformance(with id: Portfolio.IDValue) async throws -> HistoricalPortfolioPerformance
     func updateHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws
+    func createHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws
+    
+    func expandPortfolio(on transaction: Transaction) async throws -> Portfolio
 }
 
 class PostgresPortfolioRepository: PortfolioRepository {
@@ -73,5 +76,17 @@ class PostgresPortfolioRepository: PortfolioRepository {
     
     func updateHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws {
         try await historicalPerformance.update(on: database)
+    }
+    
+    func createHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws {
+        try await historicalPerformance.save(on: database)
+    }
+    
+    func expandPortfolio(on transaction: Transaction) async throws -> Portfolio {
+        return try await Portfolio.query(on: database)
+            .filter(\Portfolio.$id == transaction.$portfolio.get(on: database).id!)
+            .with(\.$transactions)
+            .with(\.$historicalPerformance)
+            .first()!
     }
 }

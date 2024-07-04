@@ -36,10 +36,10 @@ extension HistoricalQuote {
         var name: String { "CreateHistoricalQuote" }
         
         func prepare(on database: Database) async throws {
-            try await database.schema(Quote.schema)
+            try await database.schema(HistoricalQuote.schema)
                 .id()
                 .field(HistoricalQuote.Keys.symbol, .string, .required)
-                .field(Keys.datedQuotes, .array(of: .custom(DatedQuote.self)), .required)
+                .field(Keys.datedQuotes, .array(of: .json), .required)
                 .create()
         }
         

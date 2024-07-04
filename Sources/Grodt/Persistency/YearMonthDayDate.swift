@@ -1,15 +1,26 @@
 import Foundation
 
-struct YearMonthDayDate: Codable, Equatable, Hashable {
-    private var date: Date
+struct YearMonthDayDate: Codable, Equatable, Hashable, Comparable {
+    private(set) var date: Date
     
     init(_ date: Date) {
-        let calendar = Calendar.current
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone.gmt
         let components = calendar.dateComponents([.year, .month, .day], from: date)
         self.date = calendar.date(from: components)!
     }
     
-//    func toDate() -> Date {
-//        return date
-//    }
+    static func == (lhs: YearMonthDayDate, rhs: YearMonthDayDate) -> Bool {
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone.gmt
+        let lhsComponents = calendar.dateComponents([.year, .month, .day], from: lhs.date)
+        let rhsComponents = calendar.dateComponents([.year, .month, .day], from: rhs.date)
+        return lhsComponents.year == rhsComponents.year &&
+        lhsComponents.month == rhsComponents.month &&
+        lhsComponents.day == rhsComponents.day
+    }
+    
+    static func < (lhs: YearMonthDayDate, rhs: YearMonthDayDate) -> Bool {
+        return lhs.date < rhs.date
+    }
 }

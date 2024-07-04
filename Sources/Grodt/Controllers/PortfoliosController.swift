@@ -91,69 +91,14 @@ struct PortfoliosController: RouteCollection {
     }
     
     func historicalPerformance(req: Request) async throws -> PortfolioPerformanceTimeSeriesDTO {
-//        let alphavantage = AlphaVantageService(serviceType: .rapidAPI(apiKey: "1c4a060c45mshfa7aa094d7d967bp114334jsn0360bb424b2f"))
-//        let results = await alphavantage.dailyAdjustedTimeSeries(for: "MSFT", outputSize: .full)
-//        switch results {
-//        case .failure(let error):
-//            throw error
-//        case .success(let rawSeries):
-//            
-//            let dateFormatter = DateFormatter()
-//            dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-//            dateFormatter.dateFormat = "yyyy-MM-dd"
-//            
-//            let datedPrices: [DatedPriceDTO] = rawSeries.compactMap { (key: String, value: EquityDailyData) in
-//                guard let date = dateFormatter.date(from: key) else { return nil }
-//                return DatedPriceDTO(date: date, price: value.adjustedClose)
-//            }.sorted { $0.date < $1.date }
-//            
-//            return PortfolioPerformanceTimeSeriesDTO(values: datedPrices)
-//        }
-//        return generateStockData(startDate: Date(), startValue: 100, days: 365)
-        
         let id = try req.requiredID()
-        
         guard let userID = req.auth.get(User.self)?.id else {
             throw Abort(.badRequest)
         }
         
-        let historicalPerformance = try await portfolioRepository.historicalPerformance(for: userID, with: id)
+        let historicalPerformance = try await portfolioRepository.historicalPerformance(with: id)
         return await dataMapper.timeSeriesPerformance(from: historicalPerformance)
-        
-//        return generateStockData(startDate: Date(), startValue: 100, days: 365)
     }
-    
-//    private func generateStockData(startDate: Date, startValue: Decimal, days: Int) -> PortfolioPerformanceTimeSeriesDTO {
-//        var data: [DatedPortfolioPerformanceDTO] = []
-//        var currentValue = startValue
-//        let dateFormatter = DateFormatter()
-//        dateFormatter.dateFormat = "yyyy-MM-dd"
-//
-//        for i in 0..<days {
-//            guard let date = Calendar.current.date(byAdding: .day, value: i, to: startDate) else {
-//                continue
-//            }
-//
-//            let random = Double.random(in: 0...1)
-//            if random < 0.3 {
-//                // 30% of the time, decrease by -0.3% to -2%
-//                let decreaseFactor = Decimal(Double.random(in: (-0.03)...(-0.002)) + 1)
-//                            currentValue *= decreaseFactor
-//            } else if random < 0.6 {
-//                // 30% of the time, change by +0.2% to -0.3%
-//                let changeFactor = Decimal(Double.random(in: -0.002...0.003) + 1)
-//                currentValue *= changeFactor
-//            } else {
-//                // 40% of the time, increase by +1.1% to +0.2%
-//                let increaseFactor = Decimal(Double.random(in: 0.002...0.011) + 1)
-//                currentValue *= increaseFactor
-//            }
-//
-//            data.append(DatedPortfolioPerformanceDTO(date: date, price: (currentValue * Decimal(100)) / Decimal(100)))
-//        }
-//
-//        return PortfolioPerformanceTimeSeriesDTO(values: data)
-//    }
 }
 
 extension PortfolioDTO: Content { }
