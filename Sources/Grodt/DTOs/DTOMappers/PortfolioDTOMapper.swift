@@ -4,14 +4,14 @@ import CollectionConcurrencyKit
 class PortfolioDTOMapper {
     private let transactionDTOMapper: TransactionDTOMapper
     private let currencyDTOMapper: CurrencyDTOMapper
-    private let priceService: PriceService
+    private let performanceCalculator: PortfolioPerformanceCalculating
     
     init(transactionDTOMapper: TransactionDTOMapper,
          currencyDTOMapper: CurrencyDTOMapper,
-         quoteService: PriceService) {
+         performanceCalculator: PortfolioPerformanceCalculating) {
         self.transactionDTOMapper = transactionDTOMapper
         self.currencyDTOMapper = currencyDTOMapper
-        self.priceService = quoteService
+        self.performanceCalculator = performanceCalculator
     }
     
     func portfolio(from portfolio: Portfolio) async throws -> PortfolioDTO {
@@ -39,14 +39,10 @@ class PortfolioDTOMapper {
     }
     
     func performance(for portfolio: Portfolio) async throws -> PortfolioPerformanceDTO {
+        let performance = portfolio.historicalPerformance!.datedPerformance.last!
         let financials = Financials()
-        try await portfolio.transactions.concurrentForEach { transaction in
-            let inAmount = transaction.numberOfShares * transaction.pricePerShareAtPurchase + transaction.fees
-            await financials.addMoneyIn(inAmount)
-            
-            let outAmount = try await transaction.numberOfShares * self.priceService.price(for: transaction.ticker)
-            await financials.addValue(outAmount)
-        }
+        await financials.addMoneyIn(performance.moneyIn)
+        await financials.addValue(performance.value)
         
         return await PortfolioPerformanceDTO(moneyIn: financials.moneyIn, moneyOut: financials.value, profit: financials.profit, totalReturn: financials.totalReturn)
     }

@@ -11,9 +11,10 @@ func routes(_ app: Application) async throws {
     let transactionDTOMapper = TransactionDTOMapper(currencyDTOMapper: currencyDTOMapper)
     let priceService = CachedPriceService(quoteRepository: PostgresQuoteRepository(database: app.db),
                                           alphavantage: alphavantage)
+    let portfolioPerformanceCalculator = PortfolioPerformanceCalculator(priceService: priceService)
     let portfolioDTOMapper = PortfolioDTOMapper(transactionDTOMapper: transactionDTOMapper,
                                                 currencyDTOMapper: currencyDTOMapper,
-                                                quoteService: priceService)
+                                                performanceCalculator: portfolioPerformanceCalculator)
     
     try app.group("") { routeBuilder in
         try routeBuilder.register(collection: UserController(dtoMapper: loginResponseDTOMapper))
@@ -36,7 +37,7 @@ func routes(_ app: Application) async throws {
         
         transactionController.delegate = HistoricalPortfolioPerformanceUpdater(portfolioRepository: PostgresPortfolioRepository(database: app.db),
                                                                                quoteRepository: PostgresQuoteRepository(database: app.db),
-                                                                               priceService: priceService,
+                                                                               performanceCalculator: portfolioPerformanceCalculator,
                                                                                dataMapper: portfolioDTOMapper)
         try routeBuilder.register(collection: transactionController)
         

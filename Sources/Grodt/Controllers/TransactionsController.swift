@@ -9,15 +9,15 @@ class HistoricalPortfolioPerformanceUpdater: TransactionsControllerDelegate {
     private let portfolioRepository: PortfolioRepository
     private let quoteRepository: QuoteRepository
     private let dataMapper: PortfolioDTOMapper
-    private let priceService: PriceService
+    private let performanceCalculator: PortfolioPerformanceCalculating
     
     init(portfolioRepository: PortfolioRepository,
          quoteRepository: QuoteRepository,
-         priceService: PriceService,
+         performanceCalculator: PortfolioPerformanceCalculating,
          dataMapper: PortfolioDTOMapper) {
         self.portfolioRepository = portfolioRepository
         self.quoteRepository = quoteRepository
-        self.priceService = priceService
+        self.performanceCalculator = performanceCalculator
         self.dataMapper = dataMapper
     }
     
@@ -31,28 +31,13 @@ class HistoricalPortfolioPerformanceUpdater: TransactionsControllerDelegate {
         try await recalculateHistoricalPerformance(of: portfolio)
     }
     
-    func recalculateHistoricalPerformance(of portfolio: Portfolio) async throws {
+    private func recalculateHistoricalPerformance(of portfolio: Portfolio) async throws {
         var datedPerformance = [DatedPortfolioPerformance]()
         guard let earliestTransaction = portfolio.earliestTransaction else { return }
         let dates = dateRangeUntilToday(from: earliestTransaction.purchaseDate)
         
         for date in dates {
-            let transactionsUntilDate = portfolio.transactions.filter { YearMonthDayDate($0.purchaseDate) <= date }
-            
-            let financialsForDate = Financials()
-            try await transactionsUntilDate.concurrentForEach { transaction in
-                let inAmount = transaction.numberOfShares * transaction.pricePerShareAtPurchase + transaction.fees
-                await financialsForDate.addMoneyIn(inAmount)
-                
-                let value = try await transaction.numberOfShares * self.priceService.price(for: transaction.ticker, on: date)
-                await financialsForDate.addValue(value)
-            }
-            
-            let performanceForDate = DatedPortfolioPerformance(
-                moneyIn: await financialsForDate.moneyIn,
-                value: await financialsForDate.value,
-                date: date
-            )
+            let performanceForDate = try await performanceCalculator.performance(of: portfolio, on: date)
             datedPerformance.append(performanceForDate)
         }
         

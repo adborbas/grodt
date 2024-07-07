@@ -47,11 +47,15 @@ class CachedPriceService: PriceService {
         }
         
         var quote = quotes.datedQuotes.first(where: { $0.date == date })
-        var calender = Calendar.current
-        calender.timeZone = TimeZone.gmt
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone.gmt
         var dateToCheck = date
-        while quote == nil {
-            dateToCheck = YearMonthDayDate(calender.date(byAdding: .day, value: -1, to: dateToCheck.date)!)
+
+        for _ in 0..<7 {
+            if quote != nil {
+                break
+            }
+            dateToCheck = YearMonthDayDate(calendar.date(byAdding: .day, value: -1, to: dateToCheck.date)!)
             quote = quotes.datedQuotes.first(where: { $0.date == dateToCheck })
         }
         return quote!.price

@@ -25,6 +25,7 @@ class PostgresPortfolioRepository: PortfolioRepository {
             .filter(\User.$id == userID)
             .with(\.$portfolios) { portfolio in
                 portfolio.with(\.$transactions)
+                portfolio.with(\.$historicalPerformance)
             }.first()
         
         guard let user else {
