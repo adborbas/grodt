@@ -4,6 +4,7 @@ import AlphaSwiftage
 protocol PriceService {
     func price(for ticker: String) async throws -> Decimal
     func price(for ticker: String, on date: YearMonthDayDate) async throws -> Decimal
+    func fetchAndCreateHistoricalPrices(for ticker: String) async throws -> HistoricalQuote
 }
 
 class CachedPriceService: PriceService {
@@ -61,6 +62,23 @@ class CachedPriceService: PriceService {
         return quote!.price
     }
     
+    private func liveHistoricalPrices(for ticker: String) async throws -> [DatedQuote] {
+        let dateFormatter = DateFormatter()
+        dateFormatter.timeZone = TimeZone.gmt
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        let result = await alphavantage.dailyAdjustedTimeSeries(for: ticker, outputSize: .full)
+        switch result {
+        case .success(let quotes):
+            return quotes.compactMap { dateString, equityDailyData in
+                guard let date = dateFormatter.date(from: dateString) else { return nil}
+                return DatedQuote(price: equityDailyData.adjustedClose, date: YearMonthDayDate(date))
+            }
+        case .failure(let error):
+            throw error
+        }
+    }
+    
     private func fetchAndCreatePrice(for ticker: String) async throws -> Decimal {
         let quote = try await latestQuote(for: ticker)
         let newQuote = Quote(symbol: ticker,
@@ -71,10 +89,15 @@ class CachedPriceService: PriceService {
         return newQuote.price
     }
     
-    private func fetchAndCreateHistoricalPrices(for ticker: String) async throws -> HistoricalQuote {
-        let quotes = try await historicalQuotes(for: ticker)
+    func fetchAndCreateHistoricalPrices(for ticker: String) async throws -> HistoricalQuote {
+        let quotes = try await liveHistoricalPrices(for: ticker)
         let historicalQuote = HistoricalQuote(symbol: ticker, datedQuotes: quotes)
         try await quoteRepository.create(historicalQuote)
+        
+        if let previousQuote = try await quoteRepository.historicalQuote(for: ticker) {
+            try await quoteRepository.delete(previousQuote)
+        }
+        
         return historicalQuote
     }
     
@@ -101,23 +124,6 @@ class CachedPriceService: PriceService {
         switch result {
         case .success(let quote):
             return quote
-        case .failure(let error):
-            throw error
-        }
-    }
-    
-    private func historicalQuotes(for ticker: String) async throws -> [DatedQuote] {
-        let dateFormatter = DateFormatter()
-        dateFormatter.timeZone = TimeZone.gmt
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        
-        let result = await alphavantage.dailyAdjustedTimeSeries(for: ticker, outputSize: .full)
-        switch result {
-        case .success(let quotes):
-            return quotes.compactMap { dateString, equityDailyData in
-                guard let date = dateFormatter.date(from: dateString) else { return nil}
-                return DatedQuote(price: equityDailyData.adjustedClose, date: YearMonthDayDate(date))
-            }
         case .failure(let error):
             throw error
         }

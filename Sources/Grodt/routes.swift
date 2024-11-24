@@ -15,6 +15,16 @@ func routes(_ app: Application) async throws {
     let portfolioDTOMapper = PortfolioDTOMapper(transactionDTOMapper: transactionDTOMapper,
                                                 currencyDTOMapper: currencyDTOMapper,
                                                 performanceCalculator: portfolioPerformanceCalculator)
+    let portfolioPerformanceUpdater = PortfolioPerformanceUpdater(
+        userRepository: PostgresUserRepository(database: app.db),
+        portfolioRepository: PostgresPortfolioRepository(database: app.db),
+        tickerRepository: PostgresTickerRepository(database: app.db),
+        quoteRepository: PostgresQuoteRepository(database: app.db),
+        priceService: priceService,
+        performanceCalculator: portfolioPerformanceCalculator,
+        dataMapper: portfolioDTOMapper)
+    let transactionChangedHandler = TransactionChangedHandler(portfolioRepository: PostgresPortfolioRepository(database: app.db),
+                                                              historicalPerformanceUpdater: portfolioPerformanceUpdater)
     
     try app.group("") { routeBuilder in
         try routeBuilder.register(collection: UserController(dtoMapper: loginResponseDTOMapper))
@@ -26,19 +36,18 @@ func routes(_ app: Application) async throws {
     let protected = app.grouped([tokenAuthMiddleware, guardAuthMiddleware])
     try protected.group("api") { routeBuilder in
         try routeBuilder.register(collection:
-                                    PortfoliosController(portfolioRepository: PostgresPortfolioRepository(database: app.db),
-                                                         currencyRepository: PostgresCurrencyRepository(database: app.db),
-                                                         dataMapper: portfolioDTOMapper)
+                                    PortfoliosController(
+                                        portfolioRepository: PostgresPortfolioRepository(database: app.db),
+                                        currencyRepository: PostgresCurrencyRepository(database: app.db),
+                                        historicalPortfolioPerformanceUpdater: portfolioPerformanceUpdater,
+                                        dataMapper: portfolioDTOMapper)
         )
         
         let transactionController = TransactionsController(transactionsRepository: PostgresTransactionRepository(database: app.db),
                                currencyRepository: PostgresCurrencyRepository(database: app.db),
                                dataMapper: transactionDTOMapper)
         
-        transactionController.delegate = HistoricalPortfolioPerformanceUpdater(portfolioRepository: PostgresPortfolioRepository(database: app.db),
-                                                                               quoteRepository: PostgresQuoteRepository(database: app.db),
-                                                                               performanceCalculator: portfolioPerformanceCalculator,
-                                                                               dataMapper: portfolioDTOMapper)
+        transactionController.delegate = transactionChangedHandler
         try routeBuilder.register(collection: transactionController)
         
         try routeBuilder.register(collection: TickersController(tickerRepository: PostgresTickerRepository(database: app.db),

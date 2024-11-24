@@ -39,7 +39,10 @@ class PortfolioDTOMapper {
     }
     
     func performance(for portfolio: Portfolio) async throws -> PortfolioPerformanceDTO {
-        let performance = portfolio.historicalPerformance!.datedPerformance.last!
+        guard let performance = portfolio.historicalPerformance?.datedPerformance.last else {
+            return PortfolioPerformanceDTO(moneyIn: 0, moneyOut: 0, profit: 0, totalReturn: 0)
+        }
+        
         let financials = Financials()
         await financials.addMoneyIn(performance.moneyIn)
         await financials.addValue(performance.value)

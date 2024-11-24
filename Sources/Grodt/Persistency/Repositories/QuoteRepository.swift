@@ -11,6 +11,8 @@ protocol QuoteRepository {
     func historicalQuote(for ticker: String) async throws -> HistoricalQuote?
     
     func create(_ historicalQuote: HistoricalQuote) async throws
+    
+    func delete(_ historicalQuote: HistoricalQuote) async throws
 }
 
 class PostgresQuoteRepository: QuoteRepository {
@@ -42,5 +44,9 @@ class PostgresQuoteRepository: QuoteRepository {
     
     func create(_ historicalQuote: HistoricalQuote) async throws {
         try await historicalQuote.save(on: database)
+    }
+    
+    func delete(_ historicalQuote: HistoricalQuote) async throws {
+        try await historicalQuote.delete(on: database)
     }
 }
