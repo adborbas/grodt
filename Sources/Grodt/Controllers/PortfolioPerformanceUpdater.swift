@@ -13,6 +13,8 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
     private let priceService: PriceService
     private let performanceCalculator: PortfolioPerformanceCalculating
     private let dataMapper: PortfolioDTOMapper
+    
+    private let rateLimiter = RateLimiter(maxRequestsPerMinute: 5)
 
     init(userRepository: UserRepository,
          portfolioRepository: PortfolioRepository,
@@ -34,6 +36,7 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
         // Update historical prices for all tickers
         let allTickers = try await tickerRepository.allTickers()
         for ticker in allTickers {
+            await rateLimiter.waitIfNeeded()
             _ = try await priceService.fetchAndCreateHistoricalPrices(for: ticker.symbol)
         }
 
