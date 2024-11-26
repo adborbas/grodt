@@ -1,7 +1,7 @@
 import Foundation
 import Fluent
 
-class Transaction: Model {
+class Transaction: Model, @unchecked Sendable {
     static let schema = "transactions"
     
     @ID(key: .id)
@@ -90,9 +90,9 @@ extension Transaction {
                 .field(Keys.purchaseDate, .datetime, .required)
                 .field(Keys.ticker, .string, .required)
                 .field(Keys.currency, .dictionary, .required)
-                .field(Keys.fees, .sql(raw: "NUMERIC(7,2)"), .required)
-                .field(Keys.numberOfShares, .sql(raw: "NUMERIC(64,6)"), .required)
-                .field(Keys.pricePerShareAtPurchase, .sql(raw: "NUMERIC(64,4)"), .required)
+                .field(Keys.fees, .sql(unsafeRaw: "NUMERIC(7,2)"), .required)
+                .field(Keys.numberOfShares, .sql(unsafeRaw: "NUMERIC(64,6)"), .required)
+                .field(Keys.pricePerShareAtPurchase, .sql(unsafeRaw: "NUMERIC(64,4)"), .required)
                 .create()
         }
         

@@ -1,7 +1,7 @@
 import Foundation
 import Fluent
 
-final class Quote: Model {
+final class Quote: Model, @unchecked Sendable {
     static let schema = Keys.schema
     
     @ID(key: .id)

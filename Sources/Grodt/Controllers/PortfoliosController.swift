@@ -23,7 +23,6 @@ struct PortfoliosController: RouteCollection {
         let portfolios = routes.grouped("portfolios")
         portfolios.get(use: allPortfolios)
         portfolios.post(use: create)
-        portfolios.get("update", use: updateHistorycalPerformance)
         
         portfolios.group(":id") { portfolio in
             portfolio.get(use: portfolioDetail)
@@ -76,20 +75,6 @@ struct PortfoliosController: RouteCollection {
         }
         
         return try await dataMapper.portfolio(from: portfolio)
-    }
-    
-    func updateHistorycalPerformance(req: Request) async throws -> HTTPStatus {
-        guard let userID = req.auth.get(User.self)?.id else {
-            throw Abort(.badRequest)
-        }
-        
-        do {
-            try await portfolioPerformanceUpdater.updatePerformanceOfAllPortfolios()
-        } catch  {
-            return .internalServerError
-        }
-        
-        return .ok
     }
     
     func delete(req: Request) async throws -> HTTPStatus {

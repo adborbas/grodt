@@ -1,7 +1,7 @@
 import Fluent
 import Vapor
 
-final class Portfolio: Model {
+final class Portfolio: Model, @unchecked Sendable {
     static let schema = "portfolios"
     
     @ID(key: .id)

@@ -1,7 +1,7 @@
 import Vapor
 import Queues
 
-struct PortfolioPerformanceUpdaterJob: AsyncScheduledJob {
+struct PortfolioPerformanceUpdaterJob: AsyncScheduledJob, @unchecked Sendable {
     private let performanceUpdater: PortfolioHistoricalPerformanceUpdater
     
     init(performanceUpdater: PortfolioHistoricalPerformanceUpdater) {
