@@ -55,4 +55,10 @@ func routes(_ app: Application) async throws {
                                                                 tickerService: alphavantage)
         )
     }
+    
+    
+    app.queues.schedule(PortfolioPerformanceUpdaterJob(performanceUpdater: portfolioPerformanceUpdater))
+        .daily()
+        .at(.midnight)
+    app.queues.add(LoggingJobEventDelegate(logger: app.logger))
 }
