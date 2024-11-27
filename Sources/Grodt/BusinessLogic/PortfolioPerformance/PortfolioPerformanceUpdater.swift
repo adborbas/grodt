@@ -53,7 +53,7 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
     func recalculateHistoricalPerformance(of portfolio: Portfolio) async throws {
         var datedPerformance = [DatedPortfolioPerformance]()
         guard let earliestTransaction = portfolio.earliestTransaction else { return }
-        let dates = dateRangeUntilToday(from: earliestTransaction.purchaseDate)
+        let dates = dateRangeUntilYesterday(from: earliestTransaction.purchaseDate)
 
         for date in dates {
             let performanceForDate = try await performanceCalculator.performance(of: portfolio, on: date)
@@ -72,13 +72,14 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
         }
     }
 
-    private func dateRangeUntilToday(from startDate: Date) -> [YearMonthDayDate] {
+    private func dateRangeUntilYesterday(from startDate: Date) -> [YearMonthDayDate] {
         var dates: [YearMonthDayDate] = []
         var currentDate = startDate
         let calendar = Calendar.current
-        let today = Date()
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())!
 
-        while currentDate <= today {
+
+        while currentDate <= yesterday {
             let ymdDate = YearMonthDayDate(currentDate)
             dates.append(ymdDate)
             currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
