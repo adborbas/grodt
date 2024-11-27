@@ -1,4 +1,5 @@
 import Vapor
+import AlphaSwiftage
 import Fluent
 import CollectionConcurrencyKit
 
@@ -6,12 +7,15 @@ struct PortfoliosController: RouteCollection {
     private let portfolioRepository: PortfolioRepository
     private let currencyRepository: CurrencyRepository
     private let dataMapper: PortfolioDTOMapper
+    private let portfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater
     
     init(portfolioRepository: PortfolioRepository,
          currencyRepository: CurrencyRepository,
+         historicalPortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater,
          dataMapper: PortfolioDTOMapper) {
         self.portfolioRepository = portfolioRepository
         self.currencyRepository = currencyRepository
+        self.portfolioPerformanceUpdater = historicalPortfolioPerformanceUpdater
         self.dataMapper = dataMapper
     }
     
@@ -23,6 +27,10 @@ struct PortfoliosController: RouteCollection {
         portfolios.group(":id") { portfolio in
             portfolio.get(use: portfolioDetail)
             portfolio.delete(use: delete)
+            
+            portfolio.group("historicalPerformance") { pref in
+                pref.get(use: historicalPerformance)
+            }
         }
     }
     
@@ -67,7 +75,6 @@ struct PortfoliosController: RouteCollection {
         }
         
         return try await dataMapper.portfolio(from: portfolio)
-                        
     }
     
     func delete(req: Request) async throws -> HTTPStatus {
@@ -84,7 +91,18 @@ struct PortfoliosController: RouteCollection {
         }
         return .ok
     }
+    
+    func historicalPerformance(req: Request) async throws -> PortfolioPerformanceTimeSeriesDTO {
+        let id = try req.requiredID()
+        guard let _ = req.auth.get(User.self)?.id else {
+            throw Abort(.badRequest)
+        }
+        
+        let historicalPerformance = try await portfolioRepository.historicalPerformance(with: id)
+        return await dataMapper.timeSeriesPerformance(from: historicalPerformance)
+    }
 }
 
 extension PortfolioDTO: Content { }
 extension PortfolioInfoDTO: Content { }
+extension PortfolioPerformanceTimeSeriesDTO: Content { }

@@ -6,6 +6,11 @@ protocol PortfolioRepository {
     func portfolio(for userID: User.IDValue, with id: Portfolio.IDValue) async throws -> Portfolio?
     func create(_ portfolio: Portfolio) async throws -> Portfolio
     func delete(for userID: User.IDValue, with id: Portfolio.IDValue) async throws
+    func historicalPerformance(with id: Portfolio.IDValue) async throws -> HistoricalPortfolioPerformance
+    func updateHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws
+    func createHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws
+    
+    func expandPortfolio(on transaction: Transaction) async throws -> Portfolio
 }
 
 class PostgresPortfolioRepository: PortfolioRepository {
@@ -20,6 +25,7 @@ class PostgresPortfolioRepository: PortfolioRepository {
             .filter(\User.$id == userID)
             .with(\.$portfolios) { portfolio in
                 portfolio.with(\.$transactions)
+                portfolio.with(\.$historicalPerformance)
             }.first()
         
         guard let user else {
@@ -56,5 +62,32 @@ class PostgresPortfolioRepository: PortfolioRepository {
         }
         
         try await portfolio.delete(on: database)
+    }
+    
+    func historicalPerformance(with id: Portfolio.IDValue) async throws -> HistoricalPortfolioPerformance {
+        guard let portfolioWithPerformance = try await Portfolio.query(on: database)
+            .filter(\Portfolio.$id == id)
+            .with(\.$historicalPerformance)
+            .first() else {
+            throw FluentError.noResults
+        }
+        
+        return portfolioWithPerformance.$historicalPerformance.wrappedValue ?? HistoricalPortfolioPerformance(portfolioID: id, datedPerformance: [])
+    }
+    
+    func updateHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws {
+        try await historicalPerformance.update(on: database)
+    }
+    
+    func createHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws {
+        try await historicalPerformance.save(on: database)
+    }
+    
+    func expandPortfolio(on transaction: Transaction) async throws -> Portfolio {
+        return try await Portfolio.query(on: database)
+            .filter(\Portfolio.$id == transaction.$portfolio.get(on: database).id!)
+            .with(\.$transactions)
+            .with(\.$historicalPerformance)
+            .first()!
     }
 }

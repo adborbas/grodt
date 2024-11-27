@@ -1,9 +1,15 @@
 import Vapor
 
-struct TransactionsController: RouteCollection {
+protocol TransactionsControllerDelegate: AnyObject {
+    func transactionCreated(_ transaction: Transaction) async throws
+    func transactionDeleted(_ transaction: Transaction) async throws
+}
+
+class TransactionsController: RouteCollection {
     private let transactionsRepository: TransactionsRepository
     private let currencyRepository: CurrencyRepository
     private let dataMapper: TransactionDTOMapper
+    var delegate: TransactionsControllerDelegate? // TODO: Weak
     
     init(transactionsRepository: TransactionsRepository,
          currencyRepository: CurrencyRepository,
@@ -40,6 +46,7 @@ struct TransactionsController: RouteCollection {
                                          pricePerShareAtPurchase: transaction.pricePerShare)
         
         try await newTransaction.save(on: req.db)
+        try await delegate?.transactionCreated(newTransaction)
         return dataMapper.transaction(from: newTransaction)
     }
     
@@ -61,6 +68,7 @@ struct TransactionsController: RouteCollection {
         }
         
         try await transaction.delete(on: req.db)
+        try await delegate?.transactionDeleted(transaction)
         return .ok
     }
 }

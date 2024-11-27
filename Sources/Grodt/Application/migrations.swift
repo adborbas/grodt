@@ -8,4 +8,6 @@ func migrations(_ app: Application) throws {
     app.migrations.add(Currency.Migration())
     app.migrations.add(Ticker.Migration())
     app.migrations.add(Quote.Migration())
+    app.migrations.add(HistoricalPortfolioPerformance.Migration())
+    app.migrations.add(HistoricalQuote.Migration())
 }

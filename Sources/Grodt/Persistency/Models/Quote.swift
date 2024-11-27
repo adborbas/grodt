@@ -1,7 +1,7 @@
 import Foundation
 import Fluent
 
-class Quote: Model {
+final class Quote: Model, @unchecked Sendable {
     static let schema = Keys.schema
     
     @ID(key: .id)
@@ -31,8 +31,9 @@ fileprivate extension Quote {
         static let schema = "quotes"
         
         static let symbol: FieldKey = "symbol"
-        static let price: FieldKey = "name"
+        static let price: FieldKey = "price"
         static let lastUpdate: FieldKey = "lastUpdate"
+        static let date: FieldKey = "date"
     }
 }
 
@@ -44,7 +45,7 @@ extension Quote {
             try await database.schema(Quote.schema)
                 .id()
                 .field(Quote.Keys.symbol, .string, .required)
-                .field(Quote.Keys.price, .sql(raw: "NUMERIC(64,4)"), .required)
+                .field(Quote.Keys.price, .sql(unsafeRaw: "NUMERIC(64,4)"), .required)
                 .field(Quote.Keys.lastUpdate, .datetime, .required)
                 .create()
         }

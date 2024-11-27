@@ -1,7 +1,7 @@
 import Foundation
 import Fluent
 
-class Currency: Model {
+class Currency: Model, @unchecked Sendable {
     static let schema = Keys.schema
     
     @ID(key: .id)
