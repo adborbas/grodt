@@ -59,6 +59,6 @@ func routes(_ app: Application) async throws {
     
     app.queues.schedule(PortfolioPerformanceUpdaterJob(performanceUpdater: portfolioPerformanceUpdater))
         .daily()
-        .at(.midnight)
+        .at(9, 0)
     app.queues.add(LoggingJobEventDelegate(logger: app.logger))
 }
