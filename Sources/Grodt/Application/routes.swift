@@ -26,8 +26,16 @@ func routes(_ app: Application) async throws {
     let transactionChangedHandler = TransactionChangedHandler(portfolioRepository: PostgresPortfolioRepository(database: app.db),
                                                               historicalPerformanceUpdater: portfolioPerformanceUpdater)
     
+    let globalRateLimiter = RateLimiterMiddleware(maxRequests: 100, perSeconds: 60)
+    let loginRateLimiter = RateLimiterMiddleware(maxRequests: 3, perSeconds: 60)
+    
+    app.middleware.use(app.sessions.middleware)
+    app.middleware.use(globalRateLimiter)
+    
     try app.group("") { routeBuilder in
-        try routeBuilder.register(collection: UserController(dtoMapper: loginResponseDTOMapper))
+        try routeBuilder
+            .grouped(loginRateLimiter)
+            .register(collection: UserController(dtoMapper: loginResponseDTOMapper))
     }
     
     let tokenAuthMiddleware = UserToken.authenticator()
