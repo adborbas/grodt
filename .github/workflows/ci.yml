@@ -1,20 +1,28 @@
-name: Build and test
+name: Build and test on macOS and Ubuntu
 
 on:
   pull_request:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build-and-test-macos:
     runs-on: macos-13
     steps:
-    - uses: actions/checkout@v3
-    - name: Build
-      run: swift build
-      
-  test:
-    runs-on: macos-13
+      - uses: actions/checkout@v3
+      - name: Build on macOS
+        run: swift build
+      - name: Test on macOS
+        run: swift test
+
+  build-and-test-ubuntu:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Run tests
-      run: swift test
+      - uses: actions/checkout@v3
+      - name: Set up Swift on Ubuntu
+        uses: fwal/setup-swift@v1
+        with:
+          swift-version: '5.9'
+      - name: Build on Ubuntu
+        run: swift build
+      - name: Test on Ubuntu
+        run: swift test

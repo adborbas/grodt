@@ -49,7 +49,7 @@ class CachedPriceService: PriceService {
         
         var quote = quotes.datedQuotes.first(where: { $0.date == date })
         var calendar = Calendar.current
-        calendar.timeZone = TimeZone.gmt
+        calendar.timeZone = TimeZone.universalGMT
         var dateToCheck = date
 
         for _ in 0..<7 {
@@ -64,7 +64,7 @@ class CachedPriceService: PriceService {
     
     private func liveHistoricalPrices(for ticker: String) async throws -> [DatedQuote] {
         let dateFormatter = DateFormatter()
-        dateFormatter.timeZone = TimeZone.gmt
+        dateFormatter.timeZone = TimeZone.universalGMT
         dateFormatter.dateFormat = "yyyy-MM-dd"
         
         let result = await alphavantage.dailyAdjustedTimeSeries(for: ticker, outputSize: .full)

@@ -5,14 +5,14 @@ struct YearMonthDayDate: Codable, Equatable, Hashable, Comparable {
     
     init(_ date: Date) {
         var calendar = Calendar.current
-        calendar.timeZone = TimeZone.gmt
+        calendar.timeZone = TimeZone.universalGMT
         let components = calendar.dateComponents([.year, .month, .day], from: date)
         self.date = calendar.date(from: components)!
     }
     
     static func == (lhs: YearMonthDayDate, rhs: YearMonthDayDate) -> Bool {
         var calendar = Calendar.current
-        calendar.timeZone = TimeZone.gmt
+        calendar.timeZone = TimeZone.universalGMT
         let lhsComponents = calendar.dateComponents([.year, .month, .day], from: lhs.date)
         let rhsComponents = calendar.dateComponents([.year, .month, .day], from: rhs.date)
         return lhsComponents.year == rhsComponents.year &&
