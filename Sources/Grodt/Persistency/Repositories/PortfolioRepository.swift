@@ -36,7 +36,7 @@ class PostgresPortfolioRepository: PortfolioRepository {
     
     func portfolio(for userID: User.IDValue, with id: Portfolio.IDValue) async throws -> Portfolio? {
         try await allPortfolios(for: userID)
-            .first { $0.id == id }!
+            .first { $0.id == id }
     }
     
     func create(_ portfolio: Portfolio) async throws -> Portfolio {
