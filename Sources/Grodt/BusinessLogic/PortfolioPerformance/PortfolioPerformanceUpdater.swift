@@ -63,9 +63,10 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
         var datedPerformance = [DatedPortfolioPerformance]()
         guard let earliestTransaction = portfolio.earliestTransaction else { return }
         let dates = dateRangeUntilToday(from: earliestTransaction.purchaseDate)
+        var priceCache = [String: Decimal]()
 
         for date in dates {
-            let performanceForDate = try await performanceCalculator.performance(of: portfolio, on: date)
+            let performanceForDate = try await performanceCalculator.performance(of: portfolio, on: date, priceCache: &priceCache)
             datedPerformance.append(performanceForDate)
         }
 
