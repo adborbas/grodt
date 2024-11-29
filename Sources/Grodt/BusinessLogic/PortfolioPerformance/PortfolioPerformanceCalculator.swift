@@ -1,7 +1,10 @@
 import Foundation
 
 protocol PortfolioPerformanceCalculating {
-    func performance(of portfolio: Portfolio, on date: YearMonthDayDate, priceCache: inout [String: Decimal]) async throws -> DatedPortfolioPerformance
+    func performance(of portfolio: Portfolio,
+                     on date: YearMonthDayDate,
+                     priceCache: inout [QuoteKey: Decimal],
+                     quoteDictionary: [YearMonthDayDate : DatedQuote]) async throws -> DatedPortfolioPerformance
 }
 
 class PortfolioPerformanceCalculator: PortfolioPerformanceCalculating {
@@ -14,7 +17,8 @@ class PortfolioPerformanceCalculator: PortfolioPerformanceCalculating {
     func performance(
         of portfolio: Portfolio,
         on date: YearMonthDayDate,
-        priceCache: inout [String: Decimal]
+        priceCache: inout [QuoteKey: Decimal],
+        quoteDictionary: [YearMonthDayDate : DatedQuote]
     ) async throws -> DatedPortfolioPerformance {
         let transactionsUntilDate = portfolio.transactions.filter { YearMonthDayDate($0.purchaseDate) <= date }
         
@@ -24,12 +28,13 @@ class PortfolioPerformanceCalculator: PortfolioPerformanceCalculating {
             let inAmount = transaction.numberOfShares * transaction.pricePerShareAtPurchase + transaction.fees
             await financialsForDate.addMoneyIn(inAmount)
             
+            let quoteKey = QuoteKey(ticker: transaction.ticker, date: date)
             let price: Decimal
-            if let cachedPrice = priceCache[transaction.ticker] {
+            if let cachedPrice = priceCache[quoteKey] {
                 price = cachedPrice
             } else {
-                price = try await self.priceService.price(for: transaction.ticker, on: date)
-                priceCache[transaction.ticker] = price
+                price = try await self.priceService.price(for: transaction.ticker, on: date, quoteDictionary: quoteDictionary)
+                priceCache[quoteKey] = price
             }
             
             let value = transaction.numberOfShares * price
@@ -43,4 +48,9 @@ class PortfolioPerformanceCalculator: PortfolioPerformanceCalculating {
         )
         return performanceForDate
     }
+}
+
+struct QuoteKey: Hashable {
+    let ticker: String
+    let date: YearMonthDayDate
 }

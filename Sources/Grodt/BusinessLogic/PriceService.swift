@@ -3,7 +3,7 @@ import AlphaSwiftage
 
 protocol PriceService {
     func price(for ticker: String) async throws -> Decimal
-    func price(for ticker: String, on date: YearMonthDayDate) async throws -> Decimal
+    func price(for ticker: String, on date: YearMonthDayDate, quoteDictionary: [YearMonthDayDate : DatedQuote]) async throws -> Decimal
     func fetchAndCreateHistoricalPrices(for ticker: String) async throws -> HistoricalQuote
     func fetchAndUpdatePrice(for outdatedQuote: Quote) async throws -> Decimal 
 }
@@ -35,20 +35,25 @@ class CachedPriceService: PriceService {
         return try await fetchAndCreatePrice(for: ticker)
     }
     
-    func price(for ticker: String, on date: YearMonthDayDate) async throws -> Decimal {
+    func price(for ticker: String,
+               on date: YearMonthDayDate,
+               quoteDictionary: [YearMonthDayDate : DatedQuote]
+    ) async throws -> Decimal {
         if date == YearMonthDayDate(Date()) {
             return try await price(for: ticker)
         }
-    
-        // Ensure the `await` is properly handled
-        let quotes: HistoricalQuote
-        if let storedQuotes = try await quoteRepository.historicalQuote(for: ticker) {
-            quotes = storedQuotes
-        } else {
-            quotes = try await fetchAndCreateHistoricalPrices(for: ticker)
-        }
-        
-        var quote = quotes.datedQuotes.first(where: { $0.date == date })
+
+//        let quotes: HistoricalQuote
+//        if let storedQuotes = try await quoteRepository.historicalQuote(for: ticker) {
+//            quotes = storedQuotes
+//        } else {
+//            quotes = try await fetchAndCreateHistoricalPrices(for: ticker)
+//        }
+
+//        // Convert datedQuotes array to dictionary for fast lookup
+//        let quoteDictionary = Dictionary(uniqueKeysWithValues: quotes.datedQuotes.map { ($0.date, $0) })
+
+        var quote = quoteDictionary[date]
         var calendar = Calendar.current
         calendar.timeZone = TimeZone.universalGMT
         var dateToCheck = date
@@ -58,8 +63,9 @@ class CachedPriceService: PriceService {
                 break
             }
             dateToCheck = YearMonthDayDate(calendar.date(byAdding: .day, value: -1, to: dateToCheck.date)!)
-            quote = quotes.datedQuotes.first(where: { $0.date == dateToCheck })
+            quote = quoteDictionary[dateToCheck]
         }
+
         return quote!.price
     }
     

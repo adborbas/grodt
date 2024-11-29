@@ -1,7 +1,7 @@
 import Foundation
 
 protocol PortfolioHistoricalPerformanceUpdater {
-    func recalculateHistoricalPerformance(of portfolio: Portfolio) async throws
+    func recalculateHistoricalPerformance(of portfolio: Portfolio, since: Date?) async throws
     func updatePerformanceOfAllPortfolios() async throws
 }
 
@@ -59,14 +59,26 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
         }
     }
 
-    func recalculateHistoricalPerformance(of portfolio: Portfolio) async throws {
+    func recalculateHistoricalPerformance(of portfolio: Portfolio, since: Date? = nil) async throws {
         var datedPerformance = [DatedPortfolioPerformance]()
-        guard let earliestTransaction = portfolio.earliestTransaction else { return }
-        let dates = dateRangeUntilToday(from: earliestTransaction.purchaseDate)
-        var priceCache = [String: Decimal]()
+        let startDate: Date = {
+            if let since {
+                return since
+            }
+            guard let earliestTransaction = portfolio.earliestTransaction else { return Date() }
+            return earliestTransaction.purchaseDate
+        }()
+        
+        let dates = dateRangeUntilToday(from: startDate)
+        var priceCache = [QuoteKey: Decimal]()
+        
+        var quoteDictionary: [YearMonthDayDate : DatedQuote] = [:]
+        if let storedQuotes = try await quoteRepository.historicalQuote(for: portfolio.earliestTransaction!.ticker) {
+            quoteDictionary = Dictionary(uniqueKeysWithValues: storedQuotes.datedQuotes.map { ($0.date, $0) })
+        }
 
         for date in dates {
-            let performanceForDate = try await performanceCalculator.performance(of: portfolio, on: date, priceCache: &priceCache)
+            let performanceForDate = try await performanceCalculator.performance(of: portfolio, on: date, priceCache: &priceCache, quoteDictionary: quoteDictionary)
             datedPerformance.append(performanceForDate)
         }
 
