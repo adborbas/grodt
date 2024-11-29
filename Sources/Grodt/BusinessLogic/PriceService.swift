@@ -5,6 +5,7 @@ protocol PriceService {
     func price(for ticker: String) async throws -> Decimal
     func price(for ticker: String, on date: YearMonthDayDate) async throws -> Decimal
     func fetchAndCreateHistoricalPrices(for ticker: String) async throws -> HistoricalQuote
+    func fetchAndUpdatePrice(for outdatedQuote: Quote) async throws -> Decimal 
 }
 
 class CachedPriceService: PriceService {
@@ -93,15 +94,10 @@ class CachedPriceService: PriceService {
         let quotes = try await liveHistoricalPrices(for: ticker)
         let historicalQuote = HistoricalQuote(symbol: ticker, datedQuotes: quotes)
         try await quoteRepository.create(historicalQuote)
-        
-        if let previousQuote = try await quoteRepository.historicalQuote(for: ticker) {
-            try await quoteRepository.delete(previousQuote)
-        }
-        
         return historicalQuote
     }
     
-    private func fetchAndUpdatePrice(for outdatedQuote: Quote) async throws -> Decimal {
+    func fetchAndUpdatePrice(for outdatedQuote: Quote) async throws -> Decimal {
         let quote = try await latestQuote(for: outdatedQuote.symbol)
         outdatedQuote.lastUpdate = Date()
         try await quoteRepository.update(outdatedQuote)
