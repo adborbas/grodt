@@ -33,11 +33,20 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
     }
 
     func updatePerformanceOfAllPortfolios() async throws {
-        // Update historical prices for all tickers
+        // Remove all historrical prices
+        for quote in try await quoteRepository.allHistoricalQuote() {
+            try await quoteRepository.delete(quote)
+        }
+        
+        // Update historical prices and latest prices for all tickers
         let allTickers = try await tickerRepository.allTickers()
         for ticker in allTickers {
             await rateLimiter.waitIfNeeded()
             _ = try await priceService.fetchAndCreateHistoricalPrices(for: ticker.symbol)
+            await rateLimiter.waitIfNeeded()
+            if let quote = try await quoteRepository.quote(for: ticker.symbol) {
+                _ = try await priceService.fetchAndUpdatePrice(for: quote)
+            }
         }
 
         // Update historical performance for all portfolios
@@ -53,10 +62,11 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
     func recalculateHistoricalPerformance(of portfolio: Portfolio) async throws {
         var datedPerformance = [DatedPortfolioPerformance]()
         guard let earliestTransaction = portfolio.earliestTransaction else { return }
-        let dates = dateRangeUntilYesterday(from: earliestTransaction.purchaseDate)
+        let dates = dateRangeUntilToday(from: earliestTransaction.purchaseDate)
+        var priceCache = [String: Decimal]()
 
         for date in dates {
-            let performanceForDate = try await performanceCalculator.performance(of: portfolio, on: date)
+            let performanceForDate = try await performanceCalculator.performance(of: portfolio, on: date, priceCache: &priceCache)
             datedPerformance.append(performanceForDate)
         }
 
@@ -72,14 +82,14 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
         }
     }
 
-    private func dateRangeUntilYesterday(from startDate: Date) -> [YearMonthDayDate] {
+    private func dateRangeUntilToday(from startDate: Date) -> [YearMonthDayDate] {
         var dates: [YearMonthDayDate] = []
         var currentDate = startDate
         let calendar = Calendar.current
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())!
+        let today = Date()
 
 
-        while currentDate <= yesterday {
+        while currentDate <= today {
             let ymdDate = YearMonthDayDate(currentDate)
             dates.append(ymdDate)
             currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
