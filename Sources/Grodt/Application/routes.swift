@@ -9,8 +9,9 @@ func routes(_ app: Application) async throws {
     let tickerDTOMapper = TickerDTOMapper()
     let loginResponseDTOMapper = LoginResponseDTOMapper()
     let transactionDTOMapper = TransactionDTOMapper(currencyDTOMapper: currencyDTOMapper)
-    let priceService = CachedPriceService(quoteRepository: PostgresQuoteRepository(database: app.db),
-                                          alphavantage: alphavantage)
+    let livePriceService = LivePriceService(alphavantage: alphavantage)
+    let quoteCache = PostgresQuoteRepository(database: app.db)
+    let priceService = CachedPriceService(priceService: livePriceService, cache: quoteCache)
     let portfolioPerformanceCalculator = PortfolioPerformanceCalculator(priceService: priceService)
     let portfolioDTOMapper = PortfolioDTOMapper(transactionDTOMapper: transactionDTOMapper,
                                                 currencyDTOMapper: currencyDTOMapper,
@@ -19,10 +20,9 @@ func routes(_ app: Application) async throws {
         userRepository: PostgresUserRepository(database: app.db),
         portfolioRepository: PostgresPortfolioRepository(database: app.db),
         tickerRepository: PostgresTickerRepository(database: app.db),
-        quoteRepository: PostgresQuoteRepository(database: app.db),
+        quoteCache: quoteCache,
         priceService: priceService,
-        performanceCalculator: portfolioPerformanceCalculator,
-        dataMapper: portfolioDTOMapper)
+        performanceCalculator: portfolioPerformanceCalculator)
     let transactionChangedHandler = TransactionChangedHandler(portfolioRepository: PostgresPortfolioRepository(database: app.db),
                                                               historicalPerformanceUpdater: portfolioPerformanceUpdater)
     

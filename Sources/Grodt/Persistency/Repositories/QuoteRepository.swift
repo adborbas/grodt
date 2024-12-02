@@ -1,25 +1,7 @@
 import Foundation
 import Fluent
 
-protocol QuoteRepository {
-    func quote(for ticker: String) async throws -> Quote?
-    
-    func create(_ quote: Quote) async throws
-    
-    func update(_ quote: Quote) async throws
-    
-    func allHistoricalQuote() async throws -> [HistoricalQuote]
-    
-    func historicalQuote(for ticker: String) async throws -> HistoricalQuote?
-    
-    func create(_ historicalQuote: HistoricalQuote) async throws
-    
-    func delete(_ historicalQuote: HistoricalQuote) async throws
-    
-    func update(_ historicalQuote: HistoricalQuote) async throws
-}
-
-class PostgresQuoteRepository: QuoteRepository {
+class PostgresQuoteRepository: QuoteCache {
     private let database: Database
     
     init(database: Database) {
@@ -32,18 +14,18 @@ class PostgresQuoteRepository: QuoteRepository {
             .first()
     }
     
-    func create(_ quote: Quote) async throws {
-        try await quote.save(on: database)
+    func storeQuote(_ quote: Quote) async throws {
+        if quote.$id.exists {
+            try await quote.update(on: database)
+        } else {
+            try await quote.create(on: database)
+        }
     }
     
-    func update(_ quote: Quote) async throws {
-        try await quote.update(on: database)
+    func clearQuote(for ticker: String) async throws {
+        try await quote(for: ticker)?.delete(on: database)
     }
     
-    func allHistoricalQuote() async throws -> [HistoricalQuote] {
-        return try await HistoricalQuote.query(on: database)
-            .all()
-    }
     
     func historicalQuote(for ticker: String) async throws -> HistoricalQuote? {
         return try await HistoricalQuote.query(on: database)
@@ -51,15 +33,15 @@ class PostgresQuoteRepository: QuoteRepository {
             .first()
     }
     
-    func create(_ historicalQuote: HistoricalQuote) async throws {
-        try await historicalQuote.save(on: database)
+    func storeHistoricalQuote(_ quote: HistoricalQuote) async throws {
+        if quote.$id.exists {
+            try await quote.update(on: database)
+        } else {
+            try await quote.create(on: database)
+        }
     }
     
-    func update(_ historicalQuote: HistoricalQuote) async throws {
-        try await historicalQuote.update(on: database)
-    }
-    
-    func delete(_ historicalQuote: HistoricalQuote) async throws {
-        try await historicalQuote.delete(on: database)
+    func clearHistoricalQuote(for ticker: String) async throws {
+        try await historicalQuote(for: ticker)?.delete(on: database)
     }
 }
