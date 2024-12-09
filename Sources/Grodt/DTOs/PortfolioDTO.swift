@@ -5,5 +5,5 @@ struct PortfolioDTO: Codable, Equatable {
     let name: String
     let currency: CurrencyDTO
     let performance: PortfolioPerformanceDTO
-    let transactions: [TransactionDTO]
+    let investments: [InvestmentDTO]
 }

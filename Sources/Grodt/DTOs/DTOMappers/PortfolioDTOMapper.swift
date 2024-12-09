@@ -2,30 +2,26 @@ import Foundation
 import CollectionConcurrencyKit
 
 class PortfolioDTOMapper {
-    private let transactionDTOMapper: TransactionDTOMapper
+    private let investmentDTOMapper: InvestmentDTOMapper
     private let currencyDTOMapper: CurrencyDTOMapper
     private let performanceCalculator: PortfolioPerformanceCalculating
     
-    init(transactionDTOMapper: TransactionDTOMapper,
+    init(investmentDTOMapper: InvestmentDTOMapper,
          currencyDTOMapper: CurrencyDTOMapper,
          performanceCalculator: PortfolioPerformanceCalculating) {
-        self.transactionDTOMapper = transactionDTOMapper
+        self.investmentDTOMapper = investmentDTOMapper
         self.currencyDTOMapper = currencyDTOMapper
         self.performanceCalculator = performanceCalculator
     }
     
     func portfolio(from portfolio: Portfolio) async throws -> PortfolioDTO {
         
+        let investments = try await investmentDTOMapper.investments(from: portfolio.transactions)
         return try await  PortfolioDTO(id: portfolio.id?.uuidString ?? "",
                                        name: portfolio.name,
                                        currency: currencyDTOMapper.currency(from: portfolio.currency),
                                        performance: performance(for: portfolio),
-                                       transactions: portfolio.transactions
-            .sorted(by: { lhs, rhs in
-                return lhs.purchaseDate > rhs.purchaseDate
-            })
-                .compactMap { transactionDTOMapper.transaction(from: $0) }
-        )
+                                       investments: investments)
     }
     
     func portfolioInfo(from portfolio: Portfolio) async throws -> PortfolioInfoDTO {
@@ -33,8 +29,7 @@ class PortfolioDTOMapper {
         return try await PortfolioInfoDTO(id: portfolio.id?.uuidString ?? "",
                                           name: portfolio.name,
                                           currency: currencyDTOMapper.currency(from: portfolio.currency),
-                                          performance: performance(for: portfolio),
-                                          transactions: portfolio.transactions.compactMap { $0.id?.uuidString }
+                                          performance: performance(for: portfolio)
         )
     }
     

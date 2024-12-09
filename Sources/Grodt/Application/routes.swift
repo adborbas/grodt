@@ -9,11 +9,15 @@ func routes(_ app: Application) async throws {
     let tickerDTOMapper = TickerDTOMapper()
     let loginResponseDTOMapper = LoginResponseDTOMapper()
     let transactionDTOMapper = TransactionDTOMapper(currencyDTOMapper: currencyDTOMapper)
+    let tickerRepository = PostgresTickerRepository(database: app.db)
     let livePriceService = LivePriceService(alphavantage: alphavantage)
     let quoteCache = PostgresQuoteRepository(database: app.db)
     let priceService = CachedPriceService(priceService: livePriceService, cache: quoteCache)
+    let investmentDTOMapper = InvestmentDTOMapper(currencyDTOMapper: currencyDTOMapper,
+                                                  tickerRepository: tickerRepository,
+                                                  priceService: priceService)
     let portfolioPerformanceCalculator = PortfolioPerformanceCalculator(priceService: priceService)
-    let portfolioDTOMapper = PortfolioDTOMapper(transactionDTOMapper: transactionDTOMapper,
+    let portfolioDTOMapper = PortfolioDTOMapper(investmentDTOMapper: investmentDTOMapper,
                                                 currencyDTOMapper: currencyDTOMapper,
                                                 performanceCalculator: portfolioPerformanceCalculator)
     let portfolioPerformanceUpdater = PortfolioPerformanceUpdater(
@@ -26,7 +30,7 @@ func routes(_ app: Application) async throws {
     let transactionChangedHandler = TransactionChangedHandler(portfolioRepository: PostgresPortfolioRepository(database: app.db),
                                                               historicalPerformanceUpdater: portfolioPerformanceUpdater)
     
-    var tickersController = TickersController(tickerRepository: PostgresTickerRepository(database: app.db),
+    var tickersController = TickersController(tickerRepository: tickerRepository,
                                               dataMapper: tickerDTOMapper,
                                               tickerService: alphavantage)
     let tickerChangeHandler = TickerChangeHandler(priceService: priceService)
