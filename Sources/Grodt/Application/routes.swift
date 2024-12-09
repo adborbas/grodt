@@ -26,6 +26,12 @@ func routes(_ app: Application) async throws {
     let transactionChangedHandler = TransactionChangedHandler(portfolioRepository: PostgresPortfolioRepository(database: app.db),
                                                               historicalPerformanceUpdater: portfolioPerformanceUpdater)
     
+    var tickersController = TickersController(tickerRepository: PostgresTickerRepository(database: app.db),
+                                              dataMapper: tickerDTOMapper,
+                                              tickerService: alphavantage)
+    let tickerChangeHandler = TickerChangeHandler(priceService: priceService)
+    tickersController.delegate = tickerChangeHandler
+    
     let globalRateLimiter = RateLimiterMiddleware(maxRequests: 100, perSeconds: 60)
     let loginRateLimiter = RateLimiterMiddleware(maxRequests: 3, perSeconds: 60)
     
@@ -58,9 +64,7 @@ func routes(_ app: Application) async throws {
         transactionController.delegate = transactionChangedHandler
         try routeBuilder.register(collection: transactionController)
         
-        try routeBuilder.register(collection: TickersController(tickerRepository: PostgresTickerRepository(database: app.db),
-                                                                dataMapper: tickerDTOMapper,
-                                                                tickerService: alphavantage)
+        try routeBuilder.register(collection: tickersController
         )
     }
     
