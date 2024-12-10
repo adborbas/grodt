@@ -15,6 +15,7 @@ class PostgresTransactionRepository: TransactionsRepository {
     func transaction(for id: UUID) async throws -> Transaction? {
         return try await Transaction.query(on: database)
             .filter(\Transaction.$id == id)
+            .with(\.$portfolio)
             .first()
     }
 }
