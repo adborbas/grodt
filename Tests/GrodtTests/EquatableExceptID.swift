@@ -9,8 +9,7 @@ extension PortfolioInfoDTO: EquatableExceptID {
     func equalToExceptIDWith(_ other: PortfolioInfoDTO) -> Bool {
         return name == other.name &&
         currency == other.currency &&
-        performance == other.performance &&
-        transactions == other.transactions
+        performance == other.performance
     }
 }
 
@@ -19,7 +18,7 @@ extension PortfolioDTO: EquatableExceptID {
         return name == other.name &&
         currency == other.currency &&
         performance == other.performance &&
-        transactions == other.transactions
+        investments == other.investments
     }
 }
 

@@ -6,16 +6,15 @@ enum TestConstant {
         static let new = PortfolioInfoDTO(id: UUID().uuidString,
                                           name: "New",
                                           currency: Currencies.eur.dto,
-                                          performance: PerformanceDTOs.zero,
-                                          transactions: [])
+                                          performance: PerformanceDTOs.zero)
     }
     
     enum PortfolioDTOs {
         static let new = PortfolioDTO(id: UUID().uuidString,
-                               name: "New",
-                               currency: Currencies.eur.dto,
-                               performance: PerformanceDTOs.zero,
-                               transactions: [])
+                                      name: "New",
+                                      currency: Currencies.eur.dto,
+                                      performance: PerformanceDTOs.zero,
+                                      investments: [])
     }
     
     enum PerformanceDTOs {

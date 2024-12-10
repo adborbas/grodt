@@ -24,7 +24,9 @@ class PostgresPortfolioRepository: PortfolioRepository {
         let user = try await User.query(on: database)
             .filter(\User.$id == userID)
             .with(\.$portfolios) { portfolio in
-                portfolio.with(\.$transactions)
+                portfolio.with(\.$transactions) { transaction in
+                    transaction.with(\.$portfolio)
+                }
                 portfolio.with(\.$historicalPerformance)
             }.first()
         

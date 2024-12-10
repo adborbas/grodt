@@ -9,22 +9,37 @@ func routes(_ app: Application) async throws {
     let tickerDTOMapper = TickerDTOMapper()
     let loginResponseDTOMapper = LoginResponseDTOMapper()
     let transactionDTOMapper = TransactionDTOMapper(currencyDTOMapper: currencyDTOMapper)
+    let tickerRepository = PostgresTickerRepository(database: app.db)
     let livePriceService = LivePriceService(alphavantage: alphavantage)
     let quoteCache = PostgresQuoteRepository(database: app.db)
     let priceService = CachedPriceService(priceService: livePriceService, cache: quoteCache)
+    let investmentDTOMapper = InvestmentDTOMapper(currencyDTOMapper: currencyDTOMapper,
+                                                  transactionDTOMapper: transactionDTOMapper,
+                                                  tickerRepository: tickerRepository,
+                                                  priceService: priceService)
+    let portfolioRepository = PostgresPortfolioRepository(database: app.db)
     let portfolioPerformanceCalculator = PortfolioPerformanceCalculator(priceService: priceService)
-    let portfolioDTOMapper = PortfolioDTOMapper(transactionDTOMapper: transactionDTOMapper,
+    let portfolioDTOMapper = PortfolioDTOMapper(investmentDTOMapper: investmentDTOMapper,
                                                 currencyDTOMapper: currencyDTOMapper,
                                                 performanceCalculator: portfolioPerformanceCalculator)
     let portfolioPerformanceUpdater = PortfolioPerformanceUpdater(
         userRepository: PostgresUserRepository(database: app.db),
-        portfolioRepository: PostgresPortfolioRepository(database: app.db),
+        portfolioRepository: portfolioRepository,
         tickerRepository: PostgresTickerRepository(database: app.db),
         quoteCache: quoteCache,
         priceService: priceService,
         performanceCalculator: portfolioPerformanceCalculator)
     let transactionChangedHandler = TransactionChangedHandler(portfolioRepository: PostgresPortfolioRepository(database: app.db),
                                                               historicalPerformanceUpdater: portfolioPerformanceUpdater)
+    
+    var tickersController = TickersController(tickerRepository: tickerRepository,
+                                              dataMapper: tickerDTOMapper,
+                                              tickerService: alphavantage)
+    let tickerChangeHandler = TickerChangeHandler(priceService: priceService)
+    tickersController.delegate = tickerChangeHandler
+    
+    let investmentsController = InvestmentController(portfolioRepository: portfolioRepository,
+                                                     dataMapper: investmentDTOMapper)
     
     let globalRateLimiter = RateLimiterMiddleware(maxRequests: 100, perSeconds: 60)
     let loginRateLimiter = RateLimiterMiddleware(maxRequests: 3, perSeconds: 60)
@@ -58,10 +73,8 @@ func routes(_ app: Application) async throws {
         transactionController.delegate = transactionChangedHandler
         try routeBuilder.register(collection: transactionController)
         
-        try routeBuilder.register(collection: TickersController(tickerRepository: PostgresTickerRepository(database: app.db),
-                                                                dataMapper: tickerDTOMapper,
-                                                                tickerService: alphavantage)
-        )
+        try routeBuilder.register(collection: tickersController)
+        try routeBuilder.register(collection: investmentsController)
     }
     
     

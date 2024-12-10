@@ -2,30 +2,26 @@ import Foundation
 import CollectionConcurrencyKit
 
 class PortfolioDTOMapper {
-    private let transactionDTOMapper: TransactionDTOMapper
+    private let investmentDTOMapper: InvestmentDTOMapper
     private let currencyDTOMapper: CurrencyDTOMapper
     private let performanceCalculator: PortfolioPerformanceCalculating
     
-    init(transactionDTOMapper: TransactionDTOMapper,
+    init(investmentDTOMapper: InvestmentDTOMapper,
          currencyDTOMapper: CurrencyDTOMapper,
          performanceCalculator: PortfolioPerformanceCalculating) {
-        self.transactionDTOMapper = transactionDTOMapper
+        self.investmentDTOMapper = investmentDTOMapper
         self.currencyDTOMapper = currencyDTOMapper
         self.performanceCalculator = performanceCalculator
     }
     
     func portfolio(from portfolio: Portfolio) async throws -> PortfolioDTO {
         
+        let investments = try await investmentDTOMapper.investments(from: portfolio.transactions)
         return try await  PortfolioDTO(id: portfolio.id?.uuidString ?? "",
                                        name: portfolio.name,
                                        currency: currencyDTOMapper.currency(from: portfolio.currency),
                                        performance: performance(for: portfolio),
-                                       transactions: portfolio.transactions
-            .sorted(by: { lhs, rhs in
-                return lhs.purchaseDate > rhs.purchaseDate
-            })
-                .compactMap { transactionDTOMapper.transaction(from: $0) }
-        )
+                                       investments: investments)
     }
     
     func portfolioInfo(from portfolio: Portfolio) async throws -> PortfolioInfoDTO {
@@ -33,8 +29,7 @@ class PortfolioDTOMapper {
         return try await PortfolioInfoDTO(id: portfolio.id?.uuidString ?? "",
                                           name: portfolio.name,
                                           currency: currencyDTOMapper.currency(from: portfolio.currency),
-                                          performance: performance(for: portfolio),
-                                          transactions: portfolio.transactions.compactMap { $0.id?.uuidString }
+                                          performance: performance(for: portfolio)
         )
     }
     
@@ -45,10 +40,15 @@ class PortfolioDTOMapper {
         }
         
         let financials = Financials()
-        await financials.addMoneyIn(performance.moneyIn)
-        await financials.addValue(performance.value)
-        
-        return await PortfolioPerformanceDTO(moneyIn: financials.moneyIn, moneyOut: financials.value, profit: financials.profit, totalReturn: financials.totalReturn)
+            await financials.addMoneyIn(performance.moneyIn)
+            await financials.addValue(performance.value)
+            
+            return PortfolioPerformanceDTO(
+                moneyIn: await financials.moneyIn,
+                moneyOut: await financials.value,
+                profit: await financials.profit,
+                totalReturn: await financials.totalReturn
+            )
     }
     
     func timeSeriesPerformance(from historicalPerformance: HistoricalPortfolioPerformance) async -> PortfolioPerformanceTimeSeriesDTO {
@@ -70,22 +70,34 @@ class PortfolioDTOMapper {
 }
 
 actor Financials {
-    var moneyIn: Decimal = 0
-    var value: Decimal = 0
+    private(set) var moneyIn: Decimal = 0
+    private(set) var value: Decimal = 0
     
-    func addMoneyIn(_ amount: Decimal) {
+    func addMoneyIn(_ amount: Decimal) async {
+        guard amount > 0 else { return }
         moneyIn += amount
     }
     
-    func addValue(_ amount: Decimal) {
+    func addValue(_ amount: Decimal) async {
+        guard amount > 0 else { return }
         value += amount
     }
     
     var profit: Decimal {
-        return value - moneyIn
+        value - moneyIn
     }
     
     var totalReturn: Decimal {
-        return moneyIn == 0 ? 0 : profit / moneyIn
+        guard moneyIn > 0 else { return 0 }
+        return (profit / moneyIn).rounded(to: 2)
+    }
+}
+
+fileprivate extension Decimal {
+    func rounded(to scale: Int, roundingMode: NSDecimalNumber.RoundingMode = .bankers) -> Decimal {
+        var value = self
+        var result = Decimal()
+        NSDecimalRound(&result, &value, scale, roundingMode)
+        return result
     }
 }

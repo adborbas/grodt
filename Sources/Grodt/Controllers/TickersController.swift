@@ -2,10 +2,16 @@ import Vapor
 import CollectionConcurrencyKit
 import AlphaSwiftage
 
+protocol TickersControllerDelegate: AnyObject {
+    func tickerCreated(_ ticker: Ticker)
+}
+
 struct TickersController: RouteCollection {
     private let tickerRepository: TickerRepository
     private let dataMapper: TickerDTOMapper
     private let tickerService: AlphaVantageService
+    
+    var delegate: TickersControllerDelegate? // TODO: Weak
     
     init(tickerRepository: TickerRepository,
          dataMapper: TickerDTOMapper,
@@ -38,6 +44,7 @@ struct TickersController: RouteCollection {
                                currency: postTicker.currency)
         
         try await ticker.save(on: req.db)
+        delegate?.tickerCreated(ticker)
         return postTicker
     }
     
