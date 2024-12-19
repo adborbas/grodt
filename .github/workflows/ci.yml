@@ -15,7 +15,7 @@ jobs:
         run: swift test
 
   build-and-test-ubuntu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: Set up Swift on Ubuntu
