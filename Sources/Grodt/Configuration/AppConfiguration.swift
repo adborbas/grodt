@@ -20,6 +20,19 @@ struct AppConfiguration {
         fileprivate init() { }
     }
     
+    struct Redis {
+        @RequiredEnvironmentVariable(key: "REDIS_HOSTNAME")
+        var hostName: String
+        
+        @RequiredEnvironmentVariable(key: "REDIS_PASSWORD")
+        var password: String
+        
+        @RequiredEnvironmentVariable(key: "REDIS_MAX_ACTIVE_CON")
+        var maximumActiveConnections: Int
+                
+        fileprivate init() { }
+    }
+    
     struct PreconfiguredUser {
         @OptionalEnvironmentVariable(key: "DEFAULT_USER_NAME")
         var name: String?
@@ -33,6 +46,7 @@ struct AppConfiguration {
     
     private let app: Application
     let postgres = Postgres()
+    let redis = Redis()
     
     @OptionalEnvironmentVariable(key: "PORT")
     var port: Int?
