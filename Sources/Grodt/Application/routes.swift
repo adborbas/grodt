@@ -77,11 +77,13 @@ func routes(_ app: Application) async throws {
         try routeBuilder.register(collection: investmentsController)
     }
     
-    let portfolioUpdaterJob = PortfolioPerformanceUpdaterJob(performanceUpdater: portfolioPerformanceUpdater)
-    app.queues.schedule(portfolioUpdaterJob)
-        .daily()
-        .at(3, 0)
-    app.queues.add(LoggingJobEventDelegate(logger: app.logger))
-    try app.queues.startScheduledJobs()
-    try app.queues.startInProcessJobs()
+    if app.environment != .testing {
+        let portfolioUpdaterJob = PortfolioPerformanceUpdaterJob(performanceUpdater: portfolioPerformanceUpdater)
+        app.queues.schedule(portfolioUpdaterJob)
+            .daily()
+            .at(3, 0)
+        app.queues.add(LoggingJobEventDelegate(logger: app.logger))
+        try app.queues.startScheduledJobs()
+        try app.queues.startInProcessJobs()
+    }
 }
