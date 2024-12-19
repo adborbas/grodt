@@ -7,3 +7,12 @@ services:
       - 5432:5432
     environment:
       POSTGRES_PASSWORD: "test"
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--requirepass", "test"]
+    environment:
+      REDIS_PASSWORD: "test"

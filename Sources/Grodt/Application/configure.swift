@@ -1,6 +1,4 @@
 import Vapor
-import Fluent
-import FluentPostgresDriver
 import FluentSQLiteDriver
 
 public func configure(_ app: Application) async throws {
@@ -15,6 +13,7 @@ public func configure(_ app: Application) async throws {
             app.http.server.configuration.port = port
         }
         try app.databases.use(DatabaseConfigurationFactory.postgres(from: app.config.postgres), as: .psql)
+        try app.queues.use(.redis(from: app.config.redis))
     }
     
     try await routes(app)
