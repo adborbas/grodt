@@ -13,10 +13,22 @@ struct InvestmentController: RouteCollection {
     
     func boot(routes: Vapor.RoutesBuilder) throws {
         let investments = routes.grouped("investments")
+        investments.get(use: allInvestments)
         
         investments.group(":ticker") { investment in
             investment.get(use: invesetmentDetail)
         }
+    }
+    
+    func allInvestments(req: Request) async throws -> [InvestmentDTO] {
+        guard let userID = req.auth.get(User.self)?.id else {
+            throw Abort(.badRequest)
+        }
+        
+        let transactions = try await portfolioRepository.allPortfolios(for: userID)
+            .flatMap { $0.transactions }
+        
+        return try await dataMapper.investments(from: transactions)
     }
     
     func invesetmentDetail(req: Request) async throws -> InvestmentDetailDTO {
@@ -35,3 +47,4 @@ struct InvestmentController: RouteCollection {
 }
 
 extension InvestmentDetailDTO: Content { }
+extension InvestmentDTO: Content { }

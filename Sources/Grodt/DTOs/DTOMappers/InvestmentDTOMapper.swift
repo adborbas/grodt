@@ -53,7 +53,9 @@ class InvestmentDTOMapper {
             )
         }
         
-        return investments
+        return investments.sorted { lft, rgh in
+            lft.totalReturn > rgh.totalReturn
+        }
     }
     
     func investmentDetail(from transactions: [Transaction])async throws -> InvestmentDetailDTO {
