@@ -41,6 +41,8 @@ func routes(_ app: Application) async throws {
     let investmentsController = InvestmentController(portfolioRepository: portfolioRepository,
                                                      dataMapper: investmentDTOMapper)
     
+    let accountController = AccountController(userRepository: PostgresUserRepository(database: app.db), dataMapper: UserDTOMapper())
+    
     let globalRateLimiter = RateLimiterMiddleware(maxRequests: 100, perSeconds: 60)
     let loginRateLimiter = RateLimiterMiddleware(maxRequests: 3, perSeconds: 60)
     
@@ -75,6 +77,7 @@ func routes(_ app: Application) async throws {
         
         try routeBuilder.register(collection: tickersController)
         try routeBuilder.register(collection: investmentsController)
+        try routeBuilder.register(collection: accountController)
     }
     
     if app.environment != .testing {
