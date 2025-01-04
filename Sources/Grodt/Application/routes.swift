@@ -49,35 +49,33 @@ func routes(_ app: Application) async throws {
     app.middleware.use(app.sessions.middleware)
     app.middleware.use(globalRateLimiter)
     
-    try app.group("") { routeBuilder in
-        try routeBuilder
-            .grouped(loginRateLimiter)
-            .register(collection: UserController(dtoMapper: loginResponseDTOMapper))
-    }
-    
     let tokenAuthMiddleware = UserToken.authenticator()
     let guardAuthMiddleware = User.guardMiddleware()
     
-    let protected = app.grouped([tokenAuthMiddleware, guardAuthMiddleware])
-    try protected.group("api") { routeBuilder in
-        try routeBuilder.register(collection:
-                                    PortfoliosController(
-                                        portfolioRepository: PostgresPortfolioRepository(database: app.db),
-                                        currencyRepository: PostgresCurrencyRepository(database: app.db),
-                                        historicalPortfolioPerformanceUpdater: portfolioPerformanceUpdater,
-                                        dataMapper: portfolioDTOMapper)
+    try app.group("api") { api in
+        // Public routes
+        try api
+            .grouped(loginRateLimiter)
+            .register(collection: UserController(dtoMapper: loginResponseDTOMapper))
+        
+        // Protected routes
+        let protected = api.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+        try protected.register(collection:
+                                PortfoliosController(
+                                    portfolioRepository: PostgresPortfolioRepository(database: app.db),
+                                    currencyRepository: PostgresCurrencyRepository(database: app.db),
+                                    historicalPortfolioPerformanceUpdater: portfolioPerformanceUpdater,
+                                    dataMapper: portfolioDTOMapper)
         )
         
         let transactionController = TransactionsController(transactionsRepository: PostgresTransactionRepository(database: app.db),
-                               currencyRepository: PostgresCurrencyRepository(database: app.db),
-                               dataMapper: transactionDTOMapper)
-        
+                                                           currencyRepository: PostgresCurrencyRepository(database: app.db),
+                                                           dataMapper: transactionDTOMapper)
         transactionController.delegate = transactionChangedHandler
-        try routeBuilder.register(collection: transactionController)
-        
-        try routeBuilder.register(collection: tickersController)
-        try routeBuilder.register(collection: investmentsController)
-        try routeBuilder.register(collection: accountController)
+        try protected.register(collection: transactionController)
+        try protected.register(collection: tickersController)
+        try protected.register(collection: investmentsController)
+        try protected.register(collection: accountController)
     }
     
     if app.environment != .testing {

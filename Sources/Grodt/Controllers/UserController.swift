@@ -10,13 +10,15 @@ struct UserController: RouteCollection {
     
     func boot(routes: Vapor.RoutesBuilder) throws {
         let passwordProtected = routes.grouped(User.authenticator())
-        passwordProtected.post("login") { req async throws -> LoginResponseDTO in
+        passwordProtected.post("login") { req async throws -> Response in
             let user = try req.auth.require(User.self)
             let token = try user.generateToken()
             try await token.save(on: req.db)
-            return dtoMapper.response(from: token)
+            
+            let response = Response(status: .ok)
+            response.headers.add(name: .authorization, value: "Bearer \(token.value)")
+            
+            return response
         }
     }
 }
-
-extension LoginResponseDTO: Content { }
