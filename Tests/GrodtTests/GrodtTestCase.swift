@@ -63,9 +63,8 @@ class GrodtControllerTestCase: GrodtTestCase {
     }
     
     private func authHeader() async throws -> (String, String) {
-        let login = try await app.sendRequest(.POST, "login", headers: HTTPHeaders([AuthorizationHeader.basic(email: user.email, password: "password").value]))
-        let response = try login.content.decode(LoginResponseDTO.self)
-        return AuthorizationHeader.bearer(token: response.value).value
+        let login = try await app.sendRequest(.POST, "api/login", headers: HTTPHeaders([AuthorizationHeader.basic(email: user.email, password: "password").value]))
+        return AuthorizationHeader.bearer(token: login.headers.bearerAuthorization!.token).value
     }
 }
 
