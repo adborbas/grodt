@@ -89,10 +89,7 @@ class InvestmentDTOMapper {
     }
 
     private func calculateTotalReturn(profit: Decimal, cost: Decimal) -> Decimal {
-        guard cost != 0 else { return 0 }
-        var totalReturn = profit / cost
-        var roundedReturn = Decimal()
-        NSDecimalRound(&roundedReturn, &totalReturn, 2, .bankers)
-        return roundedReturn
+        guard cost > 0 else { return 0 }
+        return (profit / cost).rounded(to: 2)
     }
 }

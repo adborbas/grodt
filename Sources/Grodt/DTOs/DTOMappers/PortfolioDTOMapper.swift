@@ -93,7 +93,7 @@ actor Financials {
     }
 }
 
-fileprivate extension Decimal {
+extension Decimal {
     func rounded(to scale: Int, roundingMode: NSDecimalNumber.RoundingMode = .bankers) -> Decimal {
         var value = self
         var result = Decimal()
