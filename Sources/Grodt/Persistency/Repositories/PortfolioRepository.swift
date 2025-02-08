@@ -5,7 +5,9 @@ protocol PortfolioRepository {
     func allPortfolios(for userID: User.IDValue) async throws -> [Portfolio]
     func portfolio(for userID: User.IDValue, with id: Portfolio.IDValue) async throws -> Portfolio?
     func create(_ portfolio: Portfolio) async throws -> Portfolio
+    func update(_ portfolio: Portfolio) async throws -> Portfolio
     func delete(for userID: User.IDValue, with id: Portfolio.IDValue) async throws
+    
     func historicalPerformance(with id: Portfolio.IDValue) async throws -> HistoricalPortfolioPerformance
     func updateHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws
     func createHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws
@@ -52,6 +54,20 @@ class PostgresPortfolioRepository: PortfolioRepository {
         }
         
         return portfolioWithTransactions
+    }
+    
+    func update(_ portfolio: Portfolio) async throws -> Portfolio {
+        try await portfolio.save(on: database)
+        
+        guard let updatedPortfolio = try await Portfolio.query(on: database)
+            .filter(\Portfolio.$id == portfolio.id!)
+            .with(\.$transactions)
+            .with(\.$historicalPerformance)
+            .first() else {
+            throw FluentError.noResults
+        }
+        
+        return updatedPortfolio
     }
     
     func delete(for userID: User.IDValue, with id: Portfolio.IDValue) async throws {

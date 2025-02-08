@@ -26,6 +26,7 @@ struct PortfoliosController: RouteCollection {
         
         portfolios.group(":id") { portfolio in
             portfolio.get(use: portfolioDetail)
+            portfolio.put(use: update)
             portfolio.delete(use: delete)
             
             portfolio.group("historicalPerformance") { pref in
@@ -76,6 +77,31 @@ struct PortfoliosController: RouteCollection {
         
         return try await dataMapper.portfolio(from: portfolio)
     }
+    
+    func update(req: Request) async throws -> PortfolioDTO {
+            let id = try req.requiredID()
+            guard let userID = req.auth.get(User.self)?.id else {
+                throw Abort(.badRequest)
+            }
+            
+            let updateDTO = try req.content.decode(UpdatePortfolioRequestDTO.self)
+            
+            guard var portfolio = try await portfolioRepository.portfolio(for: userID, with: id) else {
+                throw Abort(.notFound)
+            }
+            
+            portfolio.name = updateDTO.name
+            
+            if portfolio.currency.code != updateDTO.currency {
+                guard let newCurrency = try await currencyRepository.currency(for: updateDTO.currency) else {
+                    throw Abort(.badRequest)
+                }
+                portfolio.currency = newCurrency
+            }
+            
+            let updatedPortfolio = try await portfolioRepository.update(portfolio)
+            return try await dataMapper.portfolio(from: updatedPortfolio)
+        }
     
     func delete(req: Request) async throws -> HTTPStatus {
         let id = try req.requiredID()

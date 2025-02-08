@@ -84,6 +84,11 @@ func routes(_ app: Application) async throws {
             .daily()
             .at(3, 0)
         app.queues.add(LoggingJobEventDelegate(logger: app.logger))
+        
+        let userTokenCleanerJob = UserTokenClearUpJob(userTokenClearing: UserTokenClearer(database: app.db))
+        app.queues.schedule(userTokenCleanerJob)
+            .hourly()
+        
         try app.queues.startScheduledJobs()
         try app.queues.startInProcessJobs()
     }
