@@ -2,6 +2,7 @@ import Foundation
 
 struct CreateTransactionRequestDTO: Decodable {
     let portfolio: String
+    let brokerageAccountID: String
     let platform: String
     let account: String?
     let purchaseDate: Date
@@ -12,12 +13,13 @@ struct CreateTransactionRequestDTO: Decodable {
     let pricePerShare: Decimal
     
     enum CodingKeys: String, CodingKey {
-        case portfolio, platform, account, purchaseDate, ticker, currency, fees, numberOfShares, pricePerShare
+        case portfolio, brokerageAccountID, platform, account, purchaseDate, ticker, currency, fees, numberOfShares, pricePerShare
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         portfolio = try container.decode(String.self, forKey: .portfolio)
+        brokerageAccountID = try container.decode(String.self, forKey: .brokerageAccountID)
         platform = try container.decode(String.self, forKey: .platform)
         account = try container.decodeIfPresent(String.self, forKey: .account)
         ticker = try container.decode(String.self, forKey: .ticker)

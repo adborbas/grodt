@@ -36,8 +36,7 @@ class TransactionsController: RouteCollection {
         }
         
         let newTransaction = Transaction(portfolioID: UUID(uuidString: transaction.portfolio)!,
-                                         platform: transaction.platform,
-                                         account: transaction.account,
+                                         brokerageAccountID: UUID(uuidString: transaction.brokerageAccountID)!,
                                          purchaseDate: transaction.purchaseDate,
                                          ticker: transaction.ticker,
                                          currency: currency,

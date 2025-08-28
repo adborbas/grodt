@@ -86,7 +86,7 @@ struct PortfoliosController: RouteCollection {
             
             let updateDTO = try req.content.decode(UpdatePortfolioRequestDTO.self)
             
-            guard var portfolio = try await portfolioRepository.portfolio(for: userID, with: id) else {
+            guard let portfolio = try await portfolioRepository.portfolio(for: userID, with: id) else {
                 throw Abort(.notFound)
             }
             

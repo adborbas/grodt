@@ -1,5 +1,6 @@
 import Foundation
 import Fluent
+import FluentSQL
 
 class Transaction: Model, @unchecked Sendable {
     static let schema = "transactions"
@@ -10,11 +11,8 @@ class Transaction: Model, @unchecked Sendable {
     @Parent(key: Keys.portfolioID)
     var portfolio: Portfolio
     
-    @Field(key: Keys.platform)
-    var platform: String
-    
-    @OptionalField(key: Keys.account)
-    var account: String?
+    @OptionalParent(key: Keys.brokerageAccountID)
+    var brokerageAccount: BrokerageAccount?
     
     @Field(key: Keys.purchaseDate)
     var purchaseDate: Date
@@ -42,18 +40,17 @@ class Transaction: Model, @unchecked Sendable {
     
     init(id: UUID? = nil,
          portfolioID: Portfolio.IDValue,
-         platform: String,
-         account: String?,
+         brokerageAccountID: BrokerageAccount.IDValue?,
          purchaseDate: Date,
          ticker: String,
          currency: Currency,
          fees: Decimal,
          numberOfShares: Decimal,
-         pricePerShareAtPurchase: Decimal) {
+         pricePerShareAtPurchase: Decimal)
+    {
         self.id = id
         self.$portfolio.id = portfolioID
-        self.platform = platform
-        self.account = account
+        self.$brokerageAccount.id = brokerageAccountID
         self.purchaseDate = purchaseDate
         self.ticker = ticker
         self.currency = currency
@@ -66,6 +63,7 @@ class Transaction: Model, @unchecked Sendable {
 fileprivate extension Transaction {
     enum Keys {
         static let portfolioID: FieldKey = "portfolio_id"
+        static let brokerageAccountID: FieldKey = "brokerage_account_id"
         static let platform: FieldKey = "platform"
         static let account: FieldKey = "account"
         static let purchaseDate: FieldKey = "purchase_date"
@@ -78,27 +76,42 @@ fileprivate extension Transaction {
 }
 
 extension Transaction {
-    struct Migration: AsyncMigration {
-        let name: String = "CreateTransaction"
-        
-        func prepare(on database: Database) async throws {
-            try await database.schema(Transaction.schema)
-                .id()
-                .field(Keys.portfolioID, .uuid, .required, .references(Portfolio.schema, "id"))
-                .field(Keys.platform, .string, .required)
-                .field(Keys.account, .string)
-                .field(Keys.purchaseDate, .datetime, .required)
-                .field(Keys.ticker, .string, .required)
-                .field(Keys.currency, .dictionary, .required)
-                .field(Keys.fees, .sql(unsafeRaw: "NUMERIC(7,2)"), .required)
-                .field(Keys.numberOfShares, .sql(unsafeRaw: "NUMERIC(64,6)"), .required)
-                .field(Keys.pricePerShareAtPurchase, .sql(unsafeRaw: "NUMERIC(64,4)"), .required)
-                .create()
+    struct Migration_AddBrokerageAccountID: AsyncMigration {
+        let name = "AddBrokerageAccountIDToTransactions"
+
+        func prepare(on db: Database) async throws {
+            try await db.schema(Transaction.schema)
+                .field(Keys.brokerageAccountID, .uuid, .references(BrokerageAccount.schema, "id"))
+                .update()
         }
-        
-        func revert(on database: Database) async throws {
-            try await database.schema(Transaction.schema).delete()
+
+        func revert(on db: Database) async throws {
+            try await db.schema(Transaction.schema)
+                .deleteField(Keys.brokerageAccountID)
+                .update()
         }
     }
-}
 
+    struct Migration_DropPlatformAccountAndMakeBARequired: AsyncMigration {
+            let name = "DropPlatformAccountAndMakeBrokerageAccountRequired"
+
+            func prepare(on db: Database) async throws {
+                if let sql = db as? SQLDatabase {
+                    try await sql.raw(#"""
+                        ALTER TABLE "transactions"
+                        DROP COLUMN IF EXISTS "platform",
+                        DROP COLUMN IF EXISTS "account";
+                        """#).run()
+                } else {
+                    try await db.schema(Transaction.schema)
+                        .deleteField("platform")
+                        .deleteField("account")
+                        .update()
+                }
+            }
+
+            func revert(on db: Database) async throws {
+                // No-op (we intentionally don't recreate dropped columns)
+            }
+        }
+}

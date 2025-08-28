@@ -3,8 +3,6 @@ import Foundation
 struct TransactionDTO: Encodable, Equatable {
     let id: String
     let portfolioName: String
-    let platform: String
-    let account: String?
     let purchaseDate: Date
     let ticker: String
     let currency: CurrencyDTO
@@ -16,11 +14,9 @@ struct TransactionDTO: Encodable, Equatable {
         case id, portfolioName, platform, account, ticker, currency, fees, numberOfShares, pricePerShareAtPurchase, purchaseDate
     }
     
-    init(id: String, portfolioName: String, platform: String, account: String? = nil, purchaseDate: Date, ticker: String, currency: CurrencyDTO, fees: Decimal, numberOfShares: Decimal, pricePerShareAtPurchase: Decimal) {
+    init(id: String, portfolioName: String, purchaseDate: Date, ticker: String, currency: CurrencyDTO, fees: Decimal, numberOfShares: Decimal, pricePerShareAtPurchase: Decimal) {
         self.id = id
         self.portfolioName = portfolioName
-        self.platform = platform
-        self.account = account
         self.purchaseDate = purchaseDate
         self.ticker = ticker
         self.currency = currency
@@ -33,8 +29,6 @@ struct TransactionDTO: Encodable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         portfolioName = try container.decode(String.self, forKey: .portfolioName)
-        platform = try container.decode(String.self, forKey: .platform)
-        account = try container.decodeIfPresent(String.self, forKey: .account)
         ticker = try container.decode(String.self, forKey: .ticker)
         currency = try container.decode(CurrencyDTO.self, forKey: .currency)
         fees = try container.decode(Decimal.self, forKey: .fees)
@@ -54,10 +48,6 @@ struct TransactionDTO: Encodable, Equatable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(portfolioName, forKey: .portfolioName)
-        try container.encode(platform, forKey: .platform)
-        if let account = account {
-            try container.encode(account, forKey: .account)
-        }
         try container.encode(ticker, forKey: .ticker)
         try container.encode(currency, forKey: .currency)
         try container.encode(fees, forKey: .fees)

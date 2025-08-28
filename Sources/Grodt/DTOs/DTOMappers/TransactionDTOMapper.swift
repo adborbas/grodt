@@ -10,8 +10,6 @@ class TransactionDTOMapper {
     func transaction(from transaction: Transaction) -> TransactionDTO {
         return TransactionDTO(id: transaction.id?.uuidString ?? "",
                               portfolioName: transaction.portfolio.name,
-                              platform: transaction.platform,
-                              account: transaction.account,
                               purchaseDate: transaction.purchaseDate,
                               ticker: transaction.ticker,
                               currency: currencyDTOMapper.currency(from: transaction.currency),

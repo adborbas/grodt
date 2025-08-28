@@ -76,6 +76,9 @@ func routes(_ app: Application) async throws {
         try protected.register(collection: tickersController)
         try protected.register(collection: investmentsController)
         try protected.register(collection: accountController)
+        try protected.register(collection: BrokerageController(brokerages: PostgresBrokerageRepository(),
+                                                            accounts: PostgresBrokerageAccountRepository()))
+        try protected.register(collection: BrokerageAccountController(accounts: PostgresBrokerageAccountRepository()))
     }
     
     if app.environment != .testing {
@@ -83,6 +86,14 @@ func routes(_ app: Application) async throws {
         app.queues.schedule(portfolioUpdaterJob)
             .daily()
             .at(3, 0)
+        
+        app.queues.schedule(BrokerageAccountPerformanceUpdaterJob(performanceUpdater: BrokerageAccountPerformanceUpdater(db: app.db, priceService: priceService)))
+            .daily()
+            .at(4, 0)
+        app.queues.schedule(BrokeragePerformanceUpdaterJob(performanceUpdater: BrokeragePerformanceUpdater(db: app.db)))
+            .daily()
+            .at(5, 0)
+        
         app.queues.add(LoggingJobEventDelegate(logger: app.logger))
         
         let userTokenCleanerJob = UserTokenClearUpJob(userTokenClearing: UserTokenClearer(database: app.db))
