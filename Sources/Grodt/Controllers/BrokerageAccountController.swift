@@ -2,7 +2,15 @@ import Vapor
 import Fluent
 
 struct BrokerageAccountController: RouteCollection {
-    let accounts: BrokerageAccountRepository
+    private let accounts: BrokerageAccountRepository
+    private let currencyMapper: CurrencyDTOMapper
+    private let currencyRepository: CurrencyRepository
+    
+    init(accounts: BrokerageAccountRepository, currencyMapper: CurrencyDTOMapper, currencyRepository: CurrencyRepository) {
+        self.accounts = accounts
+        self.currencyMapper = currencyMapper
+        self.currencyRepository = currencyRepository
+    }
 
     func boot(routes: RoutesBuilder) throws {
         let group = routes.grouped("brokerage-accounts")
@@ -28,7 +36,7 @@ struct BrokerageAccountController: RouteCollection {
                 brokerageId: try brokerage.requireID(),
                 brokerageName: brokerage.name,
                 displayName: model.displayName,
-                baseCurrency: model.baseCurrency,
+                baseCurrency: currencyMapper.currency(from: model.baseCurrency),
                 totals: totals)
         }
     }
@@ -36,28 +44,31 @@ struct BrokerageAccountController: RouteCollection {
     private func create(req: Request) async throws -> BrokerageAccountDTO {
         let userID = try req.requireUserID()
         struct In: Content {
-            let brokerageId: UUID
+            let brokerageID: UUID
             let displayName: String
-            let baseCurrency: Currency
+            let currency: String
         }
         let input = try req.content.decode(In.self)
+        guard let currency = try await currencyRepository.currency(for: input.currency) else {
+            throw Abort(.badRequest)
+        }
 
-        // Auth: ensure brokerage belongs to user
         guard let brokerage = try await Brokerage.query(on: req.db)
-            .filter(\.$id == input.brokerageId)
+            .filter(\.$id == input.brokerageID)
             .filter(\.$user.$id == userID)
             .first()
         else { throw Abort(.notFound, reason: "Brokerage not found") }
 
         let model = BrokerageAccount(brokerageID: try brokerage.requireID(),
-                                    displayName: input.displayName,
-                                    baseCurrency: input.baseCurrency)
+                                     displayName: input.displayName,
+                                     baseCurrency: currency)
+        
         try await accounts.create(model, on: req.db)
         return BrokerageAccountDTO(id: try model.requireID(),
                                    brokerageId: try brokerage.requireID(),
                                    brokerageName: brokerage.name,
                                    displayName: model.displayName,
-                                   baseCurrency: model.baseCurrency,
+                                   baseCurrency: currencyMapper.currency(from: model.baseCurrency),
                                    totals: nil)
     }
 
@@ -70,7 +81,7 @@ struct BrokerageAccountController: RouteCollection {
                                    brokerageId: try brokerage.requireID(),
                                    brokerageName: brokerage.name,
                                    displayName: model.displayName,
-                                   baseCurrency: model.baseCurrency,
+                                   baseCurrency: currencyMapper.currency(from: model.baseCurrency),
                                    totals: totals)
     }
 

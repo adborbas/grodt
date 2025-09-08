@@ -4,6 +4,7 @@ import Fluent
 struct BrokerageController: RouteCollection {
     let brokerages: BrokerageRepository
     let accounts: BrokerageAccountRepository
+    let currencyMapper: CurrencyDTOMapper
 
     func boot(routes: RoutesBuilder) throws {
         let group = routes.grouped("brokerages")
@@ -20,14 +21,7 @@ struct BrokerageController: RouteCollection {
     private func list(req: Request) async throws -> [BrokerageDTO] {
         let userID = try req.requireUserID()
         let items = try await brokerages.list(for: userID, on: req.db)
-        return try await items.asyncMap { brokerage in
-            let count = try await brokerages.accountsCount(for: brokerage.requireID(), on: req.db)
-            let totals = try await brokerages.totals(for: brokerage.requireID(), on: req.db)
-            return BrokerageDTO(id: try brokerage.requireID(),
-                                name: brokerage.name,
-                                accountsCount: count,
-                                totals: totals)
-        }
+        return try await items.asyncMap { try await map($0, using: req.db) }
     }
 
     private func create(req: Request) async throws -> BrokerageDTO {
@@ -36,15 +30,30 @@ struct BrokerageController: RouteCollection {
         let input = try req.content.decode(In.self)
         let item = Brokerage(userID: userID, name: input.name)
         try await brokerages.create(item, on: req.db)
-        return BrokerageDTO(id: try item.requireID(), name: item.name, accountsCount: 0, totals: nil)
+        return BrokerageDTO(id: try item.requireID(),
+                            name: item.name,
+                            accounts: [],
+                            totals: nil)
     }
 
     private func detail(req: Request) async throws -> BrokerageDTO {
         let userID = try req.requireUserID()
         let brokerage = try await requireBrokerage(req, userID: userID)
-        let count = try await brokerages.accountsCount(for: brokerage.requireID(), on: req.db)
-        let totals = try await brokerages.totals(for: brokerage.requireID(), on: req.db)
-        return BrokerageDTO(id: try brokerage.requireID(), name: brokerage.name, accountsCount: count, totals: totals)
+        return try await map(brokerage, using: req.db)
+    }
+    
+    private func map(_ brokerage: Brokerage, using db: Database) async throws -> BrokerageDTO {
+        let accounts = try await brokerage.$accounts.get(on: db)
+        let totals = try await brokerages.totals(for: brokerage.requireID(), on: db)
+        return BrokerageDTO(id: try brokerage.requireID(),
+                            name: brokerage.name,
+                            accounts: accounts.map { BrokerageAccountDTO(id: $0.id!,
+                                                                         brokerageId: brokerage.id!,
+                                                                         brokerageName: brokerage.name,
+                                                                         displayName: $0.displayName,
+                                                                         baseCurrency: currencyMapper.currency(from: $0.baseCurrency),
+                                                                         totals: PerformanceTotalsDTO(value: totals?.value ?? 0, moneyIn: totals?.moneyIn ?? 0))},
+                            totals: totals)
     }
 
     private func update(req: Request) async throws -> HTTPStatus {
@@ -64,12 +73,10 @@ struct BrokerageController: RouteCollection {
         return .noContent
     }
 
-    // GET /api/brokerages/:id/performance?range=1y&granularity=daily
     private func performanceSeries(req: Request) async throws -> [PerformancePointDTO] {
         let userID = try req.requireUserID()
         _ = try await requireBrokerage(req, userID: userID)
         let id = try req.parameters.require("id", as: UUID.self)
-        // Simple series: return everything for now (you can add range, granularity later)
         let rows = try await HistoricalBrokeragePerformance.query(on: req.db)
             .filter(\.$brokerage.$id == id)
             .sort(\.$date, .ascending)

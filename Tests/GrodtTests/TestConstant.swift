@@ -14,7 +14,8 @@ enum TestConstant {
                                       name: "New",
                                       currency: Currencies.eur.dto,
                                       performance: PerformanceDTOs.zero,
-                                      investments: [])
+                                      investments: [],
+                                      transactions: [])
     }
     
     enum PerformanceDTOs {

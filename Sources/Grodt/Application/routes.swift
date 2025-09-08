@@ -20,8 +20,10 @@ func routes(_ app: Application) async throws {
     let portfolioRepository = PostgresPortfolioRepository(database: app.db)
     let portfolioPerformanceCalculator = PortfolioPerformanceCalculator(priceService: priceService)
     let portfolioDTOMapper = PortfolioDTOMapper(investmentDTOMapper: investmentDTOMapper,
+                                                transactionDTOMapper: transactionDTOMapper,
                                                 currencyDTOMapper: currencyDTOMapper,
                                                 performanceCalculator: portfolioPerformanceCalculator)
+    let currencyRepository = PostgresCurrencyRepository(database: app.db)
     let portfolioPerformanceUpdater = PortfolioPerformanceUpdater(
         userRepository: PostgresUserRepository(database: app.db),
         portfolioRepository: portfolioRepository,
@@ -63,13 +65,13 @@ func routes(_ app: Application) async throws {
         try protected.register(collection:
                                 PortfoliosController(
                                     portfolioRepository: PostgresPortfolioRepository(database: app.db),
-                                    currencyRepository: PostgresCurrencyRepository(database: app.db),
+                                    currencyRepository: currencyRepository,
                                     historicalPortfolioPerformanceUpdater: portfolioPerformanceUpdater,
                                     dataMapper: portfolioDTOMapper)
         )
         
         let transactionController = TransactionsController(transactionsRepository: PostgresTransactionRepository(database: app.db),
-                                                           currencyRepository: PostgresCurrencyRepository(database: app.db),
+                                                           currencyRepository: currencyRepository,
                                                            dataMapper: transactionDTOMapper)
         transactionController.delegate = transactionChangedHandler
         try protected.register(collection: transactionController)
@@ -77,8 +79,11 @@ func routes(_ app: Application) async throws {
         try protected.register(collection: investmentsController)
         try protected.register(collection: accountController)
         try protected.register(collection: BrokerageController(brokerages: PostgresBrokerageRepository(),
-                                                            accounts: PostgresBrokerageAccountRepository()))
-        try protected.register(collection: BrokerageAccountController(accounts: PostgresBrokerageAccountRepository()))
+                                                               accounts: PostgresBrokerageAccountRepository(),
+                                                               currencyMapper: currencyDTOMapper))
+        try protected.register(collection: BrokerageAccountController(accounts: PostgresBrokerageAccountRepository(),
+                                                                      currencyMapper: currencyDTOMapper,
+                                                                      currencyRepository: currencyRepository))
     }
     
     if app.environment != .testing {

@@ -5,11 +5,14 @@ class PortfolioDTOMapper {
     private let investmentDTOMapper: InvestmentDTOMapper
     private let currencyDTOMapper: CurrencyDTOMapper
     private let performanceCalculator: PortfolioPerformanceCalculating
+    private let transactionDTOMapper: TransactionDTOMapper
     
     init(investmentDTOMapper: InvestmentDTOMapper,
+         transactionDTOMapper: TransactionDTOMapper,
          currencyDTOMapper: CurrencyDTOMapper,
          performanceCalculator: PortfolioPerformanceCalculating) {
         self.investmentDTOMapper = investmentDTOMapper
+        self.transactionDTOMapper = transactionDTOMapper
         self.currencyDTOMapper = currencyDTOMapper
         self.performanceCalculator = performanceCalculator
     }
@@ -17,11 +20,13 @@ class PortfolioDTOMapper {
     func portfolio(from portfolio: Portfolio) async throws -> PortfolioDTO {
         
         let investments = try await investmentDTOMapper.investments(from: portfolio.transactions)
+        let transactions = portfolio.transactions.map { transactionDTOMapper.transaction(from: $0) }
         return try await  PortfolioDTO(id: portfolio.id?.uuidString ?? "",
                                        name: portfolio.name,
                                        currency: currencyDTOMapper.currency(from: portfolio.currency),
                                        performance: performance(for: portfolio),
-                                       investments: investments)
+                                       investments: investments,
+                                       transactions: transactions)
     }
     
     func portfolioInfo(from portfolio: Portfolio) async throws -> PortfolioInfoDTO {

@@ -3,7 +3,7 @@ import Foundation
 struct BrokerageDTO: Codable {
     let id: UUID
     let name: String
-    let accountsCount: Int
+    let accounts: [BrokerageAccountDTO]
     let totals: PerformanceTotalsDTO?
 }
 
@@ -12,7 +12,7 @@ struct BrokerageAccountDTO: Codable {
     let brokerageId: UUID
     let brokerageName: String
     let displayName: String
-    let baseCurrency: Currency
+    let baseCurrency: CurrencyDTO
     let totals: PerformanceTotalsDTO?
 }
 

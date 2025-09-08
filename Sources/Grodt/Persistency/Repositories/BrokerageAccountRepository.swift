@@ -1,7 +1,7 @@
 import Vapor
 import Fluent
 
-protocol BrokerageAccountRepository: Sendable {
+protocol BrokerageAccountRepository {
     func list(for userID: User.IDValue, brokerageID: Brokerage.IDValue?, on db: Database) async throws -> [BrokerageAccount]
     func find(_ id: BrokerageAccount.IDValue, for userID: User.IDValue, on db: Database) async throws -> BrokerageAccount?
     func create(_ account: BrokerageAccount, on db: Database) async throws
@@ -10,7 +10,7 @@ protocol BrokerageAccountRepository: Sendable {
     func totals(for accountID: BrokerageAccount.IDValue, on db: Database) async throws -> PerformanceTotalsDTO?
 }
 
-struct PostgresBrokerageAccountRepository: BrokerageAccountRepository {
+class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
     func list(for userID: User.IDValue, brokerageID: Brokerage.IDValue?, on db: Database) async throws -> [BrokerageAccount] {
         var query = BrokerageAccount.query(on: db)
             .join(Brokerage.self, on: \BrokerageAccount.$brokerage.$id == \Brokerage.$id)
