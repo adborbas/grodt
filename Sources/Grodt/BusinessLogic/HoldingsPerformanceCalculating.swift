@@ -28,72 +28,105 @@ struct SimpleHoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
     }
 
     func performanceSeries(for transactions: [Transaction], from startDate: YearMonthDayDate, to endDate: YearMonthDayDate) async throws -> [DatedPortfolioPerformance] {
+        // Empty or invalid range → nothing to do
         guard !transactions.isEmpty else { return [] }
+        if endDate < startDate { return [] }
 
-        // Sort transactions by purchase date for efficient accumulation
+        // 1) Sort transactions once; we'll consume them with a cursor
         let sortedTx = transactions.sorted { $0.purchaseDate < $1.purchaseDate }
 
-        // Build date range [startDate ... endDate]
-        let dates = Self.dates(from: startDate, to: endDate)
+        // 2) Build inclusive day range [startDate ... endDate]
+        let days = Self.dates(from: startDate, to: endDate)
 
-        // Prefetch all historical quotes per ticker and make an iterator for carry-forward pricing
+        // 3) Prefetch quotes once per ticker and build per-day price update events.
+        //    We also establish a baseline price per ticker as the last quote ≤ startDate.
         let tickers = Array(Set(sortedTx.map { $0.ticker }))
-        var quotesByTicker: [String: [DatedQuote]] = [:]
+
+        var lastPriceByTicker: [String: Decimal] = [:]                  // baseline/rolling last-known price
+        var priceEventsByDay: [Date: [(String, Decimal)]] = [:]         // date → [(ticker, newPrice)]
+
         for ticker in tickers {
-            // Expect PriceService to return quotes sorted by date asc; if not, sort below
-            let quotes = try await priceService.historicalPrice(for: ticker).sorted { $0.date < $1.date }
-            quotesByTicker[ticker] = quotes
+            var quotes = try await priceService.historicalPrice(for: ticker)
+            guard !quotes.isEmpty else { continue }
+            quotes.sort { $0.date < $1.date }
+
+            // Advance to the last quote on or before the start date to set the baseline
+            var i = 0
+            var last: Decimal?
+            while i < quotes.count, quotes[i].date <= startDate {
+                last = quotes[i].price
+                i += 1
+            }
+            if let last { lastPriceByTicker[ticker] = last }
+
+            // Record future quote changes only within the requested window
+            while i < quotes.count, quotes[i].date <= endDate {
+                priceEventsByDay[quotes[i].date.date, default: []].append((ticker, quotes[i].price))
+                i += 1
+            }
         }
 
-        // State that evolves day-by-day
+        // 4) Initialize running portfolio state at startDate
         var runningMoneyIn: Decimal = 0
+        var runningValue: Decimal = 0
         var quantityByTicker: [String: Decimal] = [:]
 
-        // For price carry-forward: current index & last known price per ticker
-        var priceIndexByTicker: [String: Int] = [:]
-        var lastPriceByTicker: [String: Decimal] = [:]
-
-        // Cursor for transactions to add as we progress in time
         var txCursor = 0
+        // Apply all transactions that occur on or before startDate to establish initial state
+        while txCursor < sortedTx.count {
+            let tx = sortedTx[txCursor]
+            let txDay = YearMonthDayDate(tx.purchaseDate)
+            if txDay > startDate { break }
+            runningMoneyIn += (tx.numberOfShares * tx.pricePerShareAtPurchase) + tx.fees
+            let newQty = (quantityByTicker[tx.ticker] ?? 0) + tx.numberOfShares
+            quantityByTicker[tx.ticker] = newQty
+            if let px = lastPriceByTicker[tx.ticker] { runningValue += tx.numberOfShares * px }
+            txCursor += 1
+        }
 
-        var result: [DatedPortfolioPerformance] = []
-        result.reserveCapacity(dates.count)
+        // In the rare case no baseline prices were known but quantities exist, compute once from known prices
+        if runningValue == 0, !quantityByTicker.isEmpty {
+            var v: Decimal = 0
+            for (ticker, qty) in quantityByTicker {
+                if let px = lastPriceByTicker[ticker], qty != 0 { v += qty * px }
+            }
+            runningValue = v
+        }
 
-        for day in dates {
-            // 1) Advance transactions up to and including this day
+        // 5) Sweep through each day; update only when events happen.
+        var series: [DatedPortfolioPerformance] = []
+        series.reserveCapacity(days.count)
+
+        for day in days {
+            // 5a) Apply new transactions effective on this day
             while txCursor < sortedTx.count {
                 let tx = sortedTx[txCursor]
                 let txDay = YearMonthDayDate(tx.purchaseDate)
                 if txDay > day { break }
                 runningMoneyIn += (tx.numberOfShares * tx.pricePerShareAtPurchase) + tx.fees
-                quantityByTicker[tx.ticker, default: 0] += tx.numberOfShares
+                let prevQty = quantityByTicker[tx.ticker] ?? 0
+                let newQty = prevQty + tx.numberOfShares
+                quantityByTicker[tx.ticker] = newQty
+                if let px = lastPriceByTicker[tx.ticker] { runningValue += tx.numberOfShares * px }
                 txCursor += 1
             }
 
-            // 2) Update prices (carry forward last known price if no exact quote for this day)
-            for ticker in tickers {
-                let quotes = quotesByTicker[ticker] ?? []
-                let startIdx = priceIndexByTicker[ticker] ?? 0
-                var idx = startIdx
-                while idx < quotes.count, quotes[idx].date <= day {
-                    lastPriceByTicker[ticker] = quotes[idx].price
-                    idx += 1
-                }
-                priceIndexByTicker[ticker] = idx
-            }
-
-            // 3) Compute value using current quantities and last known prices
-            var value: Decimal = 0
-            for (ticker, qty) in quantityByTicker where qty != 0 {
-                if let px = lastPriceByTicker[ticker] {
-                    value += qty * px
+            // 5b) Apply price changes that occur on this day (carry-forward otherwise)
+            if let events = priceEventsByDay[day.date] {
+                for (ticker, newPx) in events {
+                    let oldPx = lastPriceByTicker[ticker]
+                    lastPriceByTicker[ticker] = newPx
+                    if let qty = quantityByTicker[ticker], qty != 0 {
+                        if let oldPx { runningValue += qty * (newPx - oldPx) }
+                        else { runningValue += qty * newPx }
+                    }
                 }
             }
 
-            result.append(DatedPortfolioPerformance(moneyIn: runningMoneyIn, value: value, date: day))
+            series.append(DatedPortfolioPerformance(moneyIn: runningMoneyIn, value: runningValue, date: day))
         }
 
-        return result
+        return series
     }
     
     private static func dates(from start: YearMonthDayDate, to end: YearMonthDayDate) -> [YearMonthDayDate] {
