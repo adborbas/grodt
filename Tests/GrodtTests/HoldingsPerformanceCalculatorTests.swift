@@ -18,9 +18,9 @@ fileprivate final class MockPriceService: PriceService {
     }
 }
 
-class SimpleHoldingsPerformanceCalculatorTests {
+class HoldingsPerformanceCalculatorTests {
     private var mockPriceService = MockPriceService()
-    private lazy var calculator = SimpleHoldingsPerformanceCalculator(priceService: mockPriceService)
+    private lazy var calculator = HoldingsPerformanceCalculator(priceService: mockPriceService)
     
     @Test
     func series_SingleTicker_CarryForwardAndCumulativeMoneyIn() async throws {
