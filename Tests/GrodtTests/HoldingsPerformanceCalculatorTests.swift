@@ -127,6 +127,75 @@ class HoldingsPerformanceCalculatorTests {
         #expect(mockPriceService.historicalPriceCallCount["NVDA"]! == 1)
     }
     
+    @Test
+    func performance_40Years_10Tickers() async throws {
+        // Local helper to add years to a YearMonthDayDate
+        func addYears(_ years: Int, to day: YearMonthDayDate) -> YearMonthDayDate {
+            var calendar = Calendar.current
+            calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+            let newDate = calendar.date(byAdding: .year, value: years, to: day.date)!
+            return YearMonthDayDate(newDate)
+        }
+
+        // 40-year inclusive span
+        let start = YearMonthDayDate(1985, 1, 1)
+        let end   = YearMonthDayDate(2024, 12, 31)
+        let allDays = YearMonthDayDate.days(from: start, to: end)
+
+        // 10 synthetic tickers
+        let tickers = (0..<10).map { "T\($0)" }
+
+        // Build deterministic quotes: one quote per day per ticker
+        mockPriceService.pricesByTicker.removeAll(keepingCapacity: true)
+        for (idx, ticker) in tickers.enumerated() {
+            var quotes: [DatedQuote] = []
+            quotes.reserveCapacity(allDays.count)
+            let base = Decimal(100 + idx * 3)
+            for (dayIndex, day) in allDays.enumerated() {
+                // Sawtooth pattern ensures variation while staying deterministic
+                let bump = Decimal(dayIndex % 200) / 10 // 0.0 ... 19.9 then repeat
+                quotes.append(DatedQuote(price: base + bump, date: day))
+            }
+            mockPriceService.pricesByTicker[ticker] = quotes
+        }
+
+        // Transactions: 4 buys per ticker at 0, 10, 20, 30 years from start
+        var transactions: [Transaction] = []
+        transactions.reserveCapacity(tickers.count * 4)
+        for (idx, ticker) in tickers.enumerated() {
+            for offset in [0, 10, 20, 30] {
+                let buyDay = addYears(offset, to: start)
+                let shares = Decimal(5 + (idx % 5))            // 5...9 shares
+                let purchasePrice = Decimal(100 + idx * 3 + offset)
+                transactions.append(
+                    givenTransaction(
+                        purchasedOn: buyDay,
+                        ticker: ticker,
+                        fees: 1,                                  // small fee to exercise moneyIn
+                        shares: shares,
+                        pricePerShare: purchasePrice
+                    )
+                )
+            }
+        }
+
+        // Measure using a monotonic clock
+        let clock = ContinuousClock()
+        let t0 = clock.now
+        let series = try await calculator.performanceSeries(for: transactions, from: start, to: end)
+        let duration = t0.duration(to: clock.now)
+
+        // Sanity
+        #expect(series.count == allDays.count)
+        #expect(!series.isEmpty)
+
+        // Convert Duration to seconds (lenient threshold; tune for CI hardware)
+        let comps = duration.components
+        let seconds = Double(comps.seconds) + Double(comps.attoseconds) / 1_000_000_000_000_000_000.0
+        #expect(seconds < 10.0)
+    }
+    
+    
     private func givenTransaction(
         portfolioID: UUID = UUID(),
         brokerageAccountID: UUID? = UUID(),
