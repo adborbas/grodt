@@ -40,8 +40,14 @@ class TransactionsController: RouteCollection {
             throw Abort(.badRequest)
         }
         
+        let brokerageAccountId: UUID? = {
+            guard let id = transaction.brokerageAccountID else { return nil }
+            return UUID(uuidString: id)
+        }()
+        
+        
         let newTransaction = Transaction(portfolioID: UUID(uuidString: transaction.portfolio)!,
-                                         brokerageAccountID: UUID(uuidString: transaction.brokerageAccountID)!,
+                                         brokerageAccountID: brokerageAccountId,
                                          purchaseDate: transaction.purchaseDate,
                                          ticker: transaction.ticker,
                                          currency: currency,

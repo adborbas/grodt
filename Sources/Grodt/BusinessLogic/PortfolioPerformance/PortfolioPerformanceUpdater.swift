@@ -11,7 +11,7 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
     private let tickerRepository: TickerRepository
     private let quoteCache: QuoteCache
     private let priceService: PriceService
-    private let performanceCalculator: PortfolioPerformanceCalculating
+    private let performanceCalculator: HoldingsPerformanceCalculating
     
     private let rateLimiter = RateLimiter(maxRequestsPerMinute: 5)
 
@@ -20,7 +20,7 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
          tickerRepository: TickerRepository,
          quoteCache: QuoteCache,
          priceService: PriceService,
-         performanceCalculator: PortfolioPerformanceCalculating) {
+         performanceCalculator: HoldingsPerformanceCalculating) {
         self.userRepository = userRepository
         self.portfolioRepository = portfolioRepository
         self.tickerRepository = tickerRepository
@@ -35,29 +35,29 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
     }
 
     func recalculatePerformance(of portfolio: Portfolio) async throws {
-        var datedPerformance = [DatedPortfolioPerformance]()
-        let startDate: Date = {
-            guard let earliestTransaction = portfolio.earliestTransaction else { return Date() }
-            return earliestTransaction.purchaseDate
-        }()
-        
-        let dictCache = DictionaryInMemoryTickerPriceCache()
-        for transaction in portfolio.transactions {
-            if let storedQuotes = try await quoteCache.historicalQuote(for: transaction.ticker) {
-                storedQuotes.datedQuotes.forEach { datedQuote in
-                    dictCache.setPrice(datedQuote.price, for: transaction.ticker, on: datedQuote.date)
-                }
+        // If there are no transactions, clear out any existing history and exit.
+        let transactions = portfolio.transactions
+        guard !transactions.isEmpty else {
+            if let existing = portfolio.historicalPerformance {
+                existing.datedPerformance = []
+                try await portfolioRepository.updateHistoricalPerformance(existing)
             }
-        }
-        
-        let dates = dateRangeUntilToday(from: startDate)
-        for date in dates {
-            let performanceForDate = try await performanceCalculator.performance(of: portfolio,
-                                                                                 on: date,
-                                                                                 using: dictCache)
-            datedPerformance.append(performanceForDate)
+            return
         }
 
+        // Determine inclusive date window: earliest purchase date ... today
+        let earliestDate = transactions.min(by: { $0.purchaseDate < $1.purchaseDate })!.purchaseDate
+        let start = YearMonthDayDate(earliestDate)
+        let end = YearMonthDayDate(Date())
+
+        // Use the calculator to build the full daily series
+        let datedPerformance = try await performanceCalculator.performanceSeries(
+            for: transactions,
+            from: start,
+            to: end
+        )
+
+        // Persist
         if let perf = portfolio.historicalPerformance {
             perf.datedPerformance = datedPerformance
             try await portfolioRepository.updateHistoricalPerformance(perf)

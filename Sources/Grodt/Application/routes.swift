@@ -30,7 +30,7 @@ func routes(_ app: Application) async throws {
         tickerRepository: PostgresTickerRepository(database: app.db),
         quoteCache: quoteCache,
         priceService: priceService,
-        performanceCalculator: portfolioPerformanceCalculator)
+        performanceCalculator: HoldingsPerformanceCalculator(priceService: priceService))
     let transactionChangedHandler = TransactionChangedHandler(portfolioRepository: PostgresPortfolioRepository(database: app.db),
                                                               historicalPerformanceUpdater: portfolioPerformanceUpdater)
     
