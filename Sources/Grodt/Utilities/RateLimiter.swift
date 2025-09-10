@@ -3,7 +3,7 @@ import Foundation
 actor RateLimiter {
     private enum Constants {
         static let nanosecondsPerSecond: UInt64 = 1_000_000_000
-        static let timeIntervalInSeconds: TimeInterval = 60
+        static let timeIntervalInSeconds: TimeInterval = 120
     }
     
     private let maxRequestsPerMinute: Int

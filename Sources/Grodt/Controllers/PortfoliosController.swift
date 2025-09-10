@@ -7,11 +7,11 @@ struct PortfoliosController: RouteCollection {
     private let portfolioRepository: PortfolioRepository
     private let currencyRepository: CurrencyRepository
     private let dataMapper: PortfolioDTOMapper
-    private let portfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater
+    private let portfolioPerformanceUpdater: PortfolioPerformanceUpdating
     
     init(portfolioRepository: PortfolioRepository,
          currencyRepository: CurrencyRepository,
-         historicalPortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater,
+         historicalPortfolioPerformanceUpdater: PortfolioPerformanceUpdating,
          dataMapper: PortfolioDTOMapper) {
         self.portfolioRepository = portfolioRepository
         self.currencyRepository = currencyRepository

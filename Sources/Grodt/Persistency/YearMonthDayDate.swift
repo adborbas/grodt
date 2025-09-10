@@ -3,6 +3,10 @@ import Foundation
 struct YearMonthDayDate: Codable, Equatable, Hashable, Comparable {
     private(set) var date: Date
     
+    init() {
+        self.init(Date())
+    }
+    
     init(_ date: Date) {
         var calendar = Calendar.current
         calendar.timeZone = TimeZone.universalGMT

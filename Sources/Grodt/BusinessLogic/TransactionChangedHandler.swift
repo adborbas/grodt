@@ -2,10 +2,10 @@ import Foundation
 
 class TransactionChangedHandler: TransactionsControllerDelegate {
     private let portfolioRepository: PortfolioRepository
-    private let historicalPerformanceUpdater: PortfolioHistoricalPerformanceUpdater
+    private let historicalPerformanceUpdater: PortfolioPerformanceUpdating
     
     init(portfolioRepository: PortfolioRepository,
-         historicalPerformanceUpdater: PortfolioHistoricalPerformanceUpdater) {
+         historicalPerformanceUpdater: PortfolioPerformanceUpdating) {
         self.portfolioRepository = portfolioRepository
         self.historicalPerformanceUpdater = historicalPerformanceUpdater
     }

@@ -4,17 +4,14 @@ import CollectionConcurrencyKit
 class PortfolioDTOMapper {
     private let investmentDTOMapper: InvestmentDTOMapper
     private let currencyDTOMapper: CurrencyDTOMapper
-    private let performanceCalculator: PortfolioPerformanceCalculating
     private let transactionDTOMapper: TransactionDTOMapper
     
     init(investmentDTOMapper: InvestmentDTOMapper,
          transactionDTOMapper: TransactionDTOMapper,
-         currencyDTOMapper: CurrencyDTOMapper,
-         performanceCalculator: PortfolioPerformanceCalculating) {
+         currencyDTOMapper: CurrencyDTOMapper) {
         self.investmentDTOMapper = investmentDTOMapper
         self.transactionDTOMapper = transactionDTOMapper
         self.currencyDTOMapper = currencyDTOMapper
-        self.performanceCalculator = performanceCalculator
     }
     
     func portfolio(from portfolio: Portfolio) async throws -> PortfolioDTO {

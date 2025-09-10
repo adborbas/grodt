@@ -41,8 +41,8 @@ class CachedPriceService: PriceService {
     }
     
     private func storeCachedPrice(for outdatedQuote: Quote?,
-                                           to newPrice: Decimal,
-                                           for ticker: String) async throws {
+                                  to newPrice: Decimal,
+                                  for ticker: String) async throws {
         if let outdatedQuote {
             outdatedQuote.lastUpdate = Date()
             outdatedQuote.price = newPrice

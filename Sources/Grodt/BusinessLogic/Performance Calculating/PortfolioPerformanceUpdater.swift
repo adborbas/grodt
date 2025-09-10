@@ -1,11 +1,11 @@
 import Foundation
 
-protocol PortfolioHistoricalPerformanceUpdater {
+protocol PortfolioPerformanceUpdating {
     func recalculatePerformance(of portfolio: Portfolio) async throws
-    func updatePerformanceOfAllPortfolios() async throws
+    func updateAllPortfolioPerformance() async throws
 }
 
-class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
+class PortfolioPerformanceUpdater: PortfolioPerformanceUpdating {
     private let userRepository: UserRepository
     private let portfolioRepository: PortfolioRepository
     private let tickerRepository: TickerRepository
@@ -29,9 +29,14 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
         self.performanceCalculator = performanceCalculator
     }
 
-    func updatePerformanceOfAllPortfolios() async throws {
-        try await updateAllTickerPrices()
-        try await updateHistotrycalPerformances()
+    func updateAllPortfolioPerformance() async throws {
+        let users = try await userRepository.allUsers()
+        for user in users {
+            let allPortfolios = try await portfolioRepository.allPortfolios(for: user.id!)
+            for portfolio in allPortfolios {
+                try await recalculatePerformance(of: portfolio)
+            }
+        }
     }
 
     func recalculatePerformance(of portfolio: Portfolio) async throws {
@@ -68,33 +73,6 @@ class PortfolioPerformanceUpdater: PortfolioHistoricalPerformanceUpdater {
             )
             try await portfolioRepository.createHistoricalPerformance(historicalPerformance)
         }
-    }
-    
-    private func updateAllTickerPrices() async throws{
-        let allTickers = try await tickerRepository.allTickers()
-        for ticker in allTickers {
-            try await clearCache(for: ticker.symbol)
-            
-            await rateLimiter.waitIfNeeded()
-            _ = try await priceService.historicalPrice(for: ticker.symbol)
-            await rateLimiter.waitIfNeeded()
-            _ = try await priceService.price(for: ticker.symbol)
-        }
-    }
-    
-    private func updateHistotrycalPerformances() async throws {
-        let users = try await userRepository.allUsers()
-        for user in users {
-            let allPortfolios = try await portfolioRepository.allPortfolios(for: user.id!)
-            for portfolio in allPortfolios {
-                try await recalculatePerformance(of: portfolio)
-            }
-        }
-    }
-    
-    private func clearCache(for ticker: String) async throws {
-        try await quoteCache.clearHistoricalQuote(for: ticker)
-        try await quoteCache.clearQuote(for: ticker)
     }
 
     private func dateRangeUntilToday(from startDate: Date) -> [YearMonthDayDate] {

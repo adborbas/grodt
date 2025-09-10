@@ -1,10 +1,17 @@
+import Foundation
 import Vapor
 import Fluent
 
-struct BrokeragePerformanceUpdater {
+protocol BrokeragePerformanceUpdating {
+    func updateAllBrokeragePerformance() async throws
+}
+
+struct BrokeragePerformanceUpdater: BrokeragePerformanceUpdating {
     let db: Database
 
-    func recomputeAll(for date: YearMonthDayDate) async throws {
+    func updateAllBrokeragePerformance() async throws {
+        let today = YearMonthDayDate()
+        
         // Sum across accounts using precomputed account rows for the same date
         let brokerages = try await Brokerage.query(on: db).all()
         for brokerage in brokerages {
@@ -17,7 +24,7 @@ struct BrokeragePerformanceUpdater {
 
             let rows = try await HistoricalBrokerageAccountPerformance.query(on: db)
                 .filter(\.$account.$id ~~ accountIDs)
-                .filter(\.$date == date.date)
+                .filter(\.$date == today.date)
                 .all()
 
             let moneyIn = rows.reduce(Decimal(0)) { $0 + $1.moneyIn }
@@ -26,29 +33,14 @@ struct BrokeragePerformanceUpdater {
             // upsert
             try await HistoricalBrokeragePerformance.query(on: db)
                 .filter(\.$brokerage.$id == brokerage.requireID())
-                .filter(\.$date == date.date)
+                .filter(\.$date == today.date)
                 .delete()
 
             let row = HistoricalBrokeragePerformance(brokerageID: try brokerage.requireID(),
-                                                     date: date.date,
+                                                     date: today.date,
                                                      moneyIn: moneyIn,
                                                      value: value)
             try await row.save(on: db)
         }
-    }
-}
-
-
-import Queues
-
-struct BrokeragePerformanceUpdaterJob: AsyncScheduledJob, @unchecked Sendable {
-    private let performanceUpdater: BrokeragePerformanceUpdater
-    
-    init(performanceUpdater: BrokeragePerformanceUpdater) {
-        self.performanceUpdater = performanceUpdater
-    }
-    
-    func run(context: Queues.QueueContext) async throws {
-        try await performanceUpdater.recomputeAll(for: YearMonthDayDate(Date()))
     }
 }

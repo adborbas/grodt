@@ -13,16 +13,15 @@ func routes(_ app: Application) async throws {
     let livePriceService = LivePriceService(alphavantage: alphavantage)
     let quoteCache = PostgresQuoteRepository(database: app.db)
     let priceService = CachedPriceService(priceService: livePriceService, cache: quoteCache)
+    let performanceCalculator = HoldingsPerformanceCalculator(priceService: priceService)
     let investmentDTOMapper = InvestmentDTOMapper(currencyDTOMapper: currencyDTOMapper,
                                                   transactionDTOMapper: transactionDTOMapper,
                                                   tickerRepository: tickerRepository,
                                                   priceService: priceService)
     let portfolioRepository = PostgresPortfolioRepository(database: app.db)
-    let portfolioPerformanceCalculator = PortfolioPerformanceCalculator(priceService: priceService)
     let portfolioDTOMapper = PortfolioDTOMapper(investmentDTOMapper: investmentDTOMapper,
                                                 transactionDTOMapper: transactionDTOMapper,
-                                                currencyDTOMapper: currencyDTOMapper,
-                                                performanceCalculator: portfolioPerformanceCalculator)
+                                                currencyDTOMapper: currencyDTOMapper)
     let currencyRepository = PostgresCurrencyRepository(database: app.db)
     let portfolioPerformanceUpdater = PortfolioPerformanceUpdater(
         userRepository: PostgresUserRepository(database: app.db),
@@ -30,7 +29,7 @@ func routes(_ app: Application) async throws {
         tickerRepository: PostgresTickerRepository(database: app.db),
         quoteCache: quoteCache,
         priceService: priceService,
-        performanceCalculator: HoldingsPerformanceCalculator(priceService: priceService))
+        performanceCalculator: performanceCalculator)
     let transactionChangedHandler = TransactionChangedHandler(portfolioRepository: PostgresPortfolioRepository(database: app.db),
                                                               historicalPerformanceUpdater: portfolioPerformanceUpdater)
     
@@ -87,18 +86,19 @@ func routes(_ app: Application) async throws {
     }
     
     if app.environment != .testing {
-        let portfolioUpdaterJob = PortfolioPerformanceUpdaterJob(performanceUpdater: portfolioPerformanceUpdater)
-        app.queues.schedule(portfolioUpdaterJob)
+        let nightlyUpdaterJob = NightlyUpdaterJob(
+            tickerPriceUpdater: TickerPriceUpdater(tickerRepository: tickerRepository,
+                                                   quoteCache: quoteCache,
+                                                   priceService: priceService),
+            portfolioPerformanceUpdater: portfolioPerformanceUpdater,
+            brokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdater(db: app.db,
+                                                                                   priceService: priceService),
+            brokeragePerformanceUpdater: BrokeragePerformanceUpdater(db: app.db)
+        )
+        app.queues.schedule(nightlyUpdaterJob)
             .daily()
-            .at(3, 0)
-        
-        app.queues.schedule(BrokerageAccountPerformanceUpdaterJob(performanceUpdater: BrokerageAccountPerformanceUpdater(db: app.db, priceService: priceService)))
-            .daily()
-            .at(4, 0)
-        app.queues.schedule(BrokeragePerformanceUpdaterJob(performanceUpdater: BrokeragePerformanceUpdater(db: app.db)))
-            .daily()
-            .at(5, 0)
-        
+            .at(21, 15)
+
         app.queues.add(LoggingJobEventDelegate(logger: app.logger))
         
         let userTokenCleanerJob = UserTokenClearUpJob(userTokenClearing: UserTokenClearer(database: app.db))

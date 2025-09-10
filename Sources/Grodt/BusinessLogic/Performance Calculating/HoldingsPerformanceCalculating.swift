@@ -1,42 +1,11 @@
 import Foundation
 
 protocol HoldingsPerformanceCalculating {
-    func performance(for transactions: [Transaction], on date: YearMonthDayDate) async throws -> DatedPortfolioPerformance
     func performanceSeries(for transactions: [Transaction], from startDate: YearMonthDayDate, to endDate: YearMonthDayDate) async throws -> [DatedPortfolioPerformance]
 }
 
 struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
-    /// External dependency used to resolve prices/quotes.
     let priceService: PriceService
-
-    // MARK: - Public API
-
-    /// Computes a single-day snapshot of performance for the provided transactions on the given date.
-    /// - Note: This method requires an exact quote for the date; it mirrors the prior behavior.
-    func performance(for transactions: [Transaction], on date: YearMonthDayDate) async throws -> DatedPortfolioPerformance {
-        var moneyIn: Decimal = 0
-        var value: Decimal = 0
-
-        // Aggregate quantities per ticker up to the requested date
-        var quantityByTicker: [_Ticker: Decimal] = [:]
-        for tx in transactions where YearMonthDayDate(tx.purchaseDate) <= date {
-            moneyIn += (tx.numberOfShares * tx.pricePerShareAtPurchase) + tx.fees
-            quantityByTicker[tx.ticker, default: 0] += tx.numberOfShares
-        }
-
-        // Resolve price exactly on the date (carry-forward is handled by the series function, not here)
-        for (ticker, qty) in quantityByTicker where qty != 0 {
-            let quotes = try await priceService.historicalPrice(for: ticker)
-            guard let match = quotes.first(where: { $0.date == date }) else {
-                // If no exact quote exists, treat as 0 contribution for readability/stability.
-                // This preserves method signature while avoiding a crash.
-                continue
-            }
-            value += qty * match.price
-        }
-
-        return DatedPortfolioPerformance(moneyIn: moneyIn, value: value, date: date)
-    }
 
     /// Computes an inclusive daily time series from `startDate` to `endDate`.
     /// The implementation is **event-driven**: it updates state only when a transaction occurs
@@ -52,12 +21,12 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
         // 1) Normalize inputs and build the day range.
         let sortedTransactions = transactions.sorted { $0.purchaseDate < $1.purchaseDate }
         let days = YearMonthDayDate.days(from: startDate, to: endDate)
-        let tickers = distinctTickers(from: sortedTransactions)
+        let symbols = distinctTickers(from: sortedTransactions)
 
         // 2) Prefetch quotes and build price-change events per day + baselines at start.
-        var baselinePrices: [_Ticker: Decimal] = [:]
+        var baselinePrices: [Symbol: Decimal] = [:]
         let priceEventsByDay = try await buildPriceEvents(
-            for: tickers,
+            for: symbols,
             baseline: &baselinePrices,
             startingAt: startDate,
             endingAt: endDate
@@ -81,31 +50,31 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
 
     // MARK: - Private helpers (domain types)
 
-    private typealias _Ticker = String
+    private typealias Symbol = String
 
     /// Rolling state that evolves over time while we sweep days.
     private struct RunningState {
         var moneyIn: Decimal
         var value: Decimal
-        var quantityByTicker: [_Ticker: Decimal]
-        var lastPriceByTicker: [_Ticker: Decimal]
+        var quantityByTicker: [Symbol: Decimal]
+        var lastPriceByTicker: [Symbol: Decimal]
         var txCursor: Int
     }
 
     // MARK: - Private helpers (pure functions)
 
-    /// Prefetches quotes once per ticker and returns (a) a day-indexed map of price-change events and
-    /// (b) the baseline price for each ticker as of `startDate` (last quote on or before start).
+    /// Prefetches quotes once per symbol and returns (a) a day-indexed map of price-change events and
+    /// (b) the baseline price for each symbol as of `startDate` (last quote on or before start).
     private func buildPriceEvents(
-        for tickers: [_Ticker],
-        baseline: inout [_Ticker: Decimal],
+        for symbols: [Symbol],
+        baseline: inout [Symbol: Decimal],
         startingAt startDate: YearMonthDayDate,
         endingAt endDate: YearMonthDayDate
-    ) async throws -> [Date: [(_Ticker, Decimal)]] {
-        var eventsByDay: [Date: [(_Ticker, Decimal)]] = [:]
+    ) async throws -> [Date: [(Symbol, Decimal)]] {
+        var eventsByDay: [Date: [(Symbol, Decimal)]] = [:]
 
-        for ticker in tickers {
-            var quotes = try await priceService.historicalPrice(for: ticker)
+        for symbol in symbols {
+            var quotes = try await priceService.historicalPrice(for: symbol)
             guard !quotes.isEmpty else { continue }
             quotes.sort { $0.date < $1.date }
 
@@ -116,11 +85,11 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
                 last = quotes[i].price
                 i += 1
             }
-            if let last { baseline[ticker] = last }
+            if let last { baseline[symbol] = last }
 
             // Record future quote changes only within the window
             while i < quotes.count, quotes[i].date <= endDate {
-                eventsByDay[quotes[i].date.date, default: []].append((ticker, quotes[i].price))
+                eventsByDay[quotes[i].date.date, default: []].append((symbol, quotes[i].price))
                 i += 1
             }
         }
@@ -132,11 +101,11 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
     private static func initialState(
         at startDate: YearMonthDayDate,
         with sortedTransactions: [Transaction],
-        baselinePrices: [_Ticker: Decimal]
+        baselinePrices: [Symbol: Decimal]
     ) -> RunningState {
         var moneyIn: Decimal = 0
         var value: Decimal = 0
-        var quantityByTicker: [_Ticker: Decimal] = [:]
+        var quantityByTicker: [Symbol: Decimal] = [:]
         var cursor = 0
 
         // Apply all transactions up to and including the start day
@@ -160,8 +129,8 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
         // If we have quantities but no baseline prices yet, compute value from whatever baselines exist
         if value == 0, !quantityByTicker.isEmpty {
             var v: Decimal = 0
-            for (ticker, qty) in quantityByTicker where qty != 0 {
-                if let px = baselinePrices[ticker] { v += qty * px }
+            for (symbol, qty) in quantityByTicker where qty != 0 {
+                if let px = baselinePrices[symbol] { v += qty * px }
             }
             value = v
         }
@@ -202,14 +171,14 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
     }
 
     /// Applies price changes for the given day (if any), adjusting portfolio value using the current quantities.
-    private func applyPriceEvents(on day: YearMonthDayDate, events: [(_Ticker, Decimal)], state: inout RunningState) {
+    private func applyPriceEvents(on day: YearMonthDayDate, events: [(Symbol, Decimal)], state: inout RunningState) {
         guard !events.isEmpty else { return }
 
-        for (ticker, newPx) in events {
-            let oldPx = state.lastPriceByTicker[ticker]
-            state.lastPriceByTicker[ticker] = newPx
+        for (symbol, newPx) in events {
+            let oldPx = state.lastPriceByTicker[symbol]
+            state.lastPriceByTicker[symbol] = newPx
 
-            guard let qty = state.quantityByTicker[ticker], qty != 0 else { continue }
+            guard let qty = state.quantityByTicker[symbol], qty != 0 else { continue }
             if let oldPx {
                 state.value += qty * (newPx - oldPx)
             } else {
@@ -218,7 +187,7 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
         }
     }
     
-    private func distinctTickers(from array: [Transaction]) -> [_Ticker] {
+    private func distinctTickers(from array: [Transaction]) -> [Symbol] {
         Array(Set(array.map { $0.ticker }))
     }
 }
