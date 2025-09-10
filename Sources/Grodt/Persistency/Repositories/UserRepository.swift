@@ -18,7 +18,7 @@ class PostgresUserRepository: UserRepository {
         return User.query(on: database)
             .with(\.$portfolios) { portfolio in
                 portfolio.with(\.$transactions)
-                portfolio.with(\.$historicalPerformance)
+                portfolio.with(\.$historicalDailyPerformance)
             }
     }
 

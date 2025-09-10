@@ -36,5 +36,3 @@ class TickerPriceUpdater: TickerPriceUpdating {
         try await quoteCache.clearQuote(for: ticker)
     }
 }
-
-// Fix brokerage and brokeracccount computing

@@ -5,38 +5,71 @@ protocol BrokerageAccountPerformanceUpdating {
     func updateAllBrokerageAccountPerformance() async throws
 }
 
-struct BrokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdating {
-    let db: Database
-    let priceService: PriceService
+class BrokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdating {
+    private let brokerageAccountRepository: BrokerageAccountRepository
+    private let transactionRepository: TransactionsRepository
+    private let accountDailyRepository: PostgresBrokerageAccountDailyPerformanceRepository
+    private let userRepository: UserRepository
+    private let calculator: HoldingsPerformanceCalculating
+    
+    init(transactionRepository: TransactionsRepository,
+         brokerageAccountRepository: BrokerageAccountRepository,
+         accountDailyRepository: PostgresBrokerageAccountDailyPerformanceRepository,
+         userRepository: UserRepository,
+         calculator: HoldingsPerformanceCalculating) {
+        self.transactionRepository = transactionRepository
+        self.brokerageAccountRepository = brokerageAccountRepository
+        self.accountDailyRepository = accountDailyRepository
+        self.userRepository = userRepository
+        self.calculator = calculator
+    }
 
     func updateAllBrokerageAccountPerformance() async throws {
-        let accounts = try await BrokerageAccount.query(on: db).all()
-        let calculator = HoldingsPerformanceCalculator(priceService: priceService)
+        let users = try await userRepository.allUsers()
+        for user in users {
+            try await updateAllAccounts(for: user)
+        }
+    }
+
+    private func updateAllAccounts(for user: User) async throws {
+        guard let userID = user.id else { return }
+
+        let accounts = try await brokerageAccountRepository.all(for: userID)
+        let userTransactions = try await transactionRepository.all(for: userID)
 
         for account in accounts {
-            let transacitons = try await account.$transactions.query(on: db).all()
-            guard let earliest = transacitons.map({ $0.purchaseDate }).min().map(YearMonthDayDate.init) else {
-                // No transactions: clear existing rows and continue
-                try await HistoricalBrokerageAccountPerformance.query(on: db)
-                    .filter(\.$account.$id == account.requireID())
-                    .delete()
-                continue
-            }
+            try await updateSingleAccount(account, with: userTransactions)
+        }
+    }
 
-            let series = try await calculator.performanceSeries(for: transacitons, from: earliest, to: YearMonthDayDate())
+    private func updateSingleAccount(_ account: BrokerageAccount, with userTransactions: [Transaction]) async throws {
+        let accountID = try account.requireID()
 
-            // Upsert strategy: replace entire series for this account
-            try await HistoricalBrokerageAccountPerformance.query(on: db)
-                .filter(\.$account.$id == account.requireID())
-                .delete()
-
-            for point in series {
-                let row = HistoricalBrokerageAccountPerformance(accountID: try account.requireID(),
-                                                                date: point.date.date,
-                                                                moneyIn: point.moneyIn,
-                                                                value: point.value)
-                try await row.save(on: db)
+        // Keep only transactions linked to this account (explicit loop avoids any Fluent `filter` ambiguity)
+        var accountTransactions: [Transaction] = []
+        accountTransactions.reserveCapacity(userTransactions.count)
+        for transaction in userTransactions {
+            let linkedID = transaction.$brokerageAccount.id ?? transaction.brokerageAccount?.id
+            if linkedID == accountID {
+                accountTransactions.append(transaction)
             }
         }
+
+        // No transactions → clear any stored series
+        guard let earliest = accountTransactions.map(\.purchaseDate).min() else {
+            try await accountDailyRepository.deleteAll(for: accountID)
+            return
+        }
+
+        let start = YearMonthDayDate(earliest)
+        let end = YearMonthDayDate(Date())
+
+        let series = try await calculator.performanceSeries(
+            for: accountTransactions,
+            from: start,
+            to: end
+        )
+
+        try await accountDailyRepository.replaceSeries(for: accountID, with: series)
     }
 }

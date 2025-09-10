@@ -20,6 +20,23 @@ struct NightlyUpdaterJob: AsyncScheduledJob, @unchecked Sendable {
         self.brokeragePerformanceUpdater = brokeragePerformanceUpdater
     }
     
+    func run(context: Queues.QueueContext) async throws {
+        context.logger.info("NightlyUpdaterJob – Job started")
+        try await logStep("Update all ticker prices", context: context) {
+            try await tickerPriceUpdater.updateAllTickerPrices()
+        }
+        try await logStep("Update all portfolio performance", context: context) {
+            try await portfolioPerformanceUpdater.updateAllPortfolioPerformance()
+        }
+        try await logStep("Update all brokerage account performance", context: context) {
+            try await brokerageAccountPerformanceUpdater.updateAllBrokerageAccountPerformance()
+        }
+        try await logStep("Update all brokerage performance", context: context) {
+            try await brokeragePerformanceUpdater.updateAllBrokeragePerformance()
+        }
+        context.logger.info("NightlyUpdaterJob – Job finished")
+    }
+    
     @discardableResult
     private func logStep<T>(_ name: String, context: Queues.QueueContext, _ work: () async throws -> T) async throws -> T {
         context.logger.info("NightlyUpdaterJob – START: \(name)")
@@ -39,22 +56,5 @@ struct NightlyUpdaterJob: AsyncScheduledJob, @unchecked Sendable {
             context.logger.error("NightlyUpdaterJob – ERROR during \(name) after \(String(format: "%.3f", seconds))s: \(String(describing: error))")
             throw error
         }
-    }
-
-    func run(context: Queues.QueueContext) async throws {
-        context.logger.info("NightlyUpdaterJob – Job started")
-        try await logStep("Update all ticker prices", context: context) {
-            try await tickerPriceUpdater.updateAllTickerPrices()
-        }
-        try await logStep("Update all portfolio performance", context: context) {
-            try await portfolioPerformanceUpdater.updateAllPortfolioPerformance()
-        }
-        try await logStep("Update all brokerage account performance", context: context) {
-            try await brokerageAccountPerformanceUpdater.updateAllBrokerageAccountPerformance()
-        }
-        try await logStep("Update all brokerage performance", context: context) {
-            try await brokeragePerformanceUpdater.updateAllBrokeragePerformance()
-        }
-        context.logger.info("NightlyUpdaterJob – Job finished")
     }
 }

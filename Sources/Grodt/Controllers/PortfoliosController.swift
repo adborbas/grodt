@@ -5,6 +5,7 @@ import CollectionConcurrencyKit
 
 struct PortfoliosController: RouteCollection {
     private let portfolioRepository: PortfolioRepository
+    private let portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository
     private let currencyRepository: CurrencyRepository
     private let dataMapper: PortfolioDTOMapper
     private let portfolioPerformanceUpdater: PortfolioPerformanceUpdating
@@ -12,10 +13,12 @@ struct PortfoliosController: RouteCollection {
     init(portfolioRepository: PortfolioRepository,
          currencyRepository: CurrencyRepository,
          historicalPortfolioPerformanceUpdater: PortfolioPerformanceUpdating,
+         portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository,
          dataMapper: PortfolioDTOMapper) {
         self.portfolioRepository = portfolioRepository
         self.currencyRepository = currencyRepository
         self.portfolioPerformanceUpdater = historicalPortfolioPerformanceUpdater
+        self.portfolioDailyRepo = portfolioDailyRepo
         self.dataMapper = dataMapper
     }
     
@@ -120,12 +123,14 @@ struct PortfoliosController: RouteCollection {
     
     func historicalPerformance(req: Request) async throws -> PortfolioPerformanceTimeSeriesDTO {
         let id = try req.requiredID()
-        guard let _ = req.auth.get(User.self)?.id else {
-            throw Abort(.badRequest)
+        guard let userID = req.auth.get(User.self)?.id else { throw Abort(.badRequest) }
+
+        guard let _ = try await portfolioRepository.portfolio(for: userID, with: id) else {
+            throw Abort(.notFound)
         }
-        
-        let historicalPerformance = try await portfolioRepository.historicalPerformance(with: id)
-        return await dataMapper.timeSeriesPerformance(from: historicalPerformance)
+
+        let series = try await portfolioDailyRepo.readSeries(for: id, from: nil, to: nil)
+        return await dataMapper.timeSeriesPerformance(from: series)
     }
 }
 

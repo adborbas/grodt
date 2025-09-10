@@ -18,18 +18,26 @@ func routes(_ app: Application) async throws {
                                                   transactionDTOMapper: transactionDTOMapper,
                                                   tickerRepository: tickerRepository,
                                                   priceService: priceService)
+    
+    let userRepository = PostgresUserRepository(database: app.db)
     let portfolioRepository = PostgresPortfolioRepository(database: app.db)
+    let transactionRepository = PostgresTransactionRepository(database: app.db)
+    let brokerageAccountRepository = PostgresBrokerageAccountRepository(database: app.db)
+    let brokerageAccountDailyRepository = PostgresBrokerageAccountDailyPerformanceRepository(database: app.db)
+    let brokerageDailyPerformanceRepository = PostgresBrokerageDailyPerformanceRepository(database: app.db)
+    
     let portfolioDTOMapper = PortfolioDTOMapper(investmentDTOMapper: investmentDTOMapper,
                                                 transactionDTOMapper: transactionDTOMapper,
                                                 currencyDTOMapper: currencyDTOMapper)
     let currencyRepository = PostgresCurrencyRepository(database: app.db)
     let portfolioPerformanceUpdater = PortfolioPerformanceUpdater(
-        userRepository: PostgresUserRepository(database: app.db),
+        userRepository: userRepository,
         portfolioRepository: portfolioRepository,
         tickerRepository: PostgresTickerRepository(database: app.db),
         quoteCache: quoteCache,
         priceService: priceService,
-        performanceCalculator: performanceCalculator)
+        performanceCalculator: performanceCalculator,
+        portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db))
     let transactionChangedHandler = TransactionChangedHandler(portfolioRepository: PostgresPortfolioRepository(database: app.db),
                                                               historicalPerformanceUpdater: portfolioPerformanceUpdater)
     
@@ -42,7 +50,7 @@ func routes(_ app: Application) async throws {
     let investmentsController = InvestmentController(portfolioRepository: portfolioRepository,
                                                      dataMapper: investmentDTOMapper)
     
-    let accountController = AccountController(userRepository: PostgresUserRepository(database: app.db), dataMapper: UserDTOMapper())
+    let accountController = AccountController(userRepository: userRepository, dataMapper: UserDTOMapper())
     
     let globalRateLimiter = RateLimiterMiddleware(maxRequests: 100, perSeconds: 60)
     let loginRateLimiter = RateLimiterMiddleware(maxRequests: 3, perSeconds: 60)
@@ -66,10 +74,11 @@ func routes(_ app: Application) async throws {
                                     portfolioRepository: PostgresPortfolioRepository(database: app.db),
                                     currencyRepository: currencyRepository,
                                     historicalPortfolioPerformanceUpdater: portfolioPerformanceUpdater,
+                                    portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db),
                                     dataMapper: portfolioDTOMapper)
         )
         
-        let transactionController = TransactionsController(transactionsRepository: PostgresTransactionRepository(database: app.db),
+        let transactionController = TransactionsController(transactionsRepository: transactionRepository,
                                                            currencyRepository: currencyRepository,
                                                            dataMapper: transactionDTOMapper)
         transactionController.delegate = transactionChangedHandler
@@ -78,9 +87,9 @@ func routes(_ app: Application) async throws {
         try protected.register(collection: investmentsController)
         try protected.register(collection: accountController)
         try protected.register(collection: BrokerageController(brokerages: PostgresBrokerageRepository(),
-                                                               accounts: PostgresBrokerageAccountRepository(),
+                                                               accounts: brokerageAccountRepository,
                                                                currencyMapper: currencyDTOMapper))
-        try protected.register(collection: BrokerageAccountController(accounts: PostgresBrokerageAccountRepository(),
+        try protected.register(collection: BrokerageAccountController(brokerageAccountRepository: brokerageAccountRepository,
                                                                       currencyMapper: currencyDTOMapper,
                                                                       currencyRepository: currencyRepository))
     }
@@ -91,13 +100,19 @@ func routes(_ app: Application) async throws {
                                                    quoteCache: quoteCache,
                                                    priceService: priceService),
             portfolioPerformanceUpdater: portfolioPerformanceUpdater,
-            brokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdater(db: app.db,
-                                                                                   priceService: priceService),
-            brokeragePerformanceUpdater: BrokeragePerformanceUpdater(db: app.db)
+            brokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdater(transactionRepository: transactionRepository,
+                                                                                   brokerageAccountRepository: brokerageAccountRepository,
+                                                                                   accountDailyRepository: brokerageAccountDailyRepository,
+                                                                                   userRepository: userRepository,
+                                                                                   calculator: performanceCalculator),
+            brokeragePerformanceUpdater: BrokeragePerformanceUpdater(userRepository: userRepository,
+                                                                     brokerageAccountRepository: brokerageAccountRepository,
+                                                                     accountDailyRepository: brokerageAccountDailyRepository,
+                                                                     brokerageDailyRepository: brokerageDailyPerformanceRepository)
         )
         app.queues.schedule(nightlyUpdaterJob)
             .daily()
-            .at(21, 15)
+            .at(13, 59)
 
         app.queues.add(LoggingJobEventDelegate(logger: app.logger))
         

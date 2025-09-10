@@ -43,7 +43,7 @@ struct PostgresBrokerageRepository: BrokerageRepository {
     }
     
     func totals(for brokerageID: Brokerage.IDValue, on db: Database) async throws -> PerformanceTotalsDTO? {
-        guard let last = try await HistoricalBrokeragePerformance.query(on: db)
+        guard let last = try await HistoricalBrokeragePerformanceDaily.query(on: db)
             .filter(\.$brokerage.$id == brokerageID)
             .sort(\.$date, .descending)
             .first()

@@ -1,4 +1,5 @@
 import Foundation
+import Fluent
 
 protocol PortfolioPerformanceUpdating {
     func recalculatePerformance(of portfolio: Portfolio) async throws
@@ -14,19 +15,22 @@ class PortfolioPerformanceUpdater: PortfolioPerformanceUpdating {
     private let performanceCalculator: HoldingsPerformanceCalculating
     
     private let rateLimiter = RateLimiter(maxRequestsPerMinute: 5)
+    private let portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository
 
     init(userRepository: UserRepository,
          portfolioRepository: PortfolioRepository,
          tickerRepository: TickerRepository,
          quoteCache: QuoteCache,
          priceService: PriceService,
-         performanceCalculator: HoldingsPerformanceCalculating) {
+         performanceCalculator: HoldingsPerformanceCalculating,
+         portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository) {
         self.userRepository = userRepository
         self.portfolioRepository = portfolioRepository
         self.tickerRepository = tickerRepository
         self.quoteCache = quoteCache
         self.priceService = priceService
         self.performanceCalculator = performanceCalculator
+        self.portfolioDailyRepo = portfolioDailyRepo
     }
 
     func updateAllPortfolioPerformance() async throws {
@@ -40,39 +44,25 @@ class PortfolioPerformanceUpdater: PortfolioPerformanceUpdating {
     }
 
     func recalculatePerformance(of portfolio: Portfolio) async throws {
-        // If there are no transactions, clear out any existing history and exit.
         let transactions = portfolio.transactions
+
+        // No transactions: clear daily rows and return
         guard !transactions.isEmpty else {
-            if let existing = portfolio.historicalPerformance {
-                existing.datedPerformance = []
-                try await portfolioRepository.updateHistoricalPerformance(existing)
-            }
+            try await portfolioDailyRepo.deleteAll(for: try portfolio.requireID())
             return
         }
 
-        // Determine inclusive date window: earliest purchase date ... today
         let earliestDate = transactions.min(by: { $0.purchaseDate < $1.purchaseDate })!.purchaseDate
         let start = YearMonthDayDate(earliestDate)
         let end = YearMonthDayDate(Date())
 
-        // Use the calculator to build the full daily series
         let datedPerformance = try await performanceCalculator.performanceSeries(
             for: transactions,
             from: start,
             to: end
         )
 
-        // Persist
-        if let perf = portfolio.historicalPerformance {
-            perf.datedPerformance = datedPerformance
-            try await portfolioRepository.updateHistoricalPerformance(perf)
-        } else {
-            let historicalPerformance = HistoricalPortfolioPerformance(
-                portfolioID: portfolio.id!,
-                datedPerformance: datedPerformance
-            )
-            try await portfolioRepository.createHistoricalPerformance(historicalPerformance)
-        }
+        try await portfolioDailyRepo.replaceSeries(for: try portfolio.requireID(), with: datedPerformance)
     }
 
     private func dateRangeUntilToday(from startDate: Date) -> [YearMonthDayDate] {

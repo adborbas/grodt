@@ -9,8 +9,9 @@ func migrations(_ app: Application) throws {
     app.migrations.add(Transaction.Migration_AddBrokerageAccountID())
 
     // 4) Create historical perf tables
-    app.migrations.add(HistoricalBrokerageAccountPerformance.Migration())
-    app.migrations.add(HistoricalBrokeragePerformance.Migration())
+    app.migrations.add(HistoricalPortfolioPerformanceDaily.Migration())
+    app.migrations.add(HistoricalBrokerageAccountPerformanceDaily.Migration())
+    app.migrations.add(HistoricalBrokeragePerformanceDaily.Migration())
 
     // 5) Drop platform/account and make FK required
     app.migrations.add(Transaction.Migration_DropPlatformAccountAndMakeBARequired())
@@ -22,8 +23,8 @@ func migrations(_ app: Application) throws {
     app.migrations.add(Currency.Migration())
     app.migrations.add(Ticker.Migration())
     app.migrations.add(Quote.Migration())
-    app.migrations.add(HistoricalPortfolioPerformance.Migration())
     app.migrations.add(HistoricalQuote.Migration())
     
-    
+    // 6) Drop old portfolio performance
+    app.migrations.add(DropOldHistoricalPortfolioPerformance())
 }

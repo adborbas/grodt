@@ -77,7 +77,7 @@ struct BrokerageController: RouteCollection {
         let userID = try req.requireUserID()
         _ = try await requireBrokerage(req, userID: userID)
         let id = try req.parameters.require("id", as: UUID.self)
-        let rows = try await HistoricalBrokeragePerformance.query(on: req.db)
+        let rows = try await HistoricalBrokeragePerformanceDaily.query(on: req.db)
             .filter(\.$brokerage.$id == id)
             .sort(\.$date, .ascending)
             .all()

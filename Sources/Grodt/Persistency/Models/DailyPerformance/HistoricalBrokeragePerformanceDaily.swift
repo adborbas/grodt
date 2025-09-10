@@ -1,8 +1,8 @@
 import Foundation
 import Fluent
 
-final class HistoricalBrokeragePerformance: Model, @unchecked Sendable {
-    static let schema = "historical_brokerage_performance"
+final class HistoricalBrokeragePerformanceDaily: Model, @unchecked Sendable {
+    static let schema = "historical_brokerage_performance_daily"
 
     @ID(key: .id)
     var id: UUID?
@@ -35,7 +35,7 @@ final class HistoricalBrokeragePerformance: Model, @unchecked Sendable {
     }
 }
 
-extension HistoricalBrokeragePerformance {
+extension HistoricalBrokeragePerformanceDaily {
     enum Keys {
         static let brokerageID: FieldKey = "brokerage_id"
         static let date: FieldKey = "date"
@@ -44,10 +44,10 @@ extension HistoricalBrokeragePerformance {
     }
 
     struct Migration: AsyncMigration {
-        let name = "CreateHistoricalBrokeragePerformance"
+        let name = "CreateHistoricalBrokeragePerformanceDaily"
 
         func prepare(on db: Database) async throws {
-            try await db.schema(HistoricalBrokeragePerformance.schema)
+            try await db.schema(HistoricalBrokeragePerformanceDaily.schema)
                 .id()
                 .field(Keys.brokerageID, .uuid, .required, .references(Brokerage.schema, "id", onDelete: .cascade))
                 .field(Keys.date, .date, .required)
@@ -58,7 +58,7 @@ extension HistoricalBrokeragePerformance {
         }
 
         func revert(on db: Database) async throws {
-            try await db.schema(HistoricalBrokeragePerformance.schema).delete()
+            try await db.schema(HistoricalBrokeragePerformanceDaily.schema).delete()
         }
     }
 }

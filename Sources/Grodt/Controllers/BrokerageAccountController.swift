@@ -2,12 +2,12 @@ import Vapor
 import Fluent
 
 struct BrokerageAccountController: RouteCollection {
-    private let accounts: BrokerageAccountRepository
+    private let brokerageAccountRepository: BrokerageAccountRepository
     private let currencyMapper: CurrencyDTOMapper
     private let currencyRepository: CurrencyRepository
     
-    init(accounts: BrokerageAccountRepository, currencyMapper: CurrencyDTOMapper, currencyRepository: CurrencyRepository) {
-        self.accounts = accounts
+    init(brokerageAccountRepository: BrokerageAccountRepository, currencyMapper: CurrencyDTOMapper, currencyRepository: CurrencyRepository) {
+        self.brokerageAccountRepository = brokerageAccountRepository
         self.currencyMapper = currencyMapper
         self.currencyRepository = currencyRepository
     }
@@ -26,10 +26,9 @@ struct BrokerageAccountController: RouteCollection {
 
     private func list(req: Request) async throws -> [BrokerageAccountDTO] {
         let userID = try req.requireUserID()
-        let brokerageID = try? req.query.get(UUID.self, at: "brokerageId")
-        let items = try await accounts.list(for: userID, brokerageID: brokerageID, on: req.db)
+        let items = try await brokerageAccountRepository.all(for: userID)
         return try await items.asyncMap { model in
-            let totals = try await accounts.totals(for: model.requireID(), on: req.db)
+            let totals = try await brokerageAccountRepository.totals(for: model.requireID())
             let brokerage = try await model.$brokerage.get(on: req.db)
             return BrokerageAccountDTO(
                 id: try model.requireID(),
@@ -63,7 +62,7 @@ struct BrokerageAccountController: RouteCollection {
                                      displayName: input.displayName,
                                      baseCurrency: currency)
         
-        try await accounts.create(model, on: req.db)
+        try await brokerageAccountRepository.create(model)
         return BrokerageAccountDTO(id: try model.requireID(),
                                    brokerageId: try brokerage.requireID(),
                                    brokerageName: brokerage.name,
@@ -76,7 +75,7 @@ struct BrokerageAccountController: RouteCollection {
         let userID = try req.requireUserID()
         let model = try await requireAccount(req, userID: userID)
         let brokerage = try await model.$brokerage.get(on: req.db)
-        let totals = try await accounts.totals(for: model.requireID(), on: req.db)
+        let totals = try await brokerageAccountRepository.totals(for: model.requireID())
         return BrokerageAccountDTO(id: try model.requireID(),
                                    brokerageId: try brokerage.requireID(),
                                    brokerageName: brokerage.name,
@@ -91,21 +90,21 @@ struct BrokerageAccountController: RouteCollection {
         struct In: Content { let displayName: String; let accountNumberMasked: String? }
         let input = try req.content.decode(In.self)
         model.displayName = input.displayName
-        try await accounts.update(model, on: req.db)
+        try await brokerageAccountRepository.update(model)
         return .ok
     }
 
     private func remove(req: Request) async throws -> HTTPStatus {
         let userID = try req.requireUserID()
         let model = try await requireAccount(req, userID: userID)
-        try await accounts.delete(model, on: req.db)
+        try await brokerageAccountRepository.delete(model)
         return .noContent
     }
 
     private func performanceSeries(req: Request) async throws -> [PerformancePointDTO] {
         let userID = try req.requireUserID()
         let account = try await requireAccount(req, userID: userID)
-        let rows = try await HistoricalBrokerageAccountPerformance.query(on: req.db)
+        let rows = try await HistoricalBrokerageAccountPerformanceDaily.query(on: req.db)
             .filter(\.$account.$id == account.requireID())
             .sort(\.$date, .ascending)
             .all()
@@ -114,7 +113,7 @@ struct BrokerageAccountController: RouteCollection {
 
     private func requireAccount(_ req: Request, userID: UUID) async throws -> BrokerageAccount {
         let id = try req.parameters.require("id", as: UUID.self)
-        guard let model = try await accounts.find(id, for: userID, on: req.db) else {
+        guard let model = try await brokerageAccountRepository.find(id, for: userID) else {
             throw Abort(.notFound)
         }
         return model

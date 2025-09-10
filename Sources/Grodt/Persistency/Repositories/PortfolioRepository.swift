@@ -8,10 +8,6 @@ protocol PortfolioRepository {
     func update(_ portfolio: Portfolio) async throws -> Portfolio
     func delete(for userID: User.IDValue, with id: Portfolio.IDValue) async throws
     
-    func historicalPerformance(with id: Portfolio.IDValue) async throws -> HistoricalPortfolioPerformance
-    func updateHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws
-    func createHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws
-    
     func expandPortfolio(on transaction: Transaction) async throws -> Portfolio
 }
 
@@ -29,7 +25,7 @@ class PostgresPortfolioRepository: PortfolioRepository {
                 portfolio.with(\.$transactions) { transaction in
                     transaction.with(\.$portfolio)
                 }
-                portfolio.with(\.$historicalPerformance)
+                portfolio.with(\.$historicalDailyPerformance)
             }.first()
         
         guard let user else {
@@ -62,7 +58,7 @@ class PostgresPortfolioRepository: PortfolioRepository {
         guard let updatedPortfolio = try await Portfolio.query(on: database)
             .filter(\Portfolio.$id == portfolio.id!)
             .with(\.$transactions)
-            .with(\.$historicalPerformance)
+            .with(\.$historicalDailyPerformance)
             .first() else {
             throw FluentError.noResults
         }
@@ -82,30 +78,14 @@ class PostgresPortfolioRepository: PortfolioRepository {
         try await portfolio.delete(on: database)
     }
     
-    func historicalPerformance(with id: Portfolio.IDValue) async throws -> HistoricalPortfolioPerformance {
-        guard let portfolioWithPerformance = try await Portfolio.query(on: database)
-            .filter(\Portfolio.$id == id)
-            .with(\.$historicalPerformance)
-            .first() else {
-            throw FluentError.noResults
-        }
-        
-        return portfolioWithPerformance.$historicalPerformance.wrappedValue ?? HistoricalPortfolioPerformance(portfolioID: id, datedPerformance: [])
-    }
-    
-    func updateHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws {
-        try await historicalPerformance.update(on: database)
-    }
-    
-    func createHistoricalPerformance(_ historicalPerformance: HistoricalPortfolioPerformance) async throws {
-        try await historicalPerformance.save(on: database)
-    }
-    
     func expandPortfolio(on transaction: Transaction) async throws -> Portfolio {
-        return try await Portfolio.query(on: database)
-            .filter(\Portfolio.$id == transaction.$portfolio.get(on: database).id!)
+        let portfolioID = try await transaction.$portfolio.get(on: database).requireID()
+        guard let result = try await Portfolio.query(on: database)
+            .filter(\.$id == portfolioID)
             .with(\.$transactions)
-            .with(\.$historicalPerformance)
-            .first()!
+            .with(\.$historicalDailyPerformance)
+            .first()
+        else { throw FluentError.noResults }
+        return result
     }
 }
