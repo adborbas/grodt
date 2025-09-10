@@ -22,6 +22,7 @@ func routes(_ app: Application) async throws {
     let userRepository = PostgresUserRepository(database: app.db)
     let portfolioRepository = PostgresPortfolioRepository(database: app.db)
     let transactionRepository = PostgresTransactionRepository(database: app.db)
+    let brokerageRepository = PostgresBrokerageRepository(database: app.db)
     let brokerageAccountRepository = PostgresBrokerageAccountRepository(database: app.db)
     let brokerageAccountDailyRepository = PostgresBrokerageAccountDailyPerformanceRepository(database: app.db)
     let brokerageDailyPerformanceRepository = PostgresBrokerageDailyPerformanceRepository(database: app.db)
@@ -86,9 +87,14 @@ func routes(_ app: Application) async throws {
         try protected.register(collection: tickersController)
         try protected.register(collection: investmentsController)
         try protected.register(collection: accountController)
-        try protected.register(collection: BrokerageController(brokerages: PostgresBrokerageRepository(),
+        try protected.register(collection: BrokerageController(brokerageRepository: brokerageRepository,
+                                                               dtoMapper: BrokerageDTOMapper(brokerageRepository: brokerageRepository,
+                                                                                             accountDTOMapper: BrokerageAccountDTOMapper(brokerageAccountRepository: brokerageAccountRepository,
+                                                                                                                                         currencyMapper: currencyDTOMapper)),
                                                                accounts: brokerageAccountRepository,
-                                                               currencyMapper: currencyDTOMapper))
+                                                               currencyMapper: currencyDTOMapper,
+                                                               performanceRepository: brokerageDailyPerformanceRepository,
+                                                               performancePointDTOMapper: PerformancePointDTOMapper()))
         try protected.register(collection: BrokerageAccountController(brokerageAccountRepository: brokerageAccountRepository,
                                                                       currencyMapper: currencyDTOMapper,
                                                                       currencyRepository: currencyRepository))
