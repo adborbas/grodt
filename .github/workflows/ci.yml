@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Swift on Ubuntu
-        uses: fwal/setup-swift@v1
+        uses: swift-actions/setup-swift@v1
         with:
           swift-version: '5.9'
       - name: Build on Ubuntu
