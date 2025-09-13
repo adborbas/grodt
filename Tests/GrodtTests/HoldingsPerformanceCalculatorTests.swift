@@ -1,5 +1,5 @@
 @testable import Grodt
-import Testing
+import XCTest
 import Foundation
 
 fileprivate final class MockPriceService: PriceService {
@@ -18,12 +18,11 @@ fileprivate final class MockPriceService: PriceService {
     }
 }
 
-class HoldingsPerformanceCalculatorTests {
+final class HoldingsPerformanceCalculatorTests: XCTestCase {
     private var mockPriceService = MockPriceService()
     private lazy var calculator = HoldingsPerformanceCalculator(priceService: mockPriceService)
     
-    @Test
-    func series_SingleTicker_CarryForwardAndCumulativeMoneyIn() async throws {
+    func testSeries_SingleTicker_CarryForwardAndCumulativeMoneyIn() async throws {
         // Given
         let ticker = "AAPL"
         let buy = givenTransaction(purchasedOn: YearMonthDayDate(2024, 1, 10), ticker: ticker, fees: 1, shares: 10, pricePerShare: 5)
@@ -50,12 +49,11 @@ class HoldingsPerformanceCalculatorTests {
             DatedPortfolioPerformance(moneyIn: 51, value: 70, date: YearMonthDayDate(2024, 1, 14)),
             DatedPortfolioPerformance(moneyIn: 51, value: 90, date: YearMonthDayDate(2024, 1, 15))
         ]
-        #expect(series == expected2)
-        #expect(mockPriceService.historicalPriceCallCount[ticker]! == 1)
+        XCTAssertEqual(series, expected2)
+        XCTAssertEqual(mockPriceService.historicalPriceCallCount[ticker] ?? 0, 1)
     }
     
-    @Test
-    func series_MultiTicker_AggregationAndCarryForward() async throws {
+    func testSeries_MultiTicker_AggregationAndCarryForward() async throws {
         // Given: MSFT buys on 10 (3 sh @10) and 12 (2 sh @12), AAPL buy on 14 (1 sh @100 + 2 fees)
         let msft1 = givenTransaction(purchasedOn: YearMonthDayDate(2024, 1, 10), ticker: "MSFT", shares: 3, pricePerShare: 10)
         let msft2 = givenTransaction(purchasedOn: YearMonthDayDate(2024, 1, 12), ticker: "MSFT", shares: 2, pricePerShare: 12)
@@ -85,24 +83,22 @@ class HoldingsPerformanceCalculatorTests {
             DatedPortfolioPerformance(moneyIn: 156, value: 107, date: YearMonthDayDate(2024, 1, 14)),
             DatedPortfolioPerformance(moneyIn: 156, value: 132, date: YearMonthDayDate(2024, 1, 15))
         ]
-        #expect(series == expected)
+        XCTAssertEqual(series, expected)
         // One historical fetch per ticker during prefetch
-        #expect(mockPriceService.historicalPriceCallCount["MSFT"]! == 1)
-        #expect(mockPriceService.historicalPriceCallCount["AAPL"]! == 1)
+        XCTAssertEqual(mockPriceService.historicalPriceCallCount["MSFT"] ?? 0, 1)
+        XCTAssertEqual(mockPriceService.historicalPriceCallCount["AAPL"] ?? 0, 1)
     }
     
-    @Test
-    func series_EmptyTransactions_ReturnsEmpty() async throws {
+    func testSeries_EmptyTransactions_ReturnsEmpty() async throws {
         let start = YearMonthDayDate(2024, 1, 10)
         let end   = YearMonthDayDate(2024, 1, 15)
         let series = try await calculator.performanceSeries(for: [], from: start, to: end)
         // Then
         let expected: [DatedPortfolioPerformance] = []
-        #expect(series == expected)
+        XCTAssertEqual(series, expected)
     }
     
-    @Test
-    func series_TransactionsInFuture_BeforeStartIgnored() async throws {
+    func testSeries_TransactionsInFuture_BeforeStartIgnored() async throws {
         // Given a purchase after the range end – should have no effect
         let future = givenTransaction(purchasedOn: YearMonthDayDate(2024, 1, 20), ticker: "NVDA", shares: 1, pricePerShare: 100)
         let start = YearMonthDayDate(2024, 1, 10)
@@ -122,13 +118,12 @@ class HoldingsPerformanceCalculatorTests {
             DatedPortfolioPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 14)),
             DatedPortfolioPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 15))
         ]
-        #expect(series == expected)
+        XCTAssertEqual(series, expected)
         // Prefetch may still fetch NVDA once
-        #expect(mockPriceService.historicalPriceCallCount["NVDA"]! == 1)
+        XCTAssertEqual(mockPriceService.historicalPriceCallCount["NVDA"] ?? 0, 1)
     }
     
-    @Test
-    func performance_40Years_10Tickers() async throws {
+    func testPerformance_40Years_10Tickers() async throws {
         // Local helper to add years to a YearMonthDayDate
         func addYears(_ years: Int, to day: YearMonthDayDate) -> YearMonthDayDate {
             var calendar = Calendar.current
@@ -186,13 +181,13 @@ class HoldingsPerformanceCalculatorTests {
         let duration = t0.duration(to: clock.now)
 
         // Sanity
-        #expect(series.count == allDays.count)
-        #expect(!series.isEmpty)
+        XCTAssertEqual(series.count, allDays.count)
+        XCTAssertFalse(series.isEmpty)
 
         // Convert Duration to seconds (lenient threshold; tune for CI hardware)
         let comps = duration.components
         let seconds = Double(comps.seconds) + Double(comps.attoseconds) / 1_000_000_000_000_000_000.0
-        #expect(seconds < 10.0)
+        XCTAssertLessThan(seconds, 10.0)
     }
     
     
