@@ -19,8 +19,8 @@ final class Portfolio: Model, @unchecked Sendable {
     @Children(for: \.$portfolio)
     var transactions: [Transaction]
     
-    @OptionalChild(for: \.$portfolio)
-    var historicalPerformance: HistoricalPortfolioPerformance?
+    @Children(for: \.$portfolio)
+    var historicalDailyPerformance: [HistoricalPortfolioPerformanceDaily]
     
     required init() { }
     

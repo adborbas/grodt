@@ -58,9 +58,9 @@ class InvestmentDTOMapper {
         }
     }
     
-    func investmentDetail(from transactions: [Transaction])async throws -> InvestmentDetailDTO {
+    func investmentDetail(from transactions: [Transaction]) async throws -> InvestmentDetailDTO {
         let investmentDTO = try await investments(from: transactions).first!
-        let transactions = transactions.compactMap { transactionDTOMapper.transaction(from: $0) }
+        let transactions = try await transactions.asyncCompactMap { try await transactionDTOMapper.transaction(from: $0) }
         return InvestmentDetailDTO(name: investmentDTO.name,
                                    shortName: investmentDTO.shortName,
                                    avgBuyPrice: investmentDTO.avgBuyPrice,

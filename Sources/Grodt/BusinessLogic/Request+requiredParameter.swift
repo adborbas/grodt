@@ -13,4 +13,11 @@ extension Request {
     func requiredID() throws -> UUID {
         try requiredParameter(named: "id")
     }
+    
+    func requireUserID() throws -> UUID {
+        guard let userID = auth.get(User.self)?.id else {
+            throw Abort(.badRequest)
+        }
+        return userID
+    }
 }
