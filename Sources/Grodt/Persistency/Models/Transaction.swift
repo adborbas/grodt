@@ -76,6 +76,28 @@ fileprivate extension Transaction {
 }
 
 extension Transaction {
+    struct Migration: AsyncMigration {
+        var name: String { "CreateTransaction" }
+
+        func prepare(on db: Database) async throws {
+            try await db.schema(Transaction.schema)
+                .id()
+                .field(Keys.portfolioID, .uuid, .required, .references(Portfolio.schema, "id", onDelete: .cascade))
+                // brokerage_account_id will be added (optionally) by a later migration
+                .field(Keys.purchaseDate, .date, .required)
+                .field(Keys.ticker, .string, .required)
+                .field(Keys.currency, .string, .required)
+                .field(Keys.fees, .sql(unsafeRaw: "NUMERIC(64,4)"), .required)
+                .field(Keys.numberOfShares, .sql(unsafeRaw: "NUMERIC(64,4)"), .required)
+                .field(Keys.pricePerShareAtPurchase, .sql(unsafeRaw: "NUMERIC(64,4)"), .required)
+                .create()
+        }
+
+        func revert(on db: Database) async throws {
+            try await db.schema(Transaction.schema).delete()
+        }
+    }
+    
     struct Migration_AddBrokerageAccountID: AsyncMigration {
         let name = "AddBrokerageAccountIDToTransactions"
 
@@ -96,18 +118,10 @@ extension Transaction {
             let name = "DropPlatformAccountAndMakeBrokerageAccountRequired"
 
             func prepare(on db: Database) async throws {
-                if let sql = db as? SQLDatabase {
-                    try await sql.raw(#"""
-                        ALTER TABLE "transactions"
-                        DROP COLUMN IF EXISTS "platform",
-                        DROP COLUMN IF EXISTS "account";
-                        """#).run()
-                } else {
-                    try await db.schema(Transaction.schema)
-                        .deleteField("platform")
-                        .deleteField("account")
-                        .update()
-                }
+                try await db.schema(Transaction.schema)
+                    .deleteField("platform")
+                    .deleteField("account")
+                    .update()
             }
 
             func revert(on db: Database) async throws {

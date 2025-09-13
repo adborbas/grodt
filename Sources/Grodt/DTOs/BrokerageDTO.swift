@@ -17,8 +17,17 @@ struct BrokerageAccountDTO: Codable {
 }
 
 struct PerformanceTotalsDTO: Codable {
-    let value: Decimal
-    let moneyIn: Decimal
+    private let value: Decimal
+    private let moneyIn: Decimal
+    
+    init(value: Decimal, moneyIn: Decimal) {
+        self.value = value
+        self.moneyIn = moneyIn
+    }
+    
+    init() {
+        self.init(value: 0, moneyIn: 0)
+    }
 }
 
 struct PerformancePointDTO: Codable {

@@ -1,4 +1,8 @@
+import Foundation
+
 struct BrokerageAccountInfoDTO: Codable, Equatable {
-    let name: String
-    let id: String
+    let id: UUID
+    let brokerageId: UUID
+    let brokerageName: String
+    let displayName: String
 }

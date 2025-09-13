@@ -19,7 +19,10 @@ struct PostgresBrokerageRepository: BrokerageRepository {
     }
     
     func list(for userID: User.IDValue) async throws -> [Brokerage] {
-        try await Brokerage.query(on: database).filter(\.$user.$id == userID).all()
+        try await Brokerage.query(on: database)
+            .filter(\.$user.$id == userID)
+            .with(\.$accounts)
+            .all()
     }
     
     func find(_ id: Brokerage.IDValue, for userID: User.IDValue) async throws -> Brokerage? {
@@ -53,7 +56,7 @@ struct PostgresBrokerageRepository: BrokerageRepository {
             .filter(\.$brokerage.$id == brokerageID)
             .sort(\.$date, .descending)
             .first()
-        else { return nil }
+        else { return PerformanceTotalsDTO() }
         return .init(value: last.value, moneyIn: last.moneyIn)
     }
 }

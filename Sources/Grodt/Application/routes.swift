@@ -8,7 +8,7 @@ func routes(_ app: Application) async throws {
     let currencyDTOMapper = CurrencyDTOMapper()
     let tickerDTOMapper = TickerDTOMapper()
     let loginResponseDTOMapper = LoginResponseDTOMapper()
-    let transactionDTOMapper = TransactionDTOMapper(currencyDTOMapper: currencyDTOMapper)
+    let transactionDTOMapper = TransactionDTOMapper(currencyDTOMapper: currencyDTOMapper, database: app.db)
     let tickerRepository = PostgresTickerRepository(database: app.db)
     let livePriceService = LivePriceService(alphavantage: alphavantage)
     let quoteCache = PostgresQuoteRepository(database: app.db)
@@ -90,7 +90,8 @@ func routes(_ app: Application) async throws {
         try protected.register(collection: BrokerageController(brokerageRepository: brokerageRepository,
                                                                dtoMapper: BrokerageDTOMapper(brokerageRepository: brokerageRepository,
                                                                                              accountDTOMapper: BrokerageAccountDTOMapper(brokerageAccountRepository: brokerageAccountRepository,
-                                                                                                                                         currencyMapper: currencyDTOMapper)),
+                                                                                                                                         currencyMapper: currencyDTOMapper, database: app.db),
+                                                                                             database: app.db),
                                                                accounts: brokerageAccountRepository,
                                                                currencyMapper: currencyDTOMapper,
                                                                performanceRepository: brokerageDailyPerformanceRepository,
@@ -118,7 +119,7 @@ func routes(_ app: Application) async throws {
         )
         app.queues.schedule(nightlyUpdaterJob)
             .daily()
-            .at(13, 59)
+            .at(3, 0)
 
         app.queues.add(LoggingJobEventDelegate(logger: app.logger))
         

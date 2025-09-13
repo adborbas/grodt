@@ -3,8 +3,6 @@ import Foundation
 struct CreateTransactionRequestDTO: Decodable {
     let portfolio: String
     let brokerageAccountID: String?
-    let platform: String
-    let account: String?
     let purchaseDate: Date
     let ticker: String
     let currency: String
@@ -20,8 +18,6 @@ struct CreateTransactionRequestDTO: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         portfolio = try container.decode(String.self, forKey: .portfolio)
         brokerageAccountID = try container.decodeIfPresent(String.self, forKey: .brokerageAccountID)
-        platform = try container.decode(String.self, forKey: .platform)
-        account = try container.decodeIfPresent(String.self, forKey: .account)
         ticker = try container.decode(String.self, forKey: .ticker)
         currency = try container.decode(String.self, forKey: .currency)
         fees = try container.decode(Decimal.self, forKey: .fees)

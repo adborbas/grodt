@@ -57,7 +57,7 @@ class TransactionsController: RouteCollection {
         
         try await newTransaction.save(on: req.db)
         try await delegate?.transactionCreated(newTransaction)
-        return dataMapper.transaction(from: newTransaction)
+        return try await dataMapper.transaction(from: newTransaction)
     }
     
     private func transactionDetail(req: Request) async throws -> TransactionDTO {
@@ -66,7 +66,7 @@ class TransactionsController: RouteCollection {
         guard let transaction = try await transactionsRepository.transaction(for: id) else {
             throw Abort(.notFound)
         }
-        return dataMapper.transaction(from: transaction)
+        return try await dataMapper.transaction(from: transaction)
     }
     
     
@@ -96,18 +96,10 @@ class TransactionsController: RouteCollection {
             return UUID(uuidString: raw)
         }()
 
-        // Optionally: validate that the brokerage account exists if provided
-//        if let brokerageAccountID {
-//            let exists = try await BrokerageAccount.query(on: req.db)
-//                .filter(\.$id == brokerageAccountID)
-//                .first() != nil
-//            if !exists { throw Abort(.badRequest, reason: "BrokerageAccount not found") }
-//        }
-
         transaction.$brokerageAccount.id = brokerageAccountID
         try await transaction.save(on: req.db)
 
-        return dataMapper.transaction(from: transaction)
+        return try await dataMapper.transaction(from: transaction)
     }
 }
 
