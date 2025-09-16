@@ -4,7 +4,7 @@ struct BrokerageDTO: Codable {
     let id: UUID
     let name: String
     let accounts: [BrokerageAccountDTO]
-    let totals: PerformanceDTO?
+    let performance: PerformanceDTO
 }
 
 struct BrokerageAccountDTO: Codable {
@@ -13,7 +13,7 @@ struct BrokerageAccountDTO: Codable {
     let brokerageName: String
     let displayName: String
     let baseCurrency: CurrencyDTO
-    let totals: PerformanceDTO?
+    let performance: PerformanceDTO
 }
 
 struct PerformancePointDTO: Codable {

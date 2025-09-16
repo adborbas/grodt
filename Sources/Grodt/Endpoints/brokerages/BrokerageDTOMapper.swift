@@ -18,12 +18,12 @@ struct BrokerageDTOMapper {
         let accountDTOs = try await brokerage.accounts.asyncMap {
             try await accountDTOMapper.brokerageAccount(from: $0)
         }
-        let totals = try await brokerageRepository.totals(for: brokerage.requireID())
+        let performance = try await brokerageRepository.performance(for: brokerage.requireID())
         return try BrokerageDTO(
             id: brokerage.requireID(),
             name: brokerage.name,
             accounts: accountDTOs,
-            totals: totals
+            performance: performance
         )
     }
 }

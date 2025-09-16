@@ -8,7 +8,7 @@ protocol BrokerageRepository: Sendable {
     func update(_ brokerage: Brokerage) async throws
     func delete(_ brokerage: Brokerage) async throws
     func accountsCount(for brokerageID: Brokerage.IDValue) async throws -> Int
-    func totals(for brokerageID: Brokerage.IDValue) async throws -> PerformanceDTO?
+    func performance(for brokerageID: Brokerage.IDValue) async throws -> PerformanceDTO
 }
 
 struct PostgresBrokerageRepository: BrokerageRepository {
@@ -51,12 +51,21 @@ struct PostgresBrokerageRepository: BrokerageRepository {
         try await BrokerageAccount.query(on: database).filter(\.$brokerage.$id == brokerageID).count()
     }
     
-    func totals(for brokerageID: Brokerage.IDValue) async throws -> PerformanceDTO? {
+    func performance(for brokerageID: Brokerage.IDValue) async throws -> PerformanceDTO {
         guard let last = try await HistoricalBrokeragePerformanceDaily.query(on: database)
             .filter(\.$brokerage.$id == brokerageID)
             .sort(\.$date, .descending)
             .first()
-        else { return PerformanceDTO() }
-        return .init(value: last.value, moneyIn: last.moneyIn)
+        else { return PerformanceDTO.zero }
+        
+        let moneyIn = last.moneyIn
+        let moneyOut = last.value
+        let profit = moneyOut - moneyIn
+        let totalReturn: Decimal = moneyIn > 0 ? (profit / moneyIn).rounded(to: 2) : 0
+        
+        return PerformanceDTO(moneyIn: moneyIn,
+                              moneyOut: moneyOut,
+                              profit: profit,
+                              totalReturn: totalReturn)
     }
 }

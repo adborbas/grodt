@@ -15,13 +15,13 @@ struct BrokerageAccountDTOMapper {
     
     func brokerageAccount(from brokerageAccount: BrokerageAccount) async throws -> BrokerageAccountDTO {
         try await brokerageAccount.$brokerage.load(on: database)
-        let totals = try await brokerageAccountRepository.totals(for: brokerageAccount.requireID())
+        let performance = try await brokerageAccountRepository.performance(for: brokerageAccount.requireID())
         
         return try BrokerageAccountDTO(id: brokerageAccount.requireID(),
                                        brokerageId: brokerageAccount.brokerage.requireID(),
                                        brokerageName: brokerageAccount.brokerage.name,
                                        displayName: brokerageAccount.displayName,
                                        baseCurrency: currencyMapper.currency(from: brokerageAccount.baseCurrency),
-                                       totals: totals ?? PerformanceDTO())
+                                       performance: performance)
     }
 }

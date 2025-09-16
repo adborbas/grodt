@@ -50,7 +50,7 @@ struct BrokerageController: RouteCollection {
         return BrokerageDTO(id: try item.requireID(),
                             name: item.name,
                             accounts: [],
-                            totals: nil)
+                            performance: PerformanceDTO.zero)
     }
 
     private func detail(req: Request) async throws -> BrokerageDTO {

@@ -28,7 +28,7 @@ struct BrokerageAccountController: RouteCollection {
         let userID = try req.requireUserID()
         let items = try await brokerageAccountRepository.all(for: userID)
         return try await items.asyncMap { model in
-            let totals = try await brokerageAccountRepository.totals(for: model.requireID())
+            let performance = try await brokerageAccountRepository.performance(for: model.requireID())
             let brokerage = try await model.$brokerage.get(on: req.db)
             return BrokerageAccountDTO(
                 id: try model.requireID(),
@@ -36,7 +36,7 @@ struct BrokerageAccountController: RouteCollection {
                 brokerageName: brokerage.name,
                 displayName: model.displayName,
                 baseCurrency: currencyMapper.currency(from: model.baseCurrency),
-                totals: totals)
+                performance: performance)
         }
     }
 
@@ -68,20 +68,20 @@ struct BrokerageAccountController: RouteCollection {
                                    brokerageName: brokerage.name,
                                    displayName: model.displayName,
                                    baseCurrency: currencyMapper.currency(from: model.baseCurrency),
-                                   totals: nil)
+                                   performance: PerformanceDTO.zero)
     }
 
     private func detail(req: Request) async throws -> BrokerageAccountDTO {
         let userID = try req.requireUserID()
         let model = try await requireAccount(req, userID: userID)
         let brokerage = try await model.$brokerage.get(on: req.db)
-        let totals = try await brokerageAccountRepository.totals(for: model.requireID())
+        let performance = try await brokerageAccountRepository.performance(for: model.requireID())
         return BrokerageAccountDTO(id: try model.requireID(),
                                    brokerageId: try brokerage.requireID(),
                                    brokerageName: brokerage.name,
                                    displayName: model.displayName,
                                    baseCurrency: currencyMapper.currency(from: model.baseCurrency),
-                                   totals: totals)
+                                   performance: performance)
     }
 
     private func update(req: Request) async throws -> HTTPStatus {
