@@ -22,6 +22,6 @@ struct BrokerageAccountDTOMapper {
                                        brokerageName: brokerageAccount.brokerage.name,
                                        displayName: brokerageAccount.displayName,
                                        baseCurrency: currencyMapper.currency(from: brokerageAccount.baseCurrency),
-                                       totals: totals ?? PerformanceTotalsDTO())
+                                       totals: totals ?? PerformanceDTO())
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-struct PortfolioPerformanceDTO: Codable, Equatable {
+struct PerformanceDTO: Codable, Equatable {
     let moneyIn: Decimal
     let moneyOut: Decimal
     let profit: Decimal

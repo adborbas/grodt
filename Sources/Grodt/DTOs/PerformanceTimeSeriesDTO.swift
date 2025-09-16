@@ -1,10 +1,10 @@
 import Foundation
 
 struct PortfolioPerformanceTimeSeriesDTO: Codable, Equatable {
-    let values: [DatedPortfolioPerformanceDTO]
+    let values: [DatedPerformanceDTO]
 }
 
-struct DatedPortfolioPerformanceDTO: Codable, Equatable {
+struct DatedPerformanceDTO: Codable, Equatable {
     let date: Date
     let moneyIn: Decimal
     let moneyOut: Decimal
