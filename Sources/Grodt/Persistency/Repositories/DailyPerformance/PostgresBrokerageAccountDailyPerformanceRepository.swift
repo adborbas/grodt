@@ -6,7 +6,7 @@ struct PostgresBrokerageAccountDailyPerformanceRepository: DailyPerformanceRepos
     
     let database: Database
 
-    func replaceSeries(for ownerID: UUID, with points: [DatedPortfolioPerformance]) async throws {
+    func replaceSeries(for ownerID: UUID, with points: [DatedPerformance]) async throws {
         try await deleteAll(for: ownerID)
         guard !points.isEmpty else { return }
 
@@ -21,7 +21,7 @@ struct PostgresBrokerageAccountDailyPerformanceRepository: DailyPerformanceRepos
         }
     }
 
-    func upsert(points: [DatedPortfolioPerformance], for ownerID: UUID) async throws {
+    func upsert(points: [DatedPerformance], for ownerID: UUID) async throws {
         guard !points.isEmpty else { return }
 
         let minDate = points.map { $0.date.date }.min()!
@@ -54,7 +54,7 @@ struct PostgresBrokerageAccountDailyPerformanceRepository: DailyPerformanceRepos
         }
     }
 
-    func readSeries(for ownerID: UUID, from: YearMonthDayDate?, to: YearMonthDayDate?) async throws -> [DatedPortfolioPerformance] {
+    func readSeries(for ownerID: UUID, from: YearMonthDayDate?, to: YearMonthDayDate?) async throws -> [DatedPerformance] {
         var query = HistoricalBrokerageAccountPerformanceDaily.query(on: database)
             .filter(\.$account.$id == ownerID)
             .sort(HistoricalBrokerageAccountPerformanceDaily.Keys.date, .ascending)
@@ -63,7 +63,7 @@ struct PostgresBrokerageAccountDailyPerformanceRepository: DailyPerformanceRepos
         if let to { query = query.filter(\.$date <= to.date) }
 
         let rows = try await query.all()
-        return rows.map { DatedPortfolioPerformance(moneyIn: $0.moneyIn, value: $0.value, date: YearMonthDayDate($0.date)) }
+        return rows.map { DatedPerformance(moneyIn: $0.moneyIn, value: $0.value, date: YearMonthDayDate($0.date)) }
     }
 
     func deleteAll(for ownerID: UUID) async throws {

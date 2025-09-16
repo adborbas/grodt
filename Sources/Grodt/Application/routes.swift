@@ -24,11 +24,12 @@ func routes(_ app: Application) async throws {
     let transactionRepository = PostgresTransactionRepository(database: app.db)
     let brokerageRepository = PostgresBrokerageRepository(database: app.db)
     let brokerageAccountRepository = PostgresBrokerageAccountRepository(database: app.db)
-    let brokerageAccountDailyRepository = PostgresBrokerageAccountDailyPerformanceRepository(database: app.db)
+    let brokerageAccountDailyPerformanceRepository = PostgresBrokerageAccountDailyPerformanceRepository(database: app.db)
     let brokerageDailyPerformanceRepository = PostgresBrokerageDailyPerformanceRepository(database: app.db)
     
     let portfolioDTOMapper = PortfolioDTOMapper(investmentDTOMapper: investmentDTOMapper,
                                                 transactionDTOMapper: transactionDTOMapper,
+                                                performanceDTOMapper: DatedPerformanceDTOMapper(),
                                                 currencyDTOMapper: currencyDTOMapper)
     let currencyRepository = PostgresCurrencyRepository(database: app.db)
     let portfolioPerformanceUpdater = PortfolioPerformanceUpdater(
@@ -95,8 +96,10 @@ func routes(_ app: Application) async throws {
                                                                accounts: brokerageAccountRepository,
                                                                currencyMapper: currencyDTOMapper,
                                                                performanceRepository: brokerageDailyPerformanceRepository,
-                                                               performancePointDTOMapper: PerformancePointDTOMapper()))
+                                                               performanceDTOMapper: DatedPerformanceDTOMapper()))
         try protected.register(collection: BrokerageAccountController(brokerageAccountRepository: brokerageAccountRepository,
+                                                                      performanceRepository: brokerageAccountDailyPerformanceRepository,
+                                                                      performanceDTOMapper: DatedPerformanceDTOMapper(),
                                                                       currencyMapper: currencyDTOMapper,
                                                                       currencyRepository: currencyRepository))
     }
@@ -109,12 +112,12 @@ func routes(_ app: Application) async throws {
             portfolioPerformanceUpdater: portfolioPerformanceUpdater,
             brokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdater(transactionRepository: transactionRepository,
                                                                                    brokerageAccountRepository: brokerageAccountRepository,
-                                                                                   accountDailyRepository: brokerageAccountDailyRepository,
+                                                                                   accountDailyRepository: brokerageAccountDailyPerformanceRepository,
                                                                                    userRepository: userRepository,
                                                                                    calculator: performanceCalculator),
             brokeragePerformanceUpdater: BrokeragePerformanceUpdater(userRepository: userRepository,
                                                                      brokerageAccountRepository: brokerageAccountRepository,
-                                                                     accountDailyRepository: brokerageAccountDailyRepository,
+                                                                     accountDailyRepository: brokerageAccountDailyPerformanceRepository,
                                                                      brokerageDailyRepository: brokerageDailyPerformanceRepository)
         )
         app.queues.schedule(nightlyUpdaterJob)

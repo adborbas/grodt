@@ -58,7 +58,7 @@ final class BrokeragePerformanceUpdater: BrokeragePerformanceUpdating {
         }
 
         // Read each account's full series and track the global date window
-        var perAccountSeries: [[YearMonthDayDate: DatedPortfolioPerformance]] = []
+        var perAccountSeries: [[YearMonthDayDate: DatedPerformance]] = []
         perAccountSeries.reserveCapacity(accounts.count)
 
         var earliestDate: Date?
@@ -69,7 +69,7 @@ final class BrokeragePerformanceUpdater: BrokeragePerformanceUpdating {
                 earliestDate = min(earliestDate ?? firstDate, firstDate)
             }
             // Index by date for O(1) lookups during summation
-            var map: [YearMonthDayDate: DatedPortfolioPerformance] = [:]
+            var map: [YearMonthDayDate: DatedPerformance] = [:]
             map.reserveCapacity(series.count)
             for point in series { map[point.date] = point }
             perAccountSeries.append(map)
@@ -86,7 +86,7 @@ final class BrokeragePerformanceUpdater: BrokeragePerformanceUpdating {
         let days = YearMonthDayDate.days(from: start, to: end)
 
         // Sum across accounts for each day
-        var summed: [DatedPortfolioPerformance] = []
+        var summed: [DatedPerformance] = []
         summed.reserveCapacity(days.count)
 
         for day in days {
@@ -98,7 +98,7 @@ final class BrokeragePerformanceUpdater: BrokeragePerformanceUpdating {
                     value += point.value
                 }
             }
-            summed.append(DatedPortfolioPerformance(moneyIn: moneyIn, value: value, date: day))
+            summed.append(DatedPerformance(moneyIn: moneyIn, value: value, date: day))
         }
 
         // Replace the brokerage's series

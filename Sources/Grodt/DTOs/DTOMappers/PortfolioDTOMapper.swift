@@ -5,12 +5,15 @@ class PortfolioDTOMapper {
     private let investmentDTOMapper: InvestmentDTOMapper
     private let currencyDTOMapper: CurrencyDTOMapper
     private let transactionDTOMapper: TransactionDTOMapper
+    private let performanceDTOMapper: DatedPerformanceDTOMapper
     
     init(investmentDTOMapper: InvestmentDTOMapper,
          transactionDTOMapper: TransactionDTOMapper,
+         performanceDTOMapper: DatedPerformanceDTOMapper,
          currencyDTOMapper: CurrencyDTOMapper) {
         self.investmentDTOMapper = investmentDTOMapper
         self.transactionDTOMapper = transactionDTOMapper
+        self.performanceDTOMapper = performanceDTOMapper
         self.currencyDTOMapper = currencyDTOMapper
     }
     
@@ -35,12 +38,12 @@ class PortfolioDTOMapper {
         )
     }
     
-    func performance(for portfolio: Portfolio) async throws -> PortfolioPerformanceDTO {
+    func performance(for portfolio: Portfolio) async throws -> PerformanceDTO {
         // Expect the daily series to be eager-loaded by the caller. If it's not loaded, fall back to zeros.
         guard portfolio.$historicalDailyPerformance.value != nil,
               let latest = portfolio.historicalDailyPerformance.max(by: { $0.date < $1.date })
         else {
-            return PortfolioPerformanceDTO(moneyIn: 0, moneyOut: 0, profit: 0, totalReturn: 0)
+            return PerformanceDTO(moneyIn: 0, moneyOut: 0, profit: 0, totalReturn: 0)
         }
 
         let moneyIn = latest.moneyIn
@@ -48,7 +51,7 @@ class PortfolioDTOMapper {
         let profit = moneyOut - moneyIn
         let totalReturn: Decimal = moneyIn > 0 ? (profit / moneyIn).rounded(to: 2) : 0
 
-        return PortfolioPerformanceDTO(
+        return PerformanceDTO(
             moneyIn: moneyIn,
             moneyOut: moneyOut,
             profit: profit,
@@ -56,24 +59,11 @@ class PortfolioDTOMapper {
         )
     }
     
-    func timeSeriesPerformance(from series: [DatedPortfolioPerformance]) async -> PortfolioPerformanceTimeSeriesDTO {
-        let values: [DatedPortfolioPerformanceDTO] = series
-            .map { point in
-                let moneyIn = point.moneyIn
-                let moneyOut = point.value
-                let profit = moneyOut - moneyIn
-                let totalReturn: Decimal = moneyIn > 0 ? (profit / moneyIn).rounded(to: 2) : 0
-                return DatedPortfolioPerformanceDTO(
-                    date: point.date.date,
-                    moneyIn: moneyIn,
-                    moneyOut: moneyOut,
-                    profit: profit,
-                    totalReturn: totalReturn
-                )
-            }
+    func timeSeriesPerformance(from series: [DatedPerformance]) async -> PerformanceTimeSeriesDTO {
+        let values =  series.map { performanceDTOMapper.performancePoint(from: $0)  }
             .sorted { $0.date < $1.date }
-
-        return PortfolioPerformanceTimeSeriesDTO(values: values)
+        
+        return PerformanceTimeSeriesDTO(values: values)
     }
 }
 

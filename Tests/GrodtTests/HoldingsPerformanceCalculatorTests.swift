@@ -41,13 +41,13 @@ final class HoldingsPerformanceCalculatorTests: XCTestCase {
         let series = try await calculator.performanceSeries(for: [buy], from: start, to: end)
         
         // Then
-        let expected2: [DatedPortfolioPerformance] = [
-            DatedPortfolioPerformance(moneyIn: 51, value: 60, date: YearMonthDayDate(2024, 1, 10)),
-            DatedPortfolioPerformance(moneyIn: 51, value: 60, date: YearMonthDayDate(2024, 1, 11)),
-            DatedPortfolioPerformance(moneyIn: 51, value: 70, date: YearMonthDayDate(2024, 1, 12)),
-            DatedPortfolioPerformance(moneyIn: 51, value: 70, date: YearMonthDayDate(2024, 1, 13)),
-            DatedPortfolioPerformance(moneyIn: 51, value: 70, date: YearMonthDayDate(2024, 1, 14)),
-            DatedPortfolioPerformance(moneyIn: 51, value: 90, date: YearMonthDayDate(2024, 1, 15))
+        let expected2: [DatedPerformance] = [
+            DatedPerformance(moneyIn: 51, value: 60, date: YearMonthDayDate(2024, 1, 10)),
+            DatedPerformance(moneyIn: 51, value: 60, date: YearMonthDayDate(2024, 1, 11)),
+            DatedPerformance(moneyIn: 51, value: 70, date: YearMonthDayDate(2024, 1, 12)),
+            DatedPerformance(moneyIn: 51, value: 70, date: YearMonthDayDate(2024, 1, 13)),
+            DatedPerformance(moneyIn: 51, value: 70, date: YearMonthDayDate(2024, 1, 14)),
+            DatedPerformance(moneyIn: 51, value: 90, date: YearMonthDayDate(2024, 1, 15))
         ]
         XCTAssertEqual(series, expected2)
         XCTAssertEqual(mockPriceService.historicalPriceCallCount[ticker] ?? 0, 1)
@@ -75,13 +75,13 @@ final class HoldingsPerformanceCalculatorTests: XCTestCase {
         let series = try await calculator.performanceSeries(for: [msft1, msft2, aapl], from: start, to: end)
         
         // Then
-        let expected: [DatedPortfolioPerformance] = [
-            DatedPortfolioPerformance(moneyIn: 30,  value: 60,  date: YearMonthDayDate(2024, 1, 10)),
-            DatedPortfolioPerformance(moneyIn: 30,  value: 60,  date: YearMonthDayDate(2024, 1, 11)),
-            DatedPortfolioPerformance(moneyIn: 54,  value: 100, date: YearMonthDayDate(2024, 1, 12)),
-            DatedPortfolioPerformance(moneyIn: 54,  value: 100, date: YearMonthDayDate(2024, 1, 13)),
-            DatedPortfolioPerformance(moneyIn: 156, value: 107, date: YearMonthDayDate(2024, 1, 14)),
-            DatedPortfolioPerformance(moneyIn: 156, value: 132, date: YearMonthDayDate(2024, 1, 15))
+        let expected: [DatedPerformance] = [
+            DatedPerformance(moneyIn: 30,  value: 60,  date: YearMonthDayDate(2024, 1, 10)),
+            DatedPerformance(moneyIn: 30,  value: 60,  date: YearMonthDayDate(2024, 1, 11)),
+            DatedPerformance(moneyIn: 54,  value: 100, date: YearMonthDayDate(2024, 1, 12)),
+            DatedPerformance(moneyIn: 54,  value: 100, date: YearMonthDayDate(2024, 1, 13)),
+            DatedPerformance(moneyIn: 156, value: 107, date: YearMonthDayDate(2024, 1, 14)),
+            DatedPerformance(moneyIn: 156, value: 132, date: YearMonthDayDate(2024, 1, 15))
         ]
         XCTAssertEqual(series, expected)
         // One historical fetch per ticker during prefetch
@@ -94,7 +94,7 @@ final class HoldingsPerformanceCalculatorTests: XCTestCase {
         let end   = YearMonthDayDate(2024, 1, 15)
         let series = try await calculator.performanceSeries(for: [], from: start, to: end)
         // Then
-        let expected: [DatedPortfolioPerformance] = []
+        let expected: [DatedPerformance] = []
         XCTAssertEqual(series, expected)
     }
     
@@ -110,13 +110,13 @@ final class HoldingsPerformanceCalculatorTests: XCTestCase {
         let series = try await calculator.performanceSeries(for: [future], from: start, to: end)
         
         // Then: no contribution
-        let expected: [DatedPortfolioPerformance] = [
-            DatedPortfolioPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 10)),
-            DatedPortfolioPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 11)),
-            DatedPortfolioPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 12)),
-            DatedPortfolioPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 13)),
-            DatedPortfolioPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 14)),
-            DatedPortfolioPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 15))
+        let expected: [DatedPerformance] = [
+            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 10)),
+            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 11)),
+            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 12)),
+            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 13)),
+            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 14)),
+            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 15))
         ]
         XCTAssertEqual(series, expected)
         // Prefetch may still fetch NVDA once
