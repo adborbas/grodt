@@ -101,6 +101,7 @@ func routes(_ app: Application) async throws {
                                                                       performanceRepository: brokerageAccountDailyPerformanceRepository,
                                                                       performanceDTOMapper: DatedPerformanceDTOMapper(),
                                                                       currencyMapper: currencyDTOMapper,
+                                                                      transactionDTOMapper: transactionDTOMapper,
                                                                       currencyRepository: currencyRepository))
     }
     

@@ -18,10 +18,14 @@ class TransactionDTOMapper {
             brokerageAccount = BrokerageAccountInfoDTO(id: try brokerAcc.requireID(),
                                                        brokerageId: try brokerage.requireID(),
                                                        brokerageName: brokerAcc.brokerage.name,
-                                                       displayName: brokerAcc.displayName)
+                                                       displayName: brokerAcc.displayName,
+                                                       baseCurrency: currencyDTOMapper.currency(from: brokerAcc.baseCurrency),
+                                                       performance: PerformanceDTO.zero)
         }
+        let portfolio = try await transaction.$portfolio.get(on: database)
+        
         return TransactionDTO(id: transaction.id?.uuidString ?? "",
-                              portfolioName: transaction.portfolio.name,
+                              portfolioName: portfolio.name,
                               purchaseDate: transaction.purchaseDate,
                               ticker: transaction.ticker,
                               currency: currencyDTOMapper.currency(from: transaction.currency),

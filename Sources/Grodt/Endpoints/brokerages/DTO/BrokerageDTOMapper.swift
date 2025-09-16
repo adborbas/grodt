@@ -16,7 +16,7 @@ struct BrokerageDTOMapper {
     func brokerage(from brokerage: Brokerage) async throws -> BrokerageDTO {
         try await brokerage.$accounts.load(on: database)
         let accountDTOs = try await brokerage.accounts.asyncMap {
-            try await accountDTOMapper.brokerageAccount(from: $0)
+            try await accountDTOMapper.brokerageAccountInfo(from: $0)
         }
         let performance = try await brokerageRepository.performance(for: brokerage.requireID())
         return try BrokerageDTO(
