@@ -19,7 +19,7 @@ enum TestConstant {
     }
     
     enum PerformanceDTOs {
-        static let zero = PerformanceDTO(moneyIn: 0, moneyOut: 0, profit: 0, totalReturn: 0)
+        static let zero = PerformanceDTO.zero
     }
     
     enum Currencies {

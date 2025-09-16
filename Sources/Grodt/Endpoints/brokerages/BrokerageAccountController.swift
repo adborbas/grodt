@@ -7,16 +7,19 @@ struct BrokerageAccountController: RouteCollection {
     private let currencyMapper: CurrencyDTOMapper
     private let performanceDTOMapper: DatedPerformanceDTOMapper
     private let currencyRepository: CurrencyRepository
+    private let transactionDTOMapper: TransactionDTOMapper
     
     init(brokerageAccountRepository: BrokerageAccountRepository,
          performanceRepository: PostgresBrokerageAccountDailyPerformanceRepository,
          performanceDTOMapper: DatedPerformanceDTOMapper,
          currencyMapper: CurrencyDTOMapper,
+         transactionDTOMapper: TransactionDTOMapper,
          currencyRepository: CurrencyRepository) {
         self.brokerageAccountRepository = brokerageAccountRepository
         self.performanceRepository = performanceRepository
         self.performanceDTOMapper = performanceDTOMapper
         self.currencyMapper = currencyMapper
+        self.transactionDTOMapper = transactionDTOMapper
         self.currencyRepository = currencyRepository
     }
 
@@ -32,13 +35,13 @@ struct BrokerageAccountController: RouteCollection {
         }
     }
 
-    private func list(req: Request) async throws -> [BrokerageAccountDTO] {
+    private func list(req: Request) async throws -> [BrokerageAccountInfoDTO] {
         let userID = try req.requireUserID()
         let items = try await brokerageAccountRepository.all(for: userID)
         return try await items.asyncMap { model in
             let performance = try await brokerageAccountRepository.performance(for: model.requireID())
             let brokerage = try await model.$brokerage.get(on: req.db)
-            return BrokerageAccountDTO(
+            return BrokerageAccountInfoDTO(
                 id: try model.requireID(),
                 brokerageId: try brokerage.requireID(),
                 brokerageName: brokerage.name,
@@ -76,20 +79,23 @@ struct BrokerageAccountController: RouteCollection {
                                    brokerageName: brokerage.name,
                                    displayName: model.displayName,
                                    baseCurrency: currencyMapper.currency(from: model.baseCurrency),
-                                   performance: PerformanceDTO.zero)
+                                   performance: PerformanceDTO.zero,
+                                   transacitons: [])
     }
 
     private func detail(req: Request) async throws -> BrokerageAccountDTO {
         let userID = try req.requireUserID()
         let model = try await requireAccount(req, userID: userID)
         let brokerage = try await model.$brokerage.get(on: req.db)
+        let transactions = try await model.$transactions.get(on: req.db)
         let performance = try await brokerageAccountRepository.performance(for: model.requireID())
-        return BrokerageAccountDTO(id: try model.requireID(),
+        return try await BrokerageAccountDTO(id: try model.requireID(),
                                    brokerageId: try brokerage.requireID(),
                                    brokerageName: brokerage.name,
                                    displayName: model.displayName,
                                    baseCurrency: currencyMapper.currency(from: model.baseCurrency),
-                                   performance: performance)
+                                   performance: performance,
+                                   transacitons: transactions.asyncMap { try await transactionDTOMapper.transaction(from: $0) })
     }
 
     private func update(req: Request) async throws -> HTTPStatus {
@@ -131,3 +137,4 @@ struct BrokerageAccountController: RouteCollection {
 }
 
 extension BrokerageAccountDTO: Content { }
+extension BrokerageAccountInfoDTO: Content { }

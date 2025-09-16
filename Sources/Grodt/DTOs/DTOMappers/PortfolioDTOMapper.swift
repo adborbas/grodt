@@ -43,7 +43,7 @@ class PortfolioDTOMapper {
         guard portfolio.$historicalDailyPerformance.value != nil,
               let latest = portfolio.historicalDailyPerformance.max(by: { $0.date < $1.date })
         else {
-            return PerformanceDTO(moneyIn: 0, moneyOut: 0, profit: 0, totalReturn: 0)
+            return PerformanceDTO.zero
         }
 
         let moneyIn = latest.moneyIn
