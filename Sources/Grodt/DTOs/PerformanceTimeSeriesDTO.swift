@@ -1,6 +1,6 @@
 import Foundation
 
-struct PortfolioPerformanceTimeSeriesDTO: Codable, Equatable {
+struct PerformanceTimeSeriesDTO: Codable, Equatable {
     let values: [DatedPerformanceDTO]
 }
 

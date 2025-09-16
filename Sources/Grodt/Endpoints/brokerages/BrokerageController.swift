@@ -7,21 +7,21 @@ struct BrokerageController: RouteCollection {
     private let accounts: BrokerageAccountRepository
     private let currencyMapper: CurrencyDTOMapper
     private let performanceRepository: PostgresBrokerageDailyPerformanceRepository
-    private let performancePointDTOMapper: PerformancePointDTOMapper
+    private let performanceDTOMapper: DatedPerformanceDTOMapper
     
     init(brokerageRepository: BrokerageRepository,
          dtoMapper: BrokerageDTOMapper,
          accounts: BrokerageAccountRepository,
          currencyMapper: CurrencyDTOMapper,
          performanceRepository: PostgresBrokerageDailyPerformanceRepository,
-         performancePointDTOMapper: PerformancePointDTOMapper
+         performanceDTOMapper: DatedPerformanceDTOMapper
     ) {
         self.brokerageRepository = brokerageRepository
         self.dtoMapper = dtoMapper
         self.accounts = accounts
         self.currencyMapper = currencyMapper
         self.performanceRepository = performanceRepository
-        self.performancePointDTOMapper = performancePointDTOMapper
+        self.performanceDTOMapper = performanceDTOMapper
     }
 
     func boot(routes: RoutesBuilder) throws {
@@ -75,12 +75,15 @@ struct BrokerageController: RouteCollection {
         return .noContent
     }
 
-    private func performanceSeries(req: Request) async throws -> [PerformancePointDTO] {
+    private func performanceSeries(req: Request) async throws -> PerformanceTimeSeriesDTO {
         let userID = try req.requireUserID()
         _ = try await requireBrokerage(req, userID: userID)
         let id = try req.parameters.require("id", as: UUID.self)
         let rows = try await performanceRepository.readSeries(for: id, from: nil, to: nil)
-        return rows.map { performancePointDTOMapper.performancePoint(from: $0)  }
+        
+        let values =  rows.map { performanceDTOMapper.performancePoint(from: $0)  }
+            .sorted { $0.date < $1.date }
+        return PerformanceTimeSeriesDTO(values: values)
     }
 
     private func requireBrokerage(_ req: Request, userID: UUID) async throws -> Brokerage {

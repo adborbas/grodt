@@ -32,7 +32,7 @@ struct PortfoliosController: RouteCollection {
             portfolio.put(use: update)
             portfolio.delete(use: delete)
             
-            portfolio.group("historicalPerformance") { pref in
+            portfolio.group("performance") { pref in
                 pref.get(use: historicalPerformance)
             }
         }
@@ -121,7 +121,7 @@ struct PortfoliosController: RouteCollection {
         return .ok
     }
     
-    func historicalPerformance(req: Request) async throws -> PortfolioPerformanceTimeSeriesDTO {
+    func historicalPerformance(req: Request) async throws -> PerformanceTimeSeriesDTO {
         let id = try req.requiredID()
         guard let userID = req.auth.get(User.self)?.id else { throw Abort(.badRequest) }
 
@@ -136,4 +136,4 @@ struct PortfoliosController: RouteCollection {
 
 extension PortfolioDTO: Content { }
 extension PortfolioInfoDTO: Content { }
-extension PortfolioPerformanceTimeSeriesDTO: Content { }
+extension PerformanceTimeSeriesDTO: Content { }

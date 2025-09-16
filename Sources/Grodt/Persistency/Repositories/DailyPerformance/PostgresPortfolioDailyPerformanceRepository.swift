@@ -6,7 +6,7 @@ struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
     
     let db: Database
 
-    func replaceSeries(for ownerID: UUID, with points: [DatedPortfolioPerformance]) async throws {
+    func replaceSeries(for ownerID: UUID, with points: [DatedPerformance]) async throws {
         try await deleteAll(for: ownerID)
         guard !points.isEmpty else { return }
 
@@ -21,7 +21,7 @@ struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
         }
     }
 
-    func upsert(points: [DatedPortfolioPerformance], for ownerID: UUID) async throws {
+    func upsert(points: [DatedPerformance], for ownerID: UUID) async throws {
         guard !points.isEmpty else { return }
 
         // Bound the lookup to a compact date range for efficiency
@@ -55,7 +55,7 @@ struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
         }
     }
 
-    func readSeries(for ownerID: UUID, from: YearMonthDayDate?, to: YearMonthDayDate?) async throws -> [DatedPortfolioPerformance] {
+    func readSeries(for ownerID: UUID, from: YearMonthDayDate?, to: YearMonthDayDate?) async throws -> [DatedPerformance] {
         var query = HistoricalPortfolioPerformanceDaily.query(on: db)
             .filter(\.$portfolio.$id == ownerID)
             .sort(HistoricalPortfolioPerformanceDaily.Keys.date, .ascending)
@@ -64,7 +64,7 @@ struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
         if let to { query = query.filter(\.$date <= to.date) }
 
         let rows = try await query.all()
-        return rows.map { DatedPortfolioPerformance(moneyIn: $0.moneyIn, value: $0.value, date: YearMonthDayDate($0.date)) }
+        return rows.map { DatedPerformance(moneyIn: $0.moneyIn, value: $0.value, date: YearMonthDayDate($0.date)) }
     }
 
     // Delete all rows for a portfolio.

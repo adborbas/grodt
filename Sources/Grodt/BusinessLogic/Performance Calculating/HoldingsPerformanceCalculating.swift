@@ -1,7 +1,7 @@
 import Foundation
 
 protocol HoldingsPerformanceCalculating {
-    func performanceSeries(for transactions: [Transaction], from startDate: YearMonthDayDate, to endDate: YearMonthDayDate) async throws -> [DatedPortfolioPerformance]
+    func performanceSeries(for transactions: [Transaction], from startDate: YearMonthDayDate, to endDate: YearMonthDayDate) async throws -> [DatedPerformance]
 }
 
 struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
@@ -14,7 +14,7 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
         for transactions: [Transaction],
         from startDate: YearMonthDayDate,
         to endDate: YearMonthDayDate
-    ) async throws -> [DatedPortfolioPerformance] {
+    ) async throws -> [DatedPerformance] {
         guard !transactions.isEmpty else { return [] }
         guard endDate >= startDate else { return [] }
 
@@ -36,7 +36,7 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
         var state = Self.initialState(at: startDate, with: sortedTransactions, baselinePrices: baselinePrices)
 
         // 4) Sweep day-by-day, applying new transactions and price-change events.
-        var series: [DatedPortfolioPerformance] = []
+        var series: [DatedPerformance] = []
         series.reserveCapacity(days.count)
 
         for day in days {

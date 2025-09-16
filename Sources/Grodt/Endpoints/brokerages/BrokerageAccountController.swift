@@ -3,11 +3,19 @@ import Fluent
 
 struct BrokerageAccountController: RouteCollection {
     private let brokerageAccountRepository: BrokerageAccountRepository
+    private let performanceRepository: PostgresBrokerageAccountDailyPerformanceRepository
     private let currencyMapper: CurrencyDTOMapper
+    private let performanceDTOMapper: DatedPerformanceDTOMapper
     private let currencyRepository: CurrencyRepository
     
-    init(brokerageAccountRepository: BrokerageAccountRepository, currencyMapper: CurrencyDTOMapper, currencyRepository: CurrencyRepository) {
+    init(brokerageAccountRepository: BrokerageAccountRepository,
+         performanceRepository: PostgresBrokerageAccountDailyPerformanceRepository,
+         performanceDTOMapper: DatedPerformanceDTOMapper,
+         currencyMapper: CurrencyDTOMapper,
+         currencyRepository: CurrencyRepository) {
         self.brokerageAccountRepository = brokerageAccountRepository
+        self.performanceRepository = performanceRepository
+        self.performanceDTOMapper = performanceDTOMapper
         self.currencyMapper = currencyMapper
         self.currencyRepository = currencyRepository
     }
@@ -101,14 +109,16 @@ struct BrokerageAccountController: RouteCollection {
         return .noContent
     }
 
-    private func performanceSeries(req: Request) async throws -> [PerformancePointDTO] {
+    private func performanceSeries(req: Request) async throws -> PerformanceTimeSeriesDTO {
         let userID = try req.requireUserID()
         let account = try await requireAccount(req, userID: userID)
-        let rows = try await HistoricalBrokerageAccountPerformanceDaily.query(on: req.db)
-            .filter(\.$account.$id == account.requireID())
-            .sort(\.$date, .ascending)
-            .all()
-        return rows.map { PerformancePointDTO(date: $0.date, value: $0.value, moneyIn: $0.moneyIn) }
+        let rows = try await performanceRepository.readSeries(for: account.requireID(),
+                                                              from: nil,
+                                                              to: nil)
+        
+        let values =  rows.map { performanceDTOMapper.performancePoint(from: $0)  }
+            .sorted { $0.date < $1.date }
+        return PerformanceTimeSeriesDTO(values: values)
     }
 
     private func requireAccount(_ req: Request, userID: UUID) async throws -> BrokerageAccount {
@@ -121,4 +131,3 @@ struct BrokerageAccountController: RouteCollection {
 }
 
 extension BrokerageAccountDTO: Content { }
-extension PerformancePointDTO: Content { }
