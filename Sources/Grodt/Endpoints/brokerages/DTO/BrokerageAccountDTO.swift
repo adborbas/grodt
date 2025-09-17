@@ -7,5 +7,5 @@ struct BrokerageAccountDTO: Codable {
     let displayName: String
     let baseCurrency: CurrencyDTO
     let performance: PerformanceDTO
-    let transacitons: [TransactionDTO]
+    let transactions: [TransactionDTO]
 }

@@ -80,7 +80,7 @@ struct BrokerageAccountController: RouteCollection {
                                    displayName: model.displayName,
                                    baseCurrency: currencyMapper.currency(from: model.baseCurrency),
                                    performance: PerformanceDTO.zero,
-                                   transacitons: [])
+                                   transactions: [])
     }
 
     private func detail(req: Request) async throws -> BrokerageAccountDTO {
@@ -95,7 +95,7 @@ struct BrokerageAccountController: RouteCollection {
                                    displayName: model.displayName,
                                    baseCurrency: currencyMapper.currency(from: model.baseCurrency),
                                    performance: performance,
-                                   transacitons: transactions.asyncMap { try await transactionDTOMapper.transaction(from: $0) })
+                                   transactions: transactions.asyncMap { try await transactionDTOMapper.transaction(from: $0) })
     }
 
     private func update(req: Request) async throws -> HTTPStatus {
