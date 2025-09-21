@@ -70,7 +70,12 @@ func routes(_ app: Application) async throws {
             .register(collection: UserController(dtoMapper: loginResponseDTOMapper))
         
         // Protected routes
-        let protected = api.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+        let protected = api.grouped([
+            UserTokenCookieAuthenticator(),
+            tokenAuthMiddleware,
+            OriginRefererCheckMiddleware(),
+            guardAuthMiddleware
+        ])
         try protected.register(collection:
                                 PortfoliosController(
                                     portfolioRepository: PostgresPortfolioRepository(database: app.db),
