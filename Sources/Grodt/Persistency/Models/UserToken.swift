@@ -57,12 +57,12 @@ extension UserToken {
 }
 
 extension UserToken: ModelTokenAuthenticatable {
-    static let secondsInHour: Double = 60 * 60
+    static let tokenTTL: TimeInterval = 60 * 60 * 24 * 30 // 30 days
     static let valueKey = \UserToken.$value
     static let userKey = \UserToken.$user
 
     var isValid: Bool {
-        return creationDate.timeIntervalSince1970 + UserToken.secondsInHour > Date().timeIntervalSince1970
+        return creationDate.addingTimeInterval(UserToken.tokenTTL) > Date()
     }
 }
 

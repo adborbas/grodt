@@ -70,7 +70,12 @@ func routes(_ app: Application) async throws {
             .register(collection: UserController(dtoMapper: loginResponseDTOMapper))
         
         // Protected routes
-        let protected = api.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+        let protected = api.grouped([
+            UserTokenCookieAuthenticator(),
+            tokenAuthMiddleware,
+            OriginRefererCheckMiddleware(),
+            guardAuthMiddleware
+        ])
         try protected.register(collection:
                                 PortfoliosController(
                                     portfolioRepository: PostgresPortfolioRepository(database: app.db),
@@ -129,7 +134,7 @@ func routes(_ app: Application) async throws {
         
         let userTokenCleanerJob = UserTokenClearUpJob(userTokenClearing: UserTokenClearer(database: app.db))
         app.queues.schedule(userTokenCleanerJob)
-            .hourly()
+            .daily()
         
         try app.queues.startScheduledJobs()
         try app.queues.startInProcessJobs()

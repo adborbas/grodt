@@ -17,6 +17,17 @@ struct UserController: RouteCollection {
             
             let response = Response(status: .ok)
             response.headers.add(name: .authorization, value: "Bearer \(token.value)")
+            let cookieTTL: TimeInterval = UserToken.tokenTTL
+            response.cookies[UserTokenCookieAuthenticator.tokenName] = .init(
+                string: token.value,
+                expires: Date().addingTimeInterval(cookieTTL),
+                maxAge: Int(cookieTTL),
+                domain: nil,
+                path: "/",
+                isSecure: req.application.environment == .production,
+                isHTTPOnly: true,
+                sameSite: .lax
+            )
             
             return response
         }
