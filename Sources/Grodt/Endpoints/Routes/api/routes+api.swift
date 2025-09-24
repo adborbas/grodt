@@ -48,24 +48,7 @@ func registerApiRoutes(_ app: Application, _ container: AppContainer) throws {
         try protected.register(collection: tickersController)
         try protected.register(collection: investmentsController)
 
-        try protected.register(collection:
-            BrokerageController(
-                brokerageRepository: container.brokerageRepository,
-                dtoMapper: BrokerageDTOMapper(
-                    brokerageRepository: container.brokerageRepository,
-                    accountDTOMapper: BrokerageAccountDTOMapper(
-                        brokerageAccountRepository: container.brokerageAccountRepository,
-                        currencyMapper: container.currencyDTOMapper,
-                        database: app.db
-                    ),
-                    database: app.db
-                ),
-                accounts: container.brokerageAccountRepository,
-                currencyMapper: container.currencyDTOMapper,
-                performanceRepository: container.brokerageDailyPerformanceRepository,
-                performanceDTOMapper: container.performanceDTOMapper
-            )
-        )
+        try protected.register(collection:BrokerageController(service:container.brokerageService))
 
         try protected.register(collection:
             BrokerageAccountController(

@@ -11,7 +11,9 @@ func registerSkiRoutes(_ app: Application, _ container: AppContainer) throws {
             guardAuthMiddleware
         ])
 
-        try protected.register(collection: SkiHomeController(portfolioService: container.portfolioService,
-                                                             accountService: container.accountService))
+        try protected.register(collection: SkiHomeController(
+            portfolioService: container.portfolioService,
+            accountService: container.accountService,
+            brokeragesService: container.brokerageService))
     }
 }

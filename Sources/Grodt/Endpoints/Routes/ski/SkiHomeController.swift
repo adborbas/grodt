@@ -4,11 +4,14 @@ import Fluent
 class SkiHomeController: RouteCollection {
     private let portfolioService: PortfolioService
     private let accountService: AccountService
+    private let brokerageService: BrokerageService
     
     init(portfolioService: PortfolioService,
-         accountService: AccountService) {
+         accountService: AccountService,
+         brokeragesService: BrokerageService) {
         self.portfolioService = portfolioService
         self.accountService = accountService
+        self.brokerageService = brokeragesService
     }
     
     func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -16,7 +19,7 @@ class SkiHomeController: RouteCollection {
         home.get(use: getHome)
     }
     
-    private func getHome(req: Request) async throws -> SkiHomeDTO {
+    private func getHome(req: Request) async throws -> SkiHomeResponseDTO {
         guard let userID = req.auth.get(User.self)?.id else {
             throw Abort(.badRequest)
         }
@@ -24,10 +27,18 @@ class SkiHomeController: RouteCollection {
         let portfolios = try await portfolioService.allPortfolios(userID: userID)
         let userInfo = try await accountService.userInfo(for: userID)
         let performance = try await totalPerformance(of: portfolios)
+        let brokerages = try await brokerageService.allBrokerages(for: userID)
+            .compactMap { BrokerageInfoDTO(id: $0.id,
+                                           name: $0.name,
+                                           value: $0.performance.moneyOut,
+                                           currency: CurrencyDTO(code: "EUR", symbol: "€"),
+                                           accountCount: $0.accounts.count)
+            }
         
-        let response = SkiHomeDTO(user: userInfo,
-                                  performance: performance,
-                                  portfolios: portfolios)
+        let response = SkiHomeResponseDTO(user: userInfo,
+                                          performance: performance,
+                                          portfolios: portfolios,
+                                          brokerages: brokerages)
         return response
     }
     

@@ -2,28 +2,12 @@ import Vapor
 import Fluent
 
 struct BrokerageController: RouteCollection {
-    private let brokerageRepository: BrokerageRepository
-    private let dtoMapper: BrokerageDTOMapper
-    private let accounts: BrokerageAccountRepository
-    private let currencyMapper: CurrencyDTOMapper
-    private let performanceRepository: PostgresBrokerageDailyPerformanceRepository
-    private let performanceDTOMapper: DatedPerformanceDTOMapper
+    private let service: BrokerageService
     
-    init(brokerageRepository: BrokerageRepository,
-         dtoMapper: BrokerageDTOMapper,
-         accounts: BrokerageAccountRepository,
-         currencyMapper: CurrencyDTOMapper,
-         performanceRepository: PostgresBrokerageDailyPerformanceRepository,
-         performanceDTOMapper: DatedPerformanceDTOMapper
-    ) {
-        self.brokerageRepository = brokerageRepository
-        self.dtoMapper = dtoMapper
-        self.accounts = accounts
-        self.currencyMapper = currencyMapper
-        self.performanceRepository = performanceRepository
-        self.performanceDTOMapper = performanceDTOMapper
+    init(service: BrokerageService) {
+        self.service = service
     }
-
+    
     func boot(routes: RoutesBuilder) throws {
         let group = routes.grouped("brokerages")
         group.get(use: list)
@@ -35,64 +19,47 @@ struct BrokerageController: RouteCollection {
             item.get("performance", use: performanceSeries)
         }
     }
-
+    
     private func list(req: Request) async throws -> [BrokerageDTO] {
         let userID = try req.requireUserID()
-        let items = try await brokerageRepository.list(for: userID)
-        return try await items.asyncMap { try await dtoMapper.brokerage(from: $0) }
+        return try await service.allBrokerages(for: userID)
     }
-
+    
     private func create(req: Request) async throws -> BrokerageDTO {
         let userID = try req.requireUserID()
         let input = try req.content.decode(CreateUpdateBrokerageRequestDTO.self)
-        let item = Brokerage(userID: userID, name: input.name)
-        try await brokerageRepository.create(item)
-        return BrokerageDTO(id: try item.requireID(),
-                            name: item.name,
-                            accounts: [],
-                            performance: PerformanceDTO.zero)
+        return try await service.createBrokerage(named: input.name, for: userID)
     }
-
+    
     private func detail(req: Request) async throws -> BrokerageDTO {
         let userID = try req.requireUserID()
-        let brokerage = try await requireBrokerage(req, userID: userID)
-        return try await dtoMapper.brokerage(from: brokerage)
+        let id = try req.requiredID()
+        return try await service.brokerageDetail(id: id, for: userID, on: req.db)
     }
-
+    
     private func update(req: Request) async throws -> HTTPStatus {
         let userID = try req.requireUserID()
-        let brokerage = try await requireBrokerage(req, userID: userID)
+        let id = try req.requiredID()
         let input = try req.content.decode(CreateUpdateBrokerageRequestDTO.self)
-        brokerage.name = input.name
-        try await brokerageRepository.update(brokerage)
+        _ = try await service.updateBrokerage(id: id,
+                                          update: input,
+                                          for: userID)
         return .ok
     }
-
+    
+    
     private func remove(req: Request) async throws -> HTTPStatus {
         let userID = try req.requireUserID()
-        let brokerage = try await requireBrokerage(req, userID: userID)
-        try await brokerageRepository.delete(brokerage)
-        return .noContent
+        let id = try req.requiredID()
+        try await service.deleteBrokerage(id: id, for: userID)
+        return .ok
     }
-
+        
     private func performanceSeries(req: Request) async throws -> PerformanceTimeSeriesDTO {
         let userID = try req.requireUserID()
-        _ = try await requireBrokerage(req, userID: userID)
-        let id = try req.parameters.require("id", as: UUID.self)
-        let rows = try await performanceRepository.readSeries(for: id, from: nil, to: nil)
-        
-        let values =  rows.map { performanceDTOMapper.performancePoint(from: $0)  }
-            .sorted { $0.date < $1.date }
-        return PerformanceTimeSeriesDTO(values: values)
-    }
-
-    private func requireBrokerage(_ req: Request, userID: UUID) async throws -> Brokerage {
-        let id = try req.parameters.require("id", as: UUID.self)
-        guard let model = try await brokerageRepository.find(id, for: userID) else {
-            throw Abort(.notFound)
-        }
-        return model
+        let id = try req.requiredID()
+        return try await service.performance(id: id, for: userID)
     }
 }
 
-extension BrokerageDTO: Content { }
+extension BrokerageDTO: ResponseDTO { }
