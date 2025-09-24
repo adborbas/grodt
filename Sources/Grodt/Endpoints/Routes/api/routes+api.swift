@@ -23,11 +23,6 @@ func registerApiRoutes(_ app: Application, _ container: AppContainer) throws {
             )
         )
 
-        let accountController = AccountController(
-            userRepository: container.userRepository,
-            dataMapper: UserDTOMapper()
-        )
-
         let protected = api.grouped([
             UserTokenCookieAuthenticator(),
             tokenAuthMiddleware,
@@ -36,13 +31,7 @@ func registerApiRoutes(_ app: Application, _ container: AppContainer) throws {
         ])
 
         try protected.register(collection:
-            PortfoliosController(
-                portfolioRepository: container.portfolioRepository,
-                currencyRepository: container.currencyRepository,
-                historicalPortfolioPerformanceUpdater: container.portfolioPerformanceUpdater,
-                portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db),
-                dataMapper: container.portfolioDTOMapper
-            )
+                                PortfoliosController(service: container.portfolioService)
         )
 
         let transactionController = TransactionsController(
@@ -58,7 +47,6 @@ func registerApiRoutes(_ app: Application, _ container: AppContainer) throws {
         try protected.register(collection: transactionController)
         try protected.register(collection: tickersController)
         try protected.register(collection: investmentsController)
-        try protected.register(collection: accountController)
 
         try protected.register(collection:
             BrokerageController(

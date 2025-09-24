@@ -32,6 +32,9 @@ struct AppContainer {
     // Calculators / updaters
     let performanceCalculator: HoldingsPerformanceCalculating
     let portfolioPerformanceUpdater: PortfolioPerformanceUpdater
+    
+    let portfolioService: PortfolioService
+    let accountService: AccountService
 }
 
 func buildAppContainer(_ app: Application) async throws -> AppContainer {
@@ -91,6 +94,14 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         performanceCalculator: performanceCalculator,
         portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db),
     )
+    
+    let portfolioService = PortfolioService(portfolioRepository: portfolioRepository,
+                                            currencyRepository: currencyRepository,
+                                            historicalPortfolioPerformanceUpdater: portfolioPerformanceUpdater,
+                                            portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db),
+                                            dataMapper: portfolioDTOMapper)
+    
+    let accountService = AccountService(userRepository: userRepository, userDataMapper: UserDTOMapper())
 
     return AppContainer(
         alphavantage: alphavantage,
@@ -113,7 +124,9 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         brokerageDailyPerformanceRepository: brokerageDailyPerformanceRepository,
         currencyRepository: currencyRepository,
         performanceCalculator: performanceCalculator,
-        portfolioPerformanceUpdater: portfolioPerformanceUpdater
+        portfolioPerformanceUpdater: portfolioPerformanceUpdater,
+        portfolioService: portfolioService,
+        accountService: accountService
     )
 }
 
