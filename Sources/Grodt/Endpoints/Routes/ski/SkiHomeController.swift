@@ -26,7 +26,7 @@ class SkiHomeController: RouteCollection {
         
         let portfolios = try await portfolioService.allPortfolios(userID: userID)
         let userInfo = try await accountService.userInfo(for: userID)
-        let performance = try await totalPerformance(of: portfolios)
+        let networth = try await totalPerformance(of: portfolios)
         let brokerages = try await brokerageService.allBrokerages(for: userID)
             .compactMap { BrokerageInfoDTO(id: $0.id,
                                            name: $0.name,
@@ -36,7 +36,7 @@ class SkiHomeController: RouteCollection {
             }
         
         let response = SkiHomeResponseDTO(user: userInfo,
-                                          performance: performance,
+                                          networth: networth,
                                           portfolios: portfolios,
                                           brokerages: brokerages)
         return response
