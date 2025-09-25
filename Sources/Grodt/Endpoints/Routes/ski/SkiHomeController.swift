@@ -5,13 +5,16 @@ class SkiHomeController: RouteCollection {
     private let portfolioService: PortfolioService
     private let accountService: AccountService
     private let brokerageService: BrokerageService
+    private let investmentService: InvestmentService
     
     init(portfolioService: PortfolioService,
          accountService: AccountService,
-         brokeragesService: BrokerageService) {
+         brokeragesService: BrokerageService,
+         investmentService: InvestmentService) {
         self.portfolioService = portfolioService
         self.accountService = accountService
         self.brokerageService = brokeragesService
+        self.investmentService = investmentService
     }
     
     func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -34,11 +37,13 @@ class SkiHomeController: RouteCollection {
                                            currency: CurrencyDTO(code: "EUR", symbol: "€"),
                                            accountCount: $0.accounts.count)
             }
+        let investments = try await investmentService.allInvestments(for: userID)
         
         let response = SkiHomeResponseDTO(user: userInfo,
                                           networth: networth,
                                           portfolios: portfolios,
-                                          brokerages: brokerages)
+                                          brokerages: brokerages,
+                                          investments: investments)
         return response
     }
     

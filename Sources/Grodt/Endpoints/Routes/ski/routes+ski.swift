@@ -14,6 +14,7 @@ func registerSkiRoutes(_ app: Application, _ container: AppContainer) throws {
         try protected.register(collection: SkiHomeController(
             portfolioService: container.portfolioService,
             accountService: container.accountService,
-            brokeragesService: container.brokerageService))
+            brokeragesService: container.brokerageService,
+            investmentService: container.investmentService))
     }
 }

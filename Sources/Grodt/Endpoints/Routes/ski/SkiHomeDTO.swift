@@ -3,4 +3,5 @@ struct SkiHomeResponseDTO: ResponseDTO {
     let networth: PerformanceDTO
     let portfolios: [PortfolioInfoDTO]
     let brokerages: [BrokerageInfoDTO]
+    let investments: [InvestmentDTO]
 }

@@ -36,6 +36,7 @@ struct AppContainer {
     let portfolioService: PortfolioService
     let accountService: AccountService
     let brokerageService: BrokerageService
+    let investmentService: InvestmentService
 }
 
 func buildAppContainer(_ app: Application) async throws -> AppContainer {
@@ -120,6 +121,17 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         performanceRepository: brokerageDailyPerformanceRepository,
         performanceDTOMapper: performanceDTOMapper
     )
+    
+    let investmentService = InvestmentService(
+        portfolioRepository: portfolioRepository,
+        dataMapper: InvestmentDTOMapper(
+            currencyDTOMapper: currencyDTOMapper,
+            transactionDTOMapper: transactionDTOMapper,
+            tickerRepository: tickerRepository,
+            priceService: priceService
+        )
+    )
+        
 
     return AppContainer(
         alphavantage: alphavantage,
@@ -145,7 +157,8 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         portfolioPerformanceUpdater: portfolioPerformanceUpdater,
         portfolioService: portfolioService,
         accountService: accountService,
-        brokerageService: brokerageService
+        brokerageService: brokerageService,
+        investmentService: investmentService
     )
 }
 

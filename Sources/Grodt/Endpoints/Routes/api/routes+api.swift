@@ -13,15 +13,7 @@ func registerApiRoutes(_ app: Application, _ container: AppContainer) throws {
         let tickerChangeHandler = TickerChangeHandler(priceService: container.priceService)
         tickersController.delegate = tickerChangeHandler
 
-        let investmentsController = InvestmentController(
-            portfolioRepository: container.portfolioRepository,
-            dataMapper: InvestmentDTOMapper(
-                currencyDTOMapper: container.currencyDTOMapper,
-                transactionDTOMapper: container.transactionDTOMapper,
-                tickerRepository: container.tickerRepository,
-                priceService: container.priceService
-            )
-        )
+        let investmentsController = InvestmentController(serivce: container.investmentService)
 
         let protected = api.grouped([
             UserTokenCookieAuthenticator(),
