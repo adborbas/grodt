@@ -1,7 +1,7 @@
 import Vapor
 
 func registerSkiRoutes(_ app: Application, _ container: AppContainer) throws {
-    try app.group("ski") { ski in
+    try app.group("ski", "v1") { ski in
         let tokenAuthMiddleware = UserToken.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
         let protected = ski.grouped([
