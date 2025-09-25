@@ -1,7 +1,7 @@
 import Vapor
 import Fluent
 
-class SkiHomeController: RouteCollection {
+class HomeRoute: RouteCollection {
     private let portfolioService: PortfolioService
     private let accountService: AccountService
     private let brokerageService: BrokerageService
@@ -19,10 +19,10 @@ class SkiHomeController: RouteCollection {
     
     func boot(routes: any Vapor.RoutesBuilder) throws {
         let home = routes.grouped("home")
-        home.get(use: getHome)
+        home.get(use: `get`)
     }
     
-    private func getHome(req: Request) async throws -> SkiHomeResponseDTO {
+    private func get(req: Request) async throws -> HomeResponseDTO {
         guard let userID = req.auth.get(User.self)?.id else {
             throw Abort(.badRequest)
         }
@@ -39,7 +39,7 @@ class SkiHomeController: RouteCollection {
             }
         let investments = try await investmentService.allInvestments(for: userID)
         
-        let response = SkiHomeResponseDTO(user: userInfo,
+        let response = HomeResponseDTO(user: userInfo,
                                           networth: networth,
                                           portfolios: portfolios,
                                           brokerages: brokerages,

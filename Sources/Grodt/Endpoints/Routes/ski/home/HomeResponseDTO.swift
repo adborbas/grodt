@@ -1,4 +1,4 @@
-struct SkiHomeResponseDTO: ResponseDTO {
+struct HomeResponseDTO: ResponseDTO {
     let user: UserInfoDTO
     let networth: PerformanceDTO
     let portfolios: [PortfolioInfoDTO]
