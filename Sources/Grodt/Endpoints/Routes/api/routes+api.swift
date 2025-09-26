@@ -21,11 +21,7 @@ func registerApiRoutes(_ app: Application, _ container: AppContainer) throws {
             OriginRefererCheckMiddleware(),
             guardAuthMiddleware
         ])
-
-        try protected.register(collection:
-                                PortfoliosController(service: container.portfolioService)
-        )
-
+        
         let transactionController = TransactionsController(
             transactionsRepository: container.transactionRepository,
             currencyRepository: container.currencyRepository,

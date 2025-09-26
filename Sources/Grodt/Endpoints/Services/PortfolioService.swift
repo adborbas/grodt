@@ -51,21 +51,14 @@ class PortfolioService {
         return try await dataMapper.portfolio(from: portfolio)
     }
     
-    func update(for id: Portfolio.IDValue,
-                request: UpdatePortfolioRequestDTO,
-                userID: User.IDValue) async throws -> PortfolioDTO {
+    func updateName(with id: Portfolio.IDValue,
+                    forUser userID: User.IDValue,
+                    newName: String,) async throws -> PortfolioDTO {
         guard let portfolio = try await portfolioRepository.portfolio(for: userID, with: id) else {
             throw Abort(.notFound)
         }
         
-        portfolio.name = request.name
-        
-        if portfolio.currency.code != request.currency {
-            guard let newCurrency = try await currencyRepository.currency(for: request.currency) else {
-                throw Abort(.badRequest)
-            }
-            portfolio.currency = newCurrency
-        }
+        portfolio.name = newName
         
         let updatedPortfolio = try await portfolioRepository.update(portfolio)
         return try await dataMapper.portfolio(from: updatedPortfolio)
