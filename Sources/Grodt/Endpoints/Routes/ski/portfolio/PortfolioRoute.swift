@@ -14,7 +14,7 @@ class PortfolioRoute: RouteCollection {
         
         portfolios.group(":id") { portfolio in
             portfolio.get(use: `get`)
-            portfolio.patch("name", use: updateName)
+            portfolio.patch(use: updateName)
             portfolio.delete(use: delete)
         }
     }
