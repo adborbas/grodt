@@ -53,7 +53,7 @@ class PortfolioService {
     
     func updateName(with id: Portfolio.IDValue,
                     forUser userID: User.IDValue,
-                    newName: String,) async throws -> PortfolioDTO {
+                    newName: String) async throws -> PortfolioDTO {
         guard let portfolio = try await portfolioRepository.portfolio(for: userID, with: id) else {
             throw Abort(.notFound)
         }

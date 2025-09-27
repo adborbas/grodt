@@ -97,7 +97,7 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         quoteCache: quoteCache,
         priceService: priceService,
         performanceCalculator: performanceCalculator,
-        portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db),
+        portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db)
     )
     
     let portfolioService = PortfolioService(portfolioRepository: portfolioRepository,
