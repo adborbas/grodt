@@ -37,6 +37,9 @@ struct AppContainer {
     let accountService: AccountService
     let brokerageService: BrokerageService
     let investmentService: InvestmentService
+    let transactionService: TransactionService
+    let tickersService: TickersService
+    let brokerageAccountsService: BrokerageAccountsService
 }
 
 func buildAppContainer(_ app: Application) async throws -> AppContainer {
@@ -114,12 +117,12 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
                 currencyMapper: currencyDTOMapper,
                 database: app.db
             ),
+            performanceRepository: brokerageDailyPerformanceRepository,
+            performanceDTOMapper: performanceDTOMapper,
             database: app.db
         ),
         accounts: brokerageAccountRepository,
-        currencyMapper: currencyDTOMapper,
-        performanceRepository: brokerageDailyPerformanceRepository,
-        performanceDTOMapper: performanceDTOMapper
+        currencyMapper: currencyDTOMapper
     )
     
     let investmentService = InvestmentService(
@@ -130,6 +133,29 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
             tickerRepository: tickerRepository,
             priceService: priceService
         )
+    )
+    
+    let transactionService = TransactionService(transactionsRepository: transactionRepository,
+                                                currencyRepository: currencyRepository,
+                                                dataMapper: transactionDTOMapper)
+    
+    let tickersService = TickersService(
+        tickerRepository: tickerRepository,
+        dataMapper: tickerDTOMapper,
+        tickerService: alphavantage
+    )
+    
+    let tickerChangeHandler = TickerChangeHandler(priceService: priceService)
+    tickersService.delegate = tickerChangeHandler
+    
+    let brokerageAccountsService = BrokerageAccountsService(
+        brokerageRepository: brokerageRepository,
+        brokerageAccountRepository: brokerageAccountRepository,
+        performanceRepository: brokerageAccountDailyPerformanceRepository,
+        performanceDTOMapper: performanceDTOMapper,
+        currencyMapper: currencyDTOMapper,
+        transactionDTOMapper: transactionDTOMapper,
+        currencyRepository: currencyRepository
     )
         
 
@@ -158,7 +184,10 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         portfolioService: portfolioService,
         accountService: accountService,
         brokerageService: brokerageService,
-        investmentService: investmentService
+        investmentService: investmentService,
+        transactionService: transactionService,
+        tickersService: tickersService,
+        brokerageAccountsService: brokerageAccountsService
     )
 }
 

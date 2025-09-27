@@ -9,7 +9,7 @@ protocol TransactionsControllerDelegate: AnyObject {
     func transactionDeleted(_ transaction: Transaction) async throws
 }
 
-class TransactionsController: RouteCollection {
+class TransactionsRoute: RouteCollection {
     private let transactionsRepository: TransactionsRepository
     private let currencyRepository: CurrencyRepository
     private let dataMapper: TransactionDTOMapper
@@ -25,39 +25,12 @@ class TransactionsController: RouteCollection {
     
     func boot(routes: Vapor.RoutesBuilder) throws {
         let transactions = routes.grouped("transactions")
-        transactions.post(use: create)
         
         transactions.group(":id") { transaction in
             transaction.get(use: transactionDetail)
             transaction.delete(use: delete)
             transaction.patch("brokerage-account", use: updateBrokerageAccount)
         }
-    }
-    
-    private func create(req: Request) async throws -> TransactionDTO {
-        let transaction = try req.content.decode(CreateTransactionRequestDTO.self)
-        guard let currency = try await currencyRepository.currency(for: transaction.currency) else {
-            throw Abort(.badRequest)
-        }
-        
-        let brokerageAccountId: UUID? = {
-            guard let id = transaction.brokerageAccountID else { return nil }
-            return UUID(uuidString: id)
-        }()
-        
-        
-        let newTransaction = Transaction(portfolioID: UUID(uuidString: transaction.portfolio)!,
-                                         brokerageAccountID: brokerageAccountId,
-                                         purchaseDate: transaction.purchaseDate,
-                                         ticker: transaction.ticker,
-                                         currency: currency,
-                                         fees: transaction.fees,
-                                         numberOfShares: transaction.numberOfShares,
-                                         pricePerShareAtPurchase: transaction.pricePerShare)
-        
-        try await newTransaction.save(on: req.db)
-        try await delegate?.transactionCreated(newTransaction)
-        return try await dataMapper.transaction(from: newTransaction)
     }
     
     private func transactionDetail(req: Request) async throws -> TransactionDTO {

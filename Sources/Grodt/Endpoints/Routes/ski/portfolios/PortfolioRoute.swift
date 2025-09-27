@@ -3,19 +3,33 @@ import Fluent
 
 class PortfolioRoute: RouteCollection {
     private let service: PortfolioService
+    private let transactionService: TransactionService
+    private let tickersService: TickersService
+    private let brokerageService: BrokerageService
     
-    init(service: PortfolioService) {
+    init(service: PortfolioService,
+         transactionService: TransactionService,
+         tickersService: TickersService,
+         brokerageService: BrokerageService) {
         self.service = service
+        self.transactionService = transactionService
+        self.tickersService = tickersService
+        self.brokerageService = brokerageService
     }
     
     func boot(routes: any Vapor.RoutesBuilder) throws {
-        let portfolios = routes.grouped("portfolio")
+        let portfolios = routes.grouped("portfolios")
         portfolios.post(use: create)
         
         portfolios.group(":id") { portfolio in
             portfolio.get(use: `get`)
             portfolio.patch(use: updateName)
             portfolio.delete(use: delete)
+            
+            portfolio.group("transactions") { transactions in
+                transactions.post(use: createTransaction)
+                transactions.get("options", use: getTransactionOptions)
+            }
         }
     }
     
@@ -68,4 +82,25 @@ class PortfolioRoute: RouteCollection {
         return try await service.delete(for: id, userID: userID)
     }
     
+    private func createTransaction(req: Request) async throws -> TransactionDTO {
+        let portfolioID = try req.requiredID()
+        let transaction = try req.content.decode(CreateTransactionRequestDTO.self)
+        return try await transactionService.create(transaction, on: portfolioID)
+    }
+    
+    private func getTransactionOptions(req: Request) async throws -> CreateTransactionOptionsDTO {
+        guard let userID = req.auth.get(User.self)?.id else {
+            throw Abort(.badRequest)
+        }
+        
+        let tickers = try await tickersService.allTickers()
+        let brokerages = try await brokerageService.allBrokerages(for: userID)
+        return CreateTransactionOptionsDTO(tickers: tickers,
+                                           brokerages: brokerages)
+    }
+}
+
+struct CreateTransactionOptionsDTO: ResponseDTO {
+    let tickers: [TickerDTO]
+    let brokerages: [BrokerageDTO]
 }

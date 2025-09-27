@@ -6,21 +6,15 @@ struct BrokerageService {
     private let dtoMapper: BrokerageDTOMapper
     private let accountsRepository: BrokerageAccountRepository
     private let currencyMapper: CurrencyDTOMapper
-    private let performanceRepository: PostgresBrokerageDailyPerformanceRepository
-    private let performanceDTOMapper: DatedPerformanceDTOMapper
     
     init(brokerageRepository: BrokerageRepository,
          dtoMapper: BrokerageDTOMapper,
          accounts: BrokerageAccountRepository,
-         currencyMapper: CurrencyDTOMapper,
-         performanceRepository: PostgresBrokerageDailyPerformanceRepository,
-         performanceDTOMapper: DatedPerformanceDTOMapper) {
+         currencyMapper: CurrencyDTOMapper) {
         self.brokerageRepository = brokerageRepository
         self.dtoMapper = dtoMapper
         self.accountsRepository = accounts
         self.currencyMapper = currencyMapper
-        self.performanceRepository = performanceRepository
-        self.performanceDTOMapper = performanceDTOMapper
     }
     
     func allBrokerages(for userID: UUID) async throws -> [BrokerageDTO] {
@@ -60,14 +54,5 @@ struct BrokerageService {
             throw Abort(.notFound)
         }
         try await brokerageRepository.delete(brokerage)
-    }
-    
-    func performance(id: UUID,
-                     for userID: UUID) async throws -> PerformanceTimeSeriesDTO {
-        let rows = try await performanceRepository.readSeries(for: id, from: nil, to: nil)
-        
-        let values =  rows.map { performanceDTOMapper.performancePoint(from: $0)  }
-            .sorted { $0.date < $1.date }
-        return PerformanceTimeSeriesDTO(values: values)
     }
 }

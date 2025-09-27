@@ -1,7 +1,7 @@
 import Vapor
 import Fluent
 
-class InvestmentController: RouteCollection {
+class InvestmentRoute: RouteCollection {
     private let serivce: InvestmentService
     
     init(serivce: InvestmentService) {

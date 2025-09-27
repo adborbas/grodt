@@ -1,22 +1,28 @@
 import Vapor
 import Fluent
 
-struct BrokerageController: RouteCollection {
+struct BrokeragesRoute: RouteCollection {
     private let service: BrokerageService
+    private let accountsService: BrokerageAccountsService
     
-    init(service: BrokerageService) {
+    init(service: BrokerageService,
+         accountsService: BrokerageAccountsService) {
         self.service = service
+        self.accountsService = accountsService
     }
     
     func boot(routes: RoutesBuilder) throws {
-        let group = routes.grouped("brokerages")
-        group.get(use: list)
-        group.post(use: create)
-        group.group(":id") { item in
-            item.get(use: detail)
-            item.put(use: update)
-            item.delete(use: remove)
-            item.get("performance", use: performanceSeries)
+        let brokerages = routes.grouped("brokerages")
+        brokerages.get(use: list)
+        brokerages.post(use: create)
+        brokerages.group(":id") { brokerage in
+            brokerage.get(use: detail)
+            brokerage.put(use: update)
+            brokerage.delete(use: remove)
+            
+            brokerage.group("accounts") { accounts in
+                accounts.post(use: createAccount)
+            }
         }
     }
     
@@ -47,18 +53,18 @@ struct BrokerageController: RouteCollection {
         return .ok
     }
     
-    
     private func remove(req: Request) async throws -> HTTPStatus {
         let userID = try req.requireUserID()
         let id = try req.requiredID()
         try await service.deleteBrokerage(id: id, for: userID)
         return .ok
     }
-        
-    private func performanceSeries(req: Request) async throws -> PerformanceTimeSeriesDTO {
+    
+    private func createAccount(req: Request) async throws -> BrokerageAccountDTO {
         let userID = try req.requireUserID()
-        let id = try req.requiredID()
-        return try await service.performance(id: id, for: userID)
+        let brokerageID = try req.requiredID()
+        let input = try req.content.decode(CreateBrokerageAccountDTO.self)
+        return try await accountsService.create(input, on: brokerageID, for: userID)
     }
 }
 

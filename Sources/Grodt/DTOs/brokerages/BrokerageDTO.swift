@@ -5,4 +5,5 @@ struct BrokerageDTO: Codable {
     let name: String
     let accounts: [BrokerageAccountInfoDTO]
     let performance: PerformanceDTO
+    let historicalPerformance: PerformanceTimeSeriesDTO
 }
