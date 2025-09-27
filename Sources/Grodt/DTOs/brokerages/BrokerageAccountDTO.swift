@@ -8,4 +8,5 @@ struct BrokerageAccountDTO: Codable {
     let baseCurrency: CurrencyDTO
     let performance: PerformanceDTO
     let transactions: [TransactionDTO]
+    let historicalPerformance: PerformanceTimeSeriesDTO
 }

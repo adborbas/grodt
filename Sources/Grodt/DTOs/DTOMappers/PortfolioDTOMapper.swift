@@ -20,7 +20,9 @@ class PortfolioDTOMapper {
     func portfolio(from portfolio: Portfolio) async throws -> PortfolioDTO {
         
         let investments = try await investmentDTOMapper.investments(from: portfolio.transactions)
-        let transactions = try await portfolio.transactions.asyncMap { try await transactionDTOMapper.transaction(from: $0) }
+        let transactions = try await portfolio.transactions
+            .sorted { $0.purchaseDate > $1.purchaseDate }
+            .asyncMap { try await transactionDTOMapper.transaction(from: $0) }
         return try await  PortfolioDTO(id: portfolio.id?.uuidString ?? "",
                                        name: portfolio.name,
                                        currency: currencyDTOMapper.currency(from: portfolio.currency),

@@ -4,6 +4,7 @@ import Foundation
 protocol TransactionsRepository {
     func transaction(for id: UUID) async throws -> Transaction?
     func all(for userID: User.IDValue) async throws -> [Transaction]
+    func save(_ transaction: Transaction) async throws
 }
 
 class PostgresTransactionRepository: TransactionsRepository {
@@ -28,5 +29,9 @@ class PostgresTransactionRepository: TransactionsRepository {
             .with(\.$brokerageAccount)
             .sort(\.$purchaseDate, .descending)
             .all()
+    }
+    
+    func save(_ transaction: Transaction) async throws {
+        _ = try await transaction.save(on: database)
     }
 }
