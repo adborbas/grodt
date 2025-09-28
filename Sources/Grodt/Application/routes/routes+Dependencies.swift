@@ -195,6 +195,7 @@ func installGlobalMiddleware(_ app: Application) {
     let globalRateLimiter = RateLimiterMiddleware(maxRequests: 100, perSeconds: 60)
     app.middleware.use(app.sessions.middleware)
     app.middleware.use(globalRateLimiter)
+    app.middleware.use(AccessLogMiddleware(app: app))
 }
 
 func scheduleNightlyJobs(_ app: Application, _ container: AppContainer) throws {
