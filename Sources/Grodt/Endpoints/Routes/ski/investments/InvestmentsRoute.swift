@@ -1,14 +1,11 @@
 import Vapor
 import Fluent
 
-struct InvestmentController: RouteCollection {
-    private let portfolioRepository: PortfolioRepository
-    private let dataMapper: InvestmentDTOMapper
+class InvestmentRoute: RouteCollection {
+    private let serivce: InvestmentService
     
-    init(portfolioRepository: PortfolioRepository,
-         dataMapper: InvestmentDTOMapper) {
-        self.portfolioRepository = portfolioRepository
-        self.dataMapper = dataMapper
+    init(serivce: InvestmentService) {
+        self.serivce = serivce
     }
     
     func boot(routes: Vapor.RoutesBuilder) throws {
@@ -25,10 +22,7 @@ struct InvestmentController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        let transactions = try await portfolioRepository.allPortfolios(for: userID)
-            .flatMap { $0.transactions }
-        
-        return try await dataMapper.investments(from: transactions)
+        return try await serivce.allInvestments(for: userID)
     }
     
     func invesetmentDetail(req: Request) async throws -> InvestmentDetailDTO {
@@ -38,11 +32,7 @@ struct InvestmentController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        let portfolios = try await portfolioRepository.allPortfolios(for: userID)
-        let transactions = portfolios
-            .flatMap { $0.transactions }
-            .filter { $0.ticker == ticker }
-        return try await dataMapper.investmentDetail(from: transactions)
+        return try await serivce.investmentDetail(for: ticker, userID: userID)
     }
 }
 

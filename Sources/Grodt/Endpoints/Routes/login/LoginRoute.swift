@@ -1,7 +1,7 @@
 import Vapor
 import Fluent
 
-struct UserController: RouteCollection {
+struct LoginRoute: RouteCollection {
     private let dtoMapper: LoginResponseDTOMapper
     
     init(dtoMapper: LoginResponseDTOMapper) {

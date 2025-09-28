@@ -21,6 +21,7 @@ class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
         let query = BrokerageAccount.query(on: database)
             .join(Brokerage.self, on: \BrokerageAccount.$brokerage.$id == \Brokerage.$id)
             .filter(Brokerage.self, \.$user.$id == userID)
+            .with(\.$brokerage)
         return try await query.all()
     }
     
