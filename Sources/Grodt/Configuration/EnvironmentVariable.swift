@@ -16,6 +16,12 @@ extension Int: EnvironmentVariableConvertible {
     }
 }
 
+extension Bool: EnvironmentVariableConvertible {
+    static func convert(from environmentString: String) -> Bool? {
+        return environmentString.lowercased() == "true"
+    }
+}
+
 extension Optional<Int>: EnvironmentVariableConvertible {
     static func convert(from environmentString: String) -> Optional<Int>? {
         return Int(environmentString)
