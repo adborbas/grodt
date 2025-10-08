@@ -11,9 +11,10 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
         .package(url: "https://github.com/JohnSundell/CollectionConcurrencyKit.git", from: "0.1.0"),
-        .package(url: "https://github.com/adborbas/alphaswiftage.git", from: "0.5.0"),
+        .package(url: "https://github.com/adborbas/alphaswiftage.git", .upToNextMajor(from: "0.5.0")),
         .package(url: "https://github.com/vapor/fluent-sqlite-driver.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.0.0"),
+        .package(url: "https://github.com/adborbas/MailjetKit.git", .upToNextMajor(from: "0.1.0"))
     ],
     targets: [
         .executableTarget(
@@ -26,6 +27,7 @@ let package = Package(
                 .product(name: "CollectionConcurrencyKit", package: "CollectionConcurrencyKit"),
                 .product(name: "AlphaSwiftage", package: "alphaswiftage"),
                 .product(name: "QueuesRedisDriver", package: "queues-redis-driver"),
+                .product(name: "MailjetKit", package: "MailjetKit"),
             ]
         ),
         .testTarget(name: "GrodtTests", dependencies: [
