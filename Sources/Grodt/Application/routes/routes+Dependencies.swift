@@ -236,3 +236,15 @@ func scheduleNightlyJobs(_ app: Application, _ container: AppContainer) throws {
     try app.queues.startScheduledJobs()
     try app.queues.startInProcessJobs()
 }
+
+func scheduleBackups(_ app: Application, _ container: AppContainer) throws {
+    if app.environment == .testing { return }
+    let transactionBackup = TransactionsBackup(transactionsService: container.transactionService,
+                                               userRepository: container.userRepository)
+
+    let backupJob = BackupJob(transactionsBackup: transactionBackup)
+
+    app.queues.schedule(backupJob)
+        .daily()
+        .at(15, 45)
+}
