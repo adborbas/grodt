@@ -17,6 +17,10 @@ class AccountRoute: RouteCollection {
         account.group("detail") { me in
             me.get(use: userDetail)
         }
+
+        account.group("preferences") { preferences in
+
+        }
     }
 
     func userInfo(req: Request) async throws -> UserInfoDTO {

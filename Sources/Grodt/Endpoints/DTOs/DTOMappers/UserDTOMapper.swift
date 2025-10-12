@@ -25,10 +25,10 @@ final class UserDTOMapper {
 final class UserPreferencesDTOMapper {
     func userPreferences(from preferences: UserPreferencesPayload) -> UserPreferencesDTO {
         var mailjetPreferencesDTO: MailjetPreferencesDTO?
-        if let mailjetPreferences = preferences.mailjetPreferences {
+        if let mailjetPreferences = preferences.transactionBackup.configuration {
             mailjetPreferencesDTO = MailjetPreferencesDTO(senderEmail: mailjetPreferences.senderEmail, senderName: mailjetPreferences.senderName)
         }
-        return UserPreferencesDTO(isTransactionsBackupEnabled: preferences.isTransactionsBackupEnabled,
-                                  mailjetPreferences: mailjetPreferencesDTO)
+        return UserPreferencesDTO(transactionsBackup: UserPreferencesDTO.TransactionsBackupDTO(isEnabled: preferences.transactionBackup.isEnabled,
+                                                                                               mailjetPreferences: mailjetPreferencesDTO))
     }
 }

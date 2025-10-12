@@ -23,9 +23,9 @@ class TransactionsBackup {
         let users = try await userRepository.allUsers()
         for user in users {
             let preferences = try await user.requirePreferences(on: userRepository.database)
-            guard preferences.isTransactionsBackupEnabled,
+            guard preferences.transactionBackup.isEnabled,
                   let secrets = try await user.requireSecrets(on: userRepository.database).mailjet,
-                  let config = preferences.mailjetPreferences
+                  let config = preferences.transactionBackup.configuration
             else { continue }
 
 
