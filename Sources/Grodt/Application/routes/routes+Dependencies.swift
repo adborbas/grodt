@@ -232,9 +232,6 @@ func scheduleNightlyJobs(_ app: Application, _ container: AppContainer) throws {
     let userTokenCleanerJob = UserTokenClearUpJob(userTokenClearing: UserTokenClearer(database: app.db))
     app.queues.schedule(userTokenCleanerJob)
         .daily()
-
-    try app.queues.startScheduledJobs()
-    try app.queues.startInProcessJobs()
 }
 
 func scheduleBackups(_ app: Application, _ container: AppContainer) throws {
@@ -245,6 +242,7 @@ func scheduleBackups(_ app: Application, _ container: AppContainer) throws {
     let backupJob = BackupJob(transactionsBackup: transactionBackup)
 
     app.queues.schedule(backupJob)
-        .daily()
-        .at(15, 45)
+        .weekly()
+        .on(.sunday)
+        .at(22, 0)
 }
