@@ -19,7 +19,7 @@ class AccountService {
     }
 
     func userDetail(for userID: User.IDValue) async throws -> UserDetailDTO {
-        guard let user = try await userRepository.user(for: userID) else {
+        guard let user = try await userRepository.user(for: userID, with: [.preferences]) else {
             throw Abort(.notFound)
         }
 

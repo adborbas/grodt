@@ -91,13 +91,11 @@ extension User: ModelAuthenticatable {
 
 extension User {
 
-    func requirePreferences(on db: Database) async throws -> UserPreferencesPayload {
-        try await self.$preferences.load(on: db)
-        return self.preferences!.data
+    var requiredPreferences: UserPreferencesPayload {
+        return preferences!.data
     }
 
-    func requireSecrets(on db: Database) async throws -> UserSecretsPayload {
-        try await self.$secrets.load(on: db)
-        return self.secrets!.data
+    var requiredSecrets: UserSecretsPayload {
+        return secrets!.data
     }
 }

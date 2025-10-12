@@ -1,12 +1,9 @@
 import FluentKit
 
 final class UserDTOMapper {
-    private let database: Database
     private let preferencesMapper: UserPreferencesDTOMapper
 
-    init(database: Database,
-         preferencesMapper: UserPreferencesDTOMapper) {
-        self.database = database
+    init(preferencesMapper: UserPreferencesDTOMapper) {
         self.preferencesMapper = preferencesMapper
     }
 
@@ -15,7 +12,7 @@ final class UserDTOMapper {
     }
 
     func userDetail(from user: User) async throws -> UserDetailDTO {
-        let preferences = try await user.requirePreferences(on: database)
+        let preferences = user.requiredPreferences
         return try await UserDetailDTO(name: user.name,
                              email: user.email,
                              preferences: preference(from: preferences))

@@ -20,11 +20,11 @@ class TransactionsBackup {
     }
 
     func backup() async throws {
-        let users = try await userRepository.allUsers()
+        let users = try await userRepository.allUsers(with: [.preferences, .secrets])
         for user in users {
-            let preferences = try await user.requirePreferences(on: userRepository.database)
+            let preferences = user.requiredPreferences
             guard preferences.transactionBackup.isEnabled,
-                  let secrets = try await user.requireSecrets(on: userRepository.database).mailjet,
+                  let secrets = user.requiredSecrets.mailjet,
                   let config = preferences.transactionBackup.configuration
             else { continue }
 
