@@ -58,12 +58,10 @@ extension UserSecret {
     }
 }
 
-struct UserSecretsPayload: Codable, Sendable {
-    struct Mailjet: Codable, Sendable {
-        var apiKey: String?
-        var apiSecret: String?
-        var fromEmail: String?
-        var fromName: String?
+struct UserSecretsPayload: Codable {
+    struct Mailjet: Codable {
+        var apiKey: String
+        var apiSecret: String
     }
 
     var mailjet: Mailjet?

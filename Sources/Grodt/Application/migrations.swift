@@ -24,4 +24,10 @@ func migrations(_ app: Application) throws {
     app.migrations.add(HistoricalQuote.Migration())
     
     app.migrations.add(DropOldHistoricalPortfolioPerformance())
+
+    app.migrations.add(UserPreference.CreateMigration())
+    app.migrations.add(UserSecret.CreateMigration())
+    app.migrations.add(BackfillUserSettings())
+
+    app.databases.middleware.use(UserScaffoldMiddleware())
 }

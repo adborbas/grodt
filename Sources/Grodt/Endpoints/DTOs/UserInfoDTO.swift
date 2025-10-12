@@ -1,6 +1,6 @@
 import Foundation
 
-struct UserInfoDTO: Codable, Equatable {
+struct UserInfoDTO: Equatable, ResponseDTO {
     let name: String
     let email: String
 }

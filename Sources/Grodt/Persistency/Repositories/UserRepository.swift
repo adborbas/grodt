@@ -4,11 +4,10 @@ import Fluent
 protocol UserRepository {
     func allUsers() async throws -> [User]
     func user(for userID: User.IDValue) async throws -> User?
-    
 }
 
 class PostgresUserRepository: UserRepository {
-    private let database: Database
+    let database: Database
 
     init(database: Database) {
         self.database = database

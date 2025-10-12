@@ -10,11 +10,19 @@ class AccountService {
         self.userDataMapper = userDataMapper
     }
     
-    func userInfo(for userID: UUID) async throws -> UserInfoDTO {
+    func userInfo(for userID: User.IDValue) async throws -> UserInfoDTO {
         guard let user = try await userRepository.user(for: userID) else {
             throw Abort(.notFound)
         }
         
         return userDataMapper.userInfo(from: user)
+    }
+
+    func userDetail(for userID: User.IDValue) async throws -> UserDetailDTO {
+        guard let user = try await userRepository.user(for: userID) else {
+            throw Abort(.notFound)
+        }
+
+        return try await userDataMapper.userDetail(from: user)
     }
 }

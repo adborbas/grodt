@@ -18,7 +18,13 @@ final class User: Model, Content, @unchecked Sendable {
     
     @Children(for: \.$user)
     var portfolios: [Portfolio]
-    
+
+    @OptionalChild(for: \.$user)
+    var preferences: UserPreference?
+
+    @OptionalChild(for: \.$user)
+    var secrets: UserSecret?
+
     init() { }
     
     init(id: UUID? = nil, name: String, email: String, passwordHash: String) {
@@ -80,5 +86,18 @@ extension User: ModelAuthenticatable {
     
     func verify(password: String) throws -> Bool {
         try Bcrypt.verify(password, created: self.passwordHash)
+    }
+}
+
+extension User {
+
+    func requirePreferences(on db: Database) async throws -> UserPreferencesPayload {
+        try await self.$preferences.load(on: db)
+        return self.preferences!.data
+    }
+
+    func requireSecrets(on db: Database) async throws -> UserSecretsPayload {
+        try await self.$secrets.load(on: db)
+        return self.secrets!.data
     }
 }

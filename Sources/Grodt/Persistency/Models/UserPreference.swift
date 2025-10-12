@@ -60,16 +60,17 @@ extension UserPreference {
 }
 
 struct UserPreferencesPayload: Codable {
-    struct Backup: Codable {
-        struct Transactions: Codable {
-            var enabled: Bool?
-        }
-        var transactions: Transactions?
+    struct MailjetPreferences: Codable {
+        let senderEmail: String
+        let senderName: String
     }
 
-    var backup: Backup?
+    let isTransactionsBackupEnabled: Bool
+    let mailjetPreferences: MailjetPreferences?
 
-    init(backup: Backup? = nil) {
-        self.backup = backup
+    init(isTransactionsBackupEnabled: Bool = false,
+         mailjetPreferences: MailjetPreferences? = nil) {
+        self.isTransactionsBackupEnabled = isTransactionsBackupEnabled
+        self.mailjetPreferences = mailjetPreferences
     }
 }

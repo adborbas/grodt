@@ -1,38 +1,45 @@
 import MailjetKit
 import Foundation
+import FluentKit
+
+struct MailjetConfiguration {
+    let apiKey: String
+    let apiSecret: String
+    let senderEmail: String
+    let senderName: String
+}
 
 class TransactionsBackup {
-    private let mailjetConfiguration: AppConfiguration.Mailjet
     private let userRepository: PostgresUserRepository
     private let transactionService: TransactionService
 
-    init(mailjetConfiguration: AppConfiguration.Mailjet,
-         transactionsService: TransactionService,
+    init(transactionsService: TransactionService,
          userRepository: PostgresUserRepository) {
         self.transactionService = transactionsService
         self.userRepository = userRepository
-        self.mailjetConfiguration = mailjetConfiguration
     }
 
     func backup() async throws {
-        let apiKey = try mailjetConfiguration.$apiKey.requiredValue()
-        let apiSecret = try mailjetConfiguration.$apiSecret.requiredValue()
-        let senderEmail = try mailjetConfiguration.$senderEmail.requiredValue()
-        let senderName = try mailjetConfiguration.$senderName.requiredValue()
-
         let users = try await userRepository.allUsers()
         for user in users {
+            let preferences = try await user.requirePreferences(on: userRepository.database)
+            guard preferences.isTransactionsBackupEnabled,
+                  let secrets = try await user.requireSecrets(on: userRepository.database).mailjet,
+                  let config = preferences.mailjetPreferences
+            else { continue }
+
+
             let transactions = try await transactionService.all(for: user.requireID())
 
             let encoder = JSONEncoder()
             let jsonData = try encoder.encode(transactions)
             let base64Content = jsonData.base64EncodedString()
 
-            let mailjet = MailjetKit(apiKey: apiKey,
-                                     apiSecret: apiSecret)
+            let mailjet = MailjetKit(apiKey: secrets.apiKey,
+                                     apiSecret: secrets.apiSecret)
 
-            let message = Message(from: Recipient(email: senderEmail,
-                                                  name: senderName),
+            let message = Message(from: Recipient(email: config.senderEmail,
+                                                  name: config.senderName),
                                   to: Recipient(email: user.email,
                                                 name: user.name),
                                   subject: "Backup of Podt transacitons",
