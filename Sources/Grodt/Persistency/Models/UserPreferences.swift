@@ -1,7 +1,7 @@
 import Fluent
 import Foundation
 
-final class UserPreference: Model, @unchecked Sendable {
+final class UserPreferences: Model, @unchecked Sendable {
     static let schema = "user_preferences"
 
     @ID(key: .id)
@@ -28,7 +28,7 @@ final class UserPreference: Model, @unchecked Sendable {
     }
 }
 
-fileprivate extension UserPreference {
+fileprivate extension UserPreferences {
     enum Keys {
         static let userID: FieldKey = "user_id"
         static let data: FieldKey = "data"
@@ -38,23 +38,23 @@ fileprivate extension UserPreference {
 }
 
 
-extension UserPreference {
+extension UserPreferences {
     struct CreateMigration: AsyncMigration {
-        var name: String { "CreateUserPreference" }
+        var name: String { "CreateUserPreferences" }
 
         func prepare(on db: Database) async throws {
-            try await db.schema(UserPreference.schema)
+            try await db.schema(UserPreferences.schema)
                 .id()
-                .field(UserPreference.Keys.userID, .uuid, .required, .references(User.schema, .id, onDelete: .cascade))
-                .field(UserPreference.Keys.data, .json, .required)
-                .field(UserPreference.Keys.createdAt, .datetime)
-                .field(UserPreference.Keys.updatedAt, .datetime)
-                .unique(on: UserPreference.Keys.userID)
+                .field(UserPreferences.Keys.userID, .uuid, .required, .references(User.schema, .id, onDelete: .cascade))
+                .field(UserPreferences.Keys.data, .json, .required)
+                .field(UserPreferences.Keys.createdAt, .datetime)
+                .field(UserPreferences.Keys.updatedAt, .datetime)
+                .unique(on: UserPreferences.Keys.userID)
                 .create()
         }
 
         func revert(on db: Database) async throws {
-            try await db.schema(UserPreference.schema).delete()
+            try await db.schema(UserPreferences.schema).delete()
         }
     }
 }
@@ -69,11 +69,21 @@ struct UserPreferencesPayload: Codable {
 
         let isEnabled: Bool
         let configuration: MailjetConfiguration?
+
+        init(isEnabled: Bool,
+             configuration: MailjetConfiguration?) {
+            self.isEnabled = isEnabled
+            self.configuration = configuration
+        }
     }
 
     let transactionBackup: TransactionsBackup
 
     init() {
         self.transactionBackup = TransactionsBackup(isEnabled: false, configuration: nil)
+    }
+
+    init(transactionBackup: TransactionsBackup) {
+        self.transactionBackup = transactionBackup
     }
 }

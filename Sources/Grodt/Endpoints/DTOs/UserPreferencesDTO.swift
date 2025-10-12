@@ -1,7 +1,7 @@
 struct UserPreferencesDTO: ResponseDTO {
     struct TransactionsBackupDTO: Codable {
         let isEnabled: Bool
-        let mailjetPreferences: MailjetPreferencesDTO?
+        let configuraiton: MailjetConfigurationDTO?
     }
 
     let transactionsBackup: TransactionsBackupDTO

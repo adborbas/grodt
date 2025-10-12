@@ -19,7 +19,7 @@ class AccountRoute: RouteCollection {
         }
 
         account.group("preferences") { preferences in
-
+            preferences.patch(use: updatePreferences)
         }
     }
 
@@ -34,4 +34,12 @@ class AccountRoute: RouteCollection {
 
         return try await self.service.userDetail(for: userID)
     }
+
+    func updatePreferences(req: Request) async throws -> UserPreferencesDTO {
+        let userID = try req.requireUserID()
+        let patch = try req.content.decode(UpdatePreferencesDTO.self)
+        return try await service.updatePreferences(byMerging: patch, for: userID)
+    }
 }
+
+typealias UpdatePreferencesDTO = UserPreferencesDTO

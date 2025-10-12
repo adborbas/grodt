@@ -8,11 +8,11 @@ struct UserScaffoldMiddleware: AsyncModelMiddleware {
 
         let userID = try model.requireID()
 
-        let hasPrefs = try await UserPreference.query(on: db)
+        let hasPrefs = try await UserPreferences.query(on: db)
             .filter(\.$user.$id == userID)
             .first() != nil
         if !hasPrefs {
-            try await UserPreference(userID: userID, data: .init()).save(on: db)
+            try await UserPreferences(userID: userID, data: .init()).save(on: db)
         }
 
         let hasSecrets = try await UserSecret.query(on: db)

@@ -25,7 +25,7 @@ func migrations(_ app: Application) throws {
     
     app.migrations.add(DropOldHistoricalPortfolioPerformance())
 
-    app.migrations.add(UserPreference.CreateMigration())
+    app.migrations.add(UserPreferences.CreateMigration())
     app.migrations.add(UserSecret.CreateMigration())
     app.migrations.add(BackfillUserSettings())
 

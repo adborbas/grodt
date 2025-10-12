@@ -4,6 +4,7 @@ import Fluent
 protocol UserRepository {
     func allUsers() async throws -> [User]
     func user(for userID: User.IDValue) async throws -> User?
+    func updatePreferences(_ payload: UserPreferencesPayload, for user: User) async throws
 }
 
 class PostgresUserRepository: UserRepository {
@@ -29,5 +30,11 @@ class PostgresUserRepository: UserRepository {
         return try await userQuery()
             .filter(\.$id == userID)
             .first()
+    }
+
+    func updatePreferences(_ payload: UserPreferencesPayload, for user: User) async throws {
+        try await user.$preferences.load(on: database)
+        user.preferences!.data = payload
+        try await user.preferences!.save(on: database)
     }
 }

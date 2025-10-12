@@ -25,4 +25,26 @@ class AccountService {
 
         return try await userDataMapper.userDetail(from: user)
     }
+
+    func updatePreferences(byMerging newPreferences: UserPreferencesDTO,
+                           for userID: User.IDValue) async throws -> UserPreferencesDTO {
+        guard let user = try await userRepository.user(for: userID) else {
+            throw Abort(.notFound)
+        }
+
+        var mailejtConfiguration: UserPreferencesPayload.TransactionsBackup.MailjetConfiguration?
+        if let newMailjetPref = newPreferences.transactionsBackup.configuraiton {
+            mailejtConfiguration = .init(senderEmail: newMailjetPref.senderEmail, senderName: newMailjetPref.senderName)
+        }
+
+        let payload = UserPreferencesPayload(
+            transactionBackup: .init(
+                isEnabled: newPreferences.transactionsBackup.isEnabled,
+                configuration: mailejtConfiguration
+            )
+        )
+
+        try await userRepository.updatePreferences(payload, for: user)
+        return try await userDataMapper.preferences(from: user.preferences!)
+    }
 }

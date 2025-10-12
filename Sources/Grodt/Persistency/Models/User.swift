@@ -20,7 +20,7 @@ final class User: Model, Content, @unchecked Sendable {
     var portfolios: [Portfolio]
 
     @OptionalChild(for: \.$user)
-    var preferences: UserPreference?
+    var preferences: UserPreferences?
 
     @OptionalChild(for: \.$user)
     var secrets: UserSecret?
