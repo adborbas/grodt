@@ -19,7 +19,7 @@ class AccountRoute: RouteCollection {
         }
 
         account.group("preferences") { preferences in
-            preferences.patch(use: updatePreferences)
+            preferences.patch("transaction-backup", use: updateTransactionBackup)
         }
     }
 
@@ -35,11 +35,17 @@ class AccountRoute: RouteCollection {
         return try await self.service.userDetail(for: userID)
     }
 
-    func updatePreferences(req: Request) async throws -> UserPreferencesDTO {
+    func updateTransactionBackup(req: Request) async throws -> UserPreferencesDTO {
         let userID = try req.requireUserID()
-        let patch = try req.content.decode(UpdatePreferencesDTO.self)
-        return try await service.updatePreferences(byMerging: patch, for: userID)
+        let newBackup = try req.content.decode(UpdateTranscationBackupConfigurationDTO.self)
+        return try await service.updateTranscationBackup(newBackup, for: userID)
     }
 }
 
-typealias UpdatePreferencesDTO = UserPreferencesDTO
+struct UpdateTranscationBackupConfigurationDTO: Codable {
+    let isEnabled: Bool
+    let senderEmail: String?
+    let senderName: String?
+    let apiKey: String?
+    let apiSecret: String?
+}

@@ -24,7 +24,7 @@ class TransactionsBackup {
         for user in users {
             let preferences = user.requiredPreferences
             guard preferences.transactionBackup.isEnabled,
-                  let secrets = user.requiredSecrets.mailjet,
+                  let apiSecret = user.requiredSecrets.mailjetApiSecret,
                   let config = preferences.transactionBackup.configuration
             else { continue }
 
@@ -35,8 +35,8 @@ class TransactionsBackup {
             let jsonData = try encoder.encode(transactions)
             let base64Content = jsonData.base64EncodedString()
 
-            let mailjet = MailjetKit(apiKey: secrets.apiKey,
-                                     apiSecret: secrets.apiSecret)
+            let mailjet = MailjetKit(apiKey: config.apiKey,
+                                     apiSecret: apiSecret)
 
             let message = Message(from: Recipient(email: config.senderEmail,
                                                   name: config.senderName),

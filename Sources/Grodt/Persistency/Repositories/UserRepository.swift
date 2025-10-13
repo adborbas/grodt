@@ -4,7 +4,8 @@ import Fluent
 protocol UserRepository {
     func allUsers(with: Set<UserExpansion>) async throws -> [User]
     func user(for userID: User.IDValue, with: Set<UserExpansion>) async throws -> User?
-    func updatePreferences(_ payload: UserPreferencesPayload, for user: User) async throws
+    func setTransactionBackup(_ newBackup: UserPreferencesPayload.TransactionsBackup, for user: User) async throws
+    func setMailjetApiSecret(_ secret: String?, for user: User) async throws
 }
 
 extension UserRepository {
@@ -52,9 +53,15 @@ class PostgresUserRepository: UserRepository {
             .first()
     }
 
-    func updatePreferences(_ payload: UserPreferencesPayload, for user: User) async throws {
+    func setTransactionBackup(_ newBackup: UserPreferencesPayload.TransactionsBackup, for user: User) async throws {
         try await user.$preferences.load(on: database)
-        user.preferences!.data = payload
+        user.preferences!.data.transactionBackup = newBackup
         try await user.preferences!.save(on: database)
+    }
+
+    func setMailjetApiSecret(_ secret: String?, for user: User) async throws {
+        try await user.$secrets.load(on: database)
+        user.secrets!.data.mailjetApiSecret = secret
+        try await user.secrets!.save(on: database)
     }
 }

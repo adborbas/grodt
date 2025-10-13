@@ -59,14 +59,9 @@ extension UserSecret {
 }
 
 struct UserSecretsPayload: Codable {
-    struct Mailjet: Codable {
-        var apiKey: String
-        var apiSecret: String
-    }
+    var mailjetApiSecret: String?
 
-    var mailjet: Mailjet?
-
-    init(mailjet: Mailjet? = nil) {
-        self.mailjet = mailjet
+    init(mailjetApiSecret: String? = nil) {
+        self.mailjetApiSecret = mailjetApiSecret
     }
 }

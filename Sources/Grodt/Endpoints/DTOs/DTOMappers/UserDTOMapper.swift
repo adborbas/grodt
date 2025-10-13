@@ -15,23 +15,36 @@ final class UserDTOMapper {
         let preferences = user.requiredPreferences
         return try await UserDetailDTO(name: user.name,
                              email: user.email,
-                             preferences: preference(from: preferences))
+                                       preferences: preference(from: preferences, for: user.requireID()))
     }
 
-    func preferences(from userPreferences: UserPreferences) async throws -> UserPreferencesDTO {
-        return preferencesMapper.userPreferences(from: userPreferences.data)
+    func preferences(from userPreferences: UserPreferences, for user: User.IDValue) async throws -> UserPreferencesDTO {
+        return try await preferencesMapper.userPreferences(from: userPreferences.data, for: user)
     }
 
-    func preference(from userPreference: UserPreferencesPayload) async throws -> UserPreferencesDTO {
-        return preferencesMapper.userPreferences(from: userPreference)
+    func preference(from userPreference: UserPreferencesPayload, for user: User.IDValue) async throws -> UserPreferencesDTO {
+        return try await preferencesMapper.userPreferences(from: userPreference, for: user)
     }
 }
 
 final class UserPreferencesDTOMapper {
-    func userPreferences(from preferences: UserPreferencesPayload) -> UserPreferencesDTO {
+    private let userRepository: UserRepository
+
+    init(userRepository: UserRepository) {
+        self.userRepository = userRepository
+    }
+
+    func userPreferences(from preferences: UserPreferencesPayload, for user: User.IDValue) async throws -> UserPreferencesDTO {
+
+
         var mailjetConfigurationDTO: MailjetConfigurationDTO?
-        if let mailjetConfiguration = preferences.transactionBackup.configuration {
-            mailjetConfigurationDTO = MailjetConfigurationDTO(senderEmail: mailjetConfiguration.senderEmail, senderName: mailjetConfiguration.senderName)
+        if let mailjetConfiguration = preferences.transactionBackup.configuration,
+           let apiSecret = try await userRepository.user(for: user, with: [.secrets])?.requiredSecrets.mailjetApiSecret{
+            mailjetConfigurationDTO = MailjetConfigurationDTO(
+                senderEmail: mailjetConfiguration.senderEmail,
+                senderName: mailjetConfiguration.senderName,
+                apiKey: mailjetConfiguration.apiKey,
+                apiSecret: apiSecret)
         }
         return UserPreferencesDTO(transactionsBackup: .init(isEnabled: preferences.transactionBackup.isEnabled,
                                                            configuraiton: mailjetConfigurationDTO))

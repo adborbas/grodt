@@ -26,25 +26,44 @@ class AccountService {
         return try await userDataMapper.userDetail(from: user)
     }
 
-    func updatePreferences(byMerging newPreferences: UserPreferencesDTO,
-                           for userID: User.IDValue) async throws -> UserPreferencesDTO {
+    func updateTranscationBackup(_ newBackupConfig: UpdateTranscationBackupConfigurationDTO,
+                                 for userID: User.IDValue) async throws -> UserPreferencesDTO {
         guard let user = try await userRepository.user(for: userID) else {
             throw Abort(.notFound)
         }
 
-        var mailejtConfiguration: UserPreferencesPayload.TransactionsBackup.MailjetConfiguration?
-        if let newMailjetPref = newPreferences.transactionsBackup.configuraiton {
-            mailejtConfiguration = .init(senderEmail: newMailjetPref.senderEmail, senderName: newMailjetPref.senderName)
+        let newTransactionBackupModel: UserPreferencesPayload.TransactionsBackup
+
+        if !newBackupConfig.isEnabled {
+            newTransactionBackupModel = .init(isEnabled: false,
+                                              configuration: nil)
+            try await userRepository.setMailjetApiSecret(nil, for: user)
+
+        } else {
+            guard let senderEmail = newBackupConfig.senderName,
+                  let senderName = newBackupConfig.senderName,
+                  let apiKey = newBackupConfig.apiKey,
+                  let apiSecret = newBackupConfig.apiSecret else {
+                throw Abort(.badRequest, reason: "Mailjet configuration missing.")
+            }
+
+            let mailejtConfiguration: UserPreferencesPayload.TransactionsBackup.MailjetConfiguration =
+                .init(senderEmail: senderEmail,
+                      senderName: senderName,
+                      apiKey: apiKey)
+
+            newTransactionBackupModel = .init(isEnabled: true,
+                                              configuration: mailejtConfiguration)
+
+            try await userRepository.setMailjetApiSecret(apiSecret, for: user)
         }
 
-        let payload = UserPreferencesPayload(
-            transactionBackup: .init(
-                isEnabled: newPreferences.transactionsBackup.isEnabled,
-                configuration: mailejtConfiguration
-            )
-        )
-
-        try await userRepository.updatePreferences(payload, for: user)
-        return try await userDataMapper.preferences(from: user.preferences!)
+        do {
+            try await userRepository.setTransactionBackup(newTransactionBackupModel, for: user)
+        } catch {
+            try await userRepository.setMailjetApiSecret(nil, for: user)
+            throw Abort(.internalServerError)
+        }
+        return try await userDataMapper.preferences(from: user.preferences!, for: user.requireID())
     }
 }

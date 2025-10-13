@@ -65,6 +65,7 @@ struct UserPreferencesPayload: Codable {
         struct MailjetConfiguration: Codable {
             let senderEmail: String
             let senderName: String
+            let apiKey: String
         }
 
         let isEnabled: Bool
@@ -77,7 +78,7 @@ struct UserPreferencesPayload: Codable {
         }
     }
 
-    let transactionBackup: TransactionsBackup
+    var transactionBackup: TransactionsBackup
 
     init() {
         self.transactionBackup = TransactionsBackup(isEnabled: false, configuration: nil)

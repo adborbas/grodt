@@ -106,7 +106,11 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
                                             portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db),
                                             dataMapper: portfolioDTOMapper)
     
-    let accountService = AccountService(userRepository: userRepository, userDataMapper: UserDTOMapper(preferencesMapper: UserPreferencesDTOMapper()))
+    let accountService = AccountService(userRepository: userRepository,
+                                        userDataMapper: UserDTOMapper(
+                                            preferencesMapper: UserPreferencesDTOMapper(userRepository: userRepository)
+                                        )
+    )
 
     let brokerageService = BrokerageService(
         brokerageRepository: brokerageRepository,
