@@ -40,7 +40,7 @@ class AccountService {
             try await userRepository.setMailjetApiSecret(nil, for: user)
 
         } else {
-            guard let senderEmail = newBackupConfig.senderName,
+            guard let senderEmail = newBackupConfig.senderEmail,
                   let senderName = newBackupConfig.senderName,
                   let apiKey = newBackupConfig.apiKey,
                   let apiSecret = newBackupConfig.apiSecret else {

@@ -47,6 +47,6 @@ final class UserPreferencesDTOMapper {
                 apiSecret: apiSecret)
         }
         return UserPreferencesDTO(transactionsBackup: .init(isEnabled: preferences.transactionBackup.isEnabled,
-                                                           configuraiton: mailjetConfigurationDTO))
+                                                           configuration: mailjetConfigurationDTO))
     }
 }

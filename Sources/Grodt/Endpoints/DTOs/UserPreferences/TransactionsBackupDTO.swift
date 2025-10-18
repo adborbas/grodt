@@ -1,4 +1,4 @@
 struct TransactionsBackupDTO: Codable {
     let isEnabled: Bool
-    let configuraiton: MailjetConfigurationDTO?
+    let configuration: MailjetConfigurationDTO?
 }
