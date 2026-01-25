@@ -27,7 +27,10 @@ func migrations(_ app: Application) throws {
     if app.environment != .testing {
         app.migrations.add(Transaction.Migration_DropPlatformAccountAndMakeBARequired())
     }
-    
+
+    // Migrate currency column from TEXT to JSONB (safe for both fresh and existing databases)
+    app.migrations.add(MigrateTransactionCurrencyToJsonb())
+
     app.migrations.add(Currency.Migration())
     app.migrations.add(Ticker.Migration())
     app.migrations.add(Quote.Migration())
@@ -36,6 +39,11 @@ func migrations(_ app: Application) throws {
     app.migrations.add(DropOldHistoricalPortfolioPerformance())
 
     app.migrations.add(BackfillUserSettings())
+
+    // Seed development data (only in development environment)
+    if app.environment == .development {
+        app.migrations.add(SeedDevelopmentData())
+    }
 
     app.databases.middleware.use(UserScaffoldMiddleware())
 }

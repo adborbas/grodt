@@ -1,20 +1,20 @@
 import Foundation
 import Fluent
 
-class Currency: Model, @unchecked Sendable {
+final class Currency: Model, @unchecked Sendable {
     static let schema = Keys.schema
-    
+
     @ID(key: .id)
     var id: UUID?
-    
+
     @Field(key: Keys.code)
     var code: String
-    
+
     @Field(key: Keys.symbol)
     var symbol: String
-    
+
     required init() { }
-    
+
     init(id: UUID? = nil, code: String, symbol: String) {
         self.id = id
         self.code = code
