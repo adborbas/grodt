@@ -22,7 +22,7 @@ class PortfolioPerformanceEmail {
     private func sendUpdateForUser(_ user: User) async throws {
         let preferences = user.requiredPreferences
         guard preferences.monthlyEmail.isEnabled,
-              let apiSecret = user.requiredSecrets.mailjetApiSecret,
+              let apiSecret = try await userRepository.getMailjetApiSecret(for: user),
               let config = preferences.monthlyEmail.configuration
         else { return }
 

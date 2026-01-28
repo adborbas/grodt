@@ -6,6 +6,7 @@ protocol UserRepository {
     func user(for userID: User.IDValue, with: Set<UserExpansion>) async throws -> User?
     func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws
     func setMailjetApiSecret(_ secret: String?, for user: User) async throws
+    func getMailjetApiSecret(for user: User) async throws -> String?
 }
 
 extension UserRepository {
@@ -19,9 +20,11 @@ enum UserExpansion {
 
 class PostgresUserRepository: UserRepository {
     private let database: Database
+    private let secretsEncryptor: SecretsEncrypting
 
-    init(database: Database) {
+    init(database: Database, secretsEncryptor: SecretsEncrypting) {
         self.database = database
+        self.secretsEncryptor = secretsEncryptor
     }
 
     private func userQuery(with: Set<UserExpansion> = []) -> QueryBuilder<User> {
@@ -61,7 +64,16 @@ class PostgresUserRepository: UserRepository {
 
     func setMailjetApiSecret(_ secret: String?, for user: User) async throws {
         try await user.$secrets.load(on: database)
-        user.secrets!.data.mailjetApiSecret = secret
+        let encryptedSecret = try secret.map { try secretsEncryptor.encrypt($0) }
+        user.secrets!.data.mailjetApiSecret = encryptedSecret
         try await user.secrets!.save(on: database)
+    }
+
+    func getMailjetApiSecret(for user: User) async throws -> String? {
+        try await user.$secrets.load(on: database)
+        guard let encryptedSecret = user.secrets?.data.mailjetApiSecret else {
+            return nil
+        }
+        return try secretsEncryptor.decrypt(encryptedSecret)
     }
 }

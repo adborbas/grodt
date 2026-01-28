@@ -17,3 +17,4 @@ theme-settings.json
 
 # Secret
 .alphavantagekey
+.secrets-key
