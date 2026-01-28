@@ -19,7 +19,7 @@ class AccountRoute: RouteCollection {
         }
 
         account.group("preferences") { preferences in
-            preferences.patch("transaction-backup", use: updateTransactionBackup)
+            preferences.patch("monthly-email", use: updateMonthlyEmail)
         }
     }
 
@@ -35,14 +35,14 @@ class AccountRoute: RouteCollection {
         return try await self.service.userDetail(for: userID)
     }
 
-    func updateTransactionBackup(req: Request) async throws -> UserPreferencesDTO {
+    func updateMonthlyEmail(req: Request) async throws -> UserPreferencesDTO {
         let userID = try req.requireUserID()
-        let newBackup = try req.content.decode(UpdateTranscationBackupConfigurationDTO.self)
-        return try await service.updateTranscationBackup(newBackup, for: userID)
+        let newConfig = try req.content.decode(UpdateMonthlyEmailConfigDTO.self)
+        return try await service.updateMonthlyEmailConfig(newConfig, for: userID)
     }
 }
 
-struct UpdateTranscationBackupConfigurationDTO: Codable {
+struct UpdateMonthlyEmailConfigDTO: Codable {
     let isEnabled: Bool
     let senderEmail: String?
     let senderName: String?

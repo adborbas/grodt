@@ -238,14 +238,17 @@ func scheduleNightlyJobs(_ app: Application, _ container: AppContainer) throws {
         .daily()
 }
 
-func scheduleBackups(_ app: Application, _ container: AppContainer) throws {
+func scheduleMonthlyEmails(_ app: Application, _ container: AppContainer) throws {
     if app.environment == .testing { return }
-    let transactionBackup = TransactionsBackup(transactionsService: container.transactionService,
-                                               userRepository: container.userRepository)
 
-    let backupJob = BackupJob(transactionsBackup: transactionBackup)
+    let portfolioPerformanceEmail = PortfolioPerformanceEmail(
+        portfolioService: container.portfolioService,
+        userRepository: container.userRepository
+    )
 
-    app.queues.schedule(backupJob)
+    let monthlyEmailJob = MonthlyEmailJob(portfolioPerformanceEmail: portfolioPerformanceEmail)
+
+    app.queues.schedule(monthlyEmailJob)
         .monthly()
         .on(1)
         .at(22, 0)

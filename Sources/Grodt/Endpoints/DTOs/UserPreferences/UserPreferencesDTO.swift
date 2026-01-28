@@ -1,3 +1,3 @@
 struct UserPreferencesDTO: ResponseDTO {
-    let transactionsBackup: TransactionsBackupDTO
+    let monthlyEmail: MonthlyEmailConfigDTO
 }

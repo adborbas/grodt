@@ -35,18 +35,16 @@ final class UserPreferencesDTOMapper {
     }
 
     func userPreferences(from preferences: UserPreferencesPayload, for user: User.IDValue) async throws -> UserPreferencesDTO {
-
-
         var mailjetConfigurationDTO: MailjetConfigurationDTO?
-        if let mailjetConfiguration = preferences.transactionBackup.configuration,
-           let apiSecret = try await userRepository.user(for: user, with: [.secrets])?.requiredSecrets.mailjetApiSecret{
+        if let mailjetConfiguration = preferences.monthlyEmail.configuration,
+           let apiSecret = try await userRepository.user(for: user, with: [.secrets])?.requiredSecrets.mailjetApiSecret {
             mailjetConfigurationDTO = MailjetConfigurationDTO(
                 senderEmail: mailjetConfiguration.senderEmail,
                 senderName: mailjetConfiguration.senderName,
                 apiKey: mailjetConfiguration.apiKey,
                 apiSecret: apiSecret)
         }
-        return UserPreferencesDTO(transactionsBackup: .init(isEnabled: preferences.transactionBackup.isEnabled,
-                                                           configuration: mailjetConfigurationDTO))
+        return UserPreferencesDTO(monthlyEmail: .init(isEnabled: preferences.monthlyEmail.isEnabled,
+                                                      configuration: mailjetConfigurationDTO))
     }
 }

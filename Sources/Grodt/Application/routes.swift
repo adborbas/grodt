@@ -6,7 +6,7 @@ func routes(_ app: Application) async throws {
     installGlobalMiddleware(app)
     try registerLoginRoutes(app, container)
     try registerSkiRoutes(app, container)
-    try scheduleBackups(app, container)
+    try scheduleMonthlyEmails(app, container)
     try scheduleNightlyJobs(app, container)
 
     try app.queues.startScheduledJobs()

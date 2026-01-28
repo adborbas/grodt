@@ -4,7 +4,7 @@ import Fluent
 protocol UserRepository {
     func allUsers(with: Set<UserExpansion>) async throws -> [User]
     func user(for userID: User.IDValue, with: Set<UserExpansion>) async throws -> User?
-    func setTransactionBackup(_ newBackup: UserPreferencesPayload.TransactionsBackup, for user: User) async throws
+    func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws
     func setMailjetApiSecret(_ secret: String?, for user: User) async throws
 }
 
@@ -53,9 +53,9 @@ class PostgresUserRepository: UserRepository {
             .first()
     }
 
-    func setTransactionBackup(_ newBackup: UserPreferencesPayload.TransactionsBackup, for user: User) async throws {
+    func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws {
         try await user.$preferences.load(on: database)
-        user.preferences!.data.transactionBackup = newBackup
+        user.preferences!.data.monthlyEmail = config
         try await user.preferences!.save(on: database)
     }
 

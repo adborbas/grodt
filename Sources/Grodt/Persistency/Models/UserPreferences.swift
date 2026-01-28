@@ -61,7 +61,7 @@ extension UserPreferences {
 
 struct UserPreferencesPayload: Codable {
 
-    struct TransactionsBackup: Codable {
+    struct MonthlyEmailConfig: Codable {
         struct MailjetConfiguration: Codable {
             let senderEmail: String
             let senderName: String
@@ -78,13 +78,13 @@ struct UserPreferencesPayload: Codable {
         }
     }
 
-    var transactionBackup: TransactionsBackup
+    var monthlyEmail: MonthlyEmailConfig
 
     init() {
-        self.transactionBackup = TransactionsBackup(isEnabled: false, configuration: nil)
+        self.monthlyEmail = MonthlyEmailConfig(isEnabled: false, configuration: nil)
     }
 
-    init(transactionBackup: TransactionsBackup) {
-        self.transactionBackup = transactionBackup
+    init(monthlyEmail: MonthlyEmailConfig) {
+        self.monthlyEmail = monthlyEmail
     }
 }
