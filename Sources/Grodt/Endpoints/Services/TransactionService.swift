@@ -13,7 +13,12 @@ class TransactionService {
         self.currencyRepository = currencyRepository
         self.dataMapper = dataMapper
     }
-    
+
+    func all(for user: User.IDValue) async throws -> [TransactionDTO] {
+        let transactions = try await transactionsRepository.all(for: user)
+        return await transactions.concurrentCompactMap { try? await self.dataMapper.transaction(from: $0) }
+    }
+
     func create(_ transaction: CreateTransactionRequestDTO, on portfolioID: Portfolio.IDValue) async throws -> TransactionDTO {
         guard let currency = try await currencyRepository.currency(for: transaction.currency) else {
             throw Abort(.badRequest)

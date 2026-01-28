@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-and-test-macos:
-    runs-on: macos-13
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
       - name: Build on macOS
@@ -19,9 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Swift on Ubuntu
-        uses: swift-actions/setup-swift@v1
+        uses: swift-actions/setup-swift@v2
         with:
-          swift-version: '5.9'
+          swift-version: '6.1'
       - name: Build on Ubuntu
         run: swift build
       - name: Test on Ubuntu

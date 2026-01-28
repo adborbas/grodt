@@ -118,10 +118,26 @@ extension Transaction {
             let name = "DropPlatformAccountAndMakeBrokerageAccountRequired"
 
             func prepare(on db: Database) async throws {
-                try await db.schema(Transaction.schema)
-                    .deleteField("platform")
-                    .deleteField("account")
-                    .update()
+                // Check if columns exist before dropping (for backwards compatibility with fresh databases)
+                guard let sql = db as? SQLDatabase else {
+                    return
+                }
+
+                // Query to check if columns exist
+                let columnsExist = try await sql.raw("""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'transactions'
+                    AND column_name IN ('platform', 'account')
+                    """).all()
+
+                // Only drop columns if they exist
+                if !columnsExist.isEmpty {
+                    try await db.schema(Transaction.schema)
+                        .deleteField("platform")
+                        .deleteField("account")
+                        .update()
+                }
             }
 
             func revert(on db: Database) async throws {

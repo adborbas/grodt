@@ -13,6 +13,14 @@ class AccountRoute: RouteCollection {
         account.group("me") { me in
             me.get(use: userInfo)
         }
+
+        account.group("detail") { me in
+            me.get(use: userDetail)
+        }
+
+        account.group("preferences") { preferences in
+            preferences.patch("monthly-email", use: updateMonthlyEmail)
+        }
     }
 
     func userInfo(req: Request) async throws -> UserInfoDTO {
@@ -20,6 +28,24 @@ class AccountRoute: RouteCollection {
                 
         return try await self.service.userInfo(for: userID)
     }
+
+    func userDetail(req: Request) async throws -> UserDetailDTO {
+        let userID = try req.requireUserID()
+
+        return try await self.service.userDetail(for: userID)
+    }
+
+    func updateMonthlyEmail(req: Request) async throws -> UserPreferencesDTO {
+        let userID = try req.requireUserID()
+        let newConfig = try req.content.decode(UpdateMonthlyEmailConfigDTO.self)
+        return try await service.updateMonthlyEmailConfig(newConfig, for: userID)
+    }
 }
 
-extension UserInfoDTO: Content { }
+struct UpdateMonthlyEmailConfigDTO: Codable {
+    let isEnabled: Bool
+    let senderEmail: String?
+    let senderName: String?
+    let apiKey: String?
+    let apiSecret: String?
+}

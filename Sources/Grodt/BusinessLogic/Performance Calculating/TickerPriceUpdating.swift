@@ -18,7 +18,6 @@ class TickerPriceUpdater: TickerPriceUpdating {
     }
     
     func updateAllTickerPrices() async throws {
-        print("\(#function)")
         let allTickers = try await tickerRepository.allTickers()
         for ticker in allTickers {
             try await clearCache(for: ticker.symbol)

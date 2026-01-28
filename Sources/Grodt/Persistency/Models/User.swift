@@ -18,7 +18,13 @@ final class User: Model, Content, @unchecked Sendable {
     
     @Children(for: \.$user)
     var portfolios: [Portfolio]
-    
+
+    @OptionalChild(for: \.$user)
+    var preferences: UserPreferences?
+
+    @OptionalChild(for: \.$user)
+    var secrets: UserSecret?
+
     init() { }
     
     init(id: UUID? = nil, name: String, email: String, passwordHash: String) {
@@ -41,16 +47,8 @@ fileprivate extension User {
 
 extension User {
     struct Migration: AsyncMigration {
-        private let preconfigured: User?
-        private let logger: Logger
-        
-        init(preconfigured: User? = nil, logger: Logger) {
-            self.preconfigured = preconfigured
-            self.logger = logger
-        }
-        
         var name: String { "CreateUser" }
-        
+
         func prepare(on database: Database) async throws {
             try await database.schema(Keys.schema)
                 .id()
@@ -59,17 +57,35 @@ extension User {
                 .field(Keys.passwordHash, .string, .required)
                 .unique(on: Keys.email)
                 .create()
-            
+        }
+
+        func revert(on database: Database) async throws {
+            try await database.schema(Keys.schema).delete()
+        }
+    }
+
+    struct CreatePreconfiguredUserMigration: AsyncMigration {
+        private let preconfigured: User?
+        private let logger: Logger
+
+        init(preconfigured: User? = nil, logger: Logger) {
+            self.preconfigured = preconfigured
+            self.logger = logger
+        }
+
+        var name: String { "CreatePreconfiguredUser" }
+
+        func prepare(on database: Database) async throws {
             if let preconfigured = preconfigured {
                 logger.info("Creating preconfigured user: \(preconfigured.email)")
                 try await preconfigured.save(on: database)
             } else {
-                logger.info("No preconfigured created.")
+                logger.info("No preconfigured user created.")
             }
         }
-        
+
         func revert(on database: Database) async throws {
-            try await database.schema(Keys.schema).delete()
+            // No-op: we don't want to delete users on rollback
         }
     }
 }
@@ -80,5 +96,16 @@ extension User: ModelAuthenticatable {
     
     func verify(password: String) throws -> Bool {
         try Bcrypt.verify(password, created: self.passwordHash)
+    }
+}
+
+extension User {
+
+    var requiredPreferences: UserPreferencesPayload {
+        return preferences!.data
+    }
+
+    var requiredSecrets: UserSecretsPayload {
+        return secrets!.data
     }
 }

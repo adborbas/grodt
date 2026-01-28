@@ -44,15 +44,33 @@ struct RequiredEnvironmentVariable<T: EnvironmentVariableConvertible> {
     }
 }
 
+struct EnvironmentVariableMissing: Error, LocalizedError {
+    let key: String
+
+    var errorDescription: String {
+        "Environment variable \(key) could not be found."
+    }
+}
+
 @propertyWrapper
 struct OptionalEnvironmentVariable<T: EnvironmentVariableConvertible> {
     private let key: String
+
+    var projectedValue: OptionalEnvironmentVariable { self }
 
     var wrappedValue: T? {
         guard let valueString = Environment.get(key), let value = T.convert(from: valueString) else {
             return nil
         }
         return value
+    }
+
+    func requiredValue() throws -> T {
+        guard let wrapped = wrappedValue.wrapped else {
+            throw EnvironmentVariableMissing(key: key)
+        }
+
+        return wrapped
     }
 
     init(key: String) {

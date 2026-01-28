@@ -68,7 +68,8 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         priceService: priceService
     )
 
-    let userRepository = PostgresUserRepository(database: app.db)
+    let secretsEncryptor = try SecretsEncryptor.loadOrCreate(from: ".secrets-key")
+    let userRepository = PostgresUserRepository(database: app.db, secretsEncryptor: secretsEncryptor)
     let portfolioRepository = PostgresPortfolioRepository(database: app.db)
     let transactionRepository = PostgresTransactionRepository(database: app.db)
     let brokerageRepository = PostgresBrokerageRepository(database: app.db)
@@ -106,8 +107,12 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
                                             portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db),
                                             dataMapper: portfolioDTOMapper)
     
-    let accountService = AccountService(userRepository: userRepository, userDataMapper: UserDTOMapper())
-    
+    let accountService = AccountService(userRepository: userRepository,
+                                        userDataMapper: UserDTOMapper(
+                                            preferencesMapper: UserPreferencesDTOMapper(userRepository: userRepository)
+                                        )
+    )
+
     let brokerageService = BrokerageService(
         brokerageRepository: brokerageRepository,
         dtoMapper: BrokerageDTOMapper(
@@ -232,7 +237,20 @@ func scheduleNightlyJobs(_ app: Application, _ container: AppContainer) throws {
     let userTokenCleanerJob = UserTokenClearUpJob(userTokenClearing: UserTokenClearer(database: app.db))
     app.queues.schedule(userTokenCleanerJob)
         .daily()
+}
 
-    try app.queues.startScheduledJobs()
-    try app.queues.startInProcessJobs()
+func scheduleMonthlyEmails(_ app: Application, _ container: AppContainer) throws {
+    if app.environment == .testing { return }
+
+    let portfolioPerformanceEmail = PortfolioPerformanceEmail(
+        portfolioService: container.portfolioService,
+        userRepository: container.userRepository
+    )
+
+    let monthlyEmailJob = MonthlyEmailJob(portfolioPerformanceEmail: portfolioPerformanceEmail)
+
+    app.queues.schedule(monthlyEmailJob)
+        .monthly()
+        .on(1)
+        .at(22, 0)
 }
