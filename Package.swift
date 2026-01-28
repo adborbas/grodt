@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.1
 import PackageDescription
 
 let package = Package(
@@ -14,7 +14,8 @@ let package = Package(
         .package(url: "https://github.com/adborbas/alphaswiftage.git", .upToNextMajor(from: "0.5.0")),
         .package(url: "https://github.com/vapor/fluent-sqlite-driver.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.0.0"),
-        .package(url: "https://github.com/adborbas/MailjetKit.git", .upToNextMajor(from: "0.1.0"))
+        .package(url: "https://github.com/adborbas/MailjetKit.git", .upToNextMajor(from: "0.1.0")),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0")
     ],
     targets: [
         .executableTarget(
@@ -28,7 +29,9 @@ let package = Package(
                 .product(name: "AlphaSwiftage", package: "alphaswiftage"),
                 .product(name: "QueuesRedisDriver", package: "queues-redis-driver"),
                 .product(name: "MailjetKit", package: "MailjetKit"),
-            ]
+                .product(name: "Crypto", package: "swift-crypto"),
+            ],
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .testTarget(name: "GrodtTests", dependencies: [
             .target(name: "Grodt"),
@@ -36,6 +39,7 @@ let package = Package(
 
             // Workaround for https://github.com/apple/swift-package-manager/issues/6940
             .product(name: "Vapor", package: "vapor"),
-        ])
+        ],
+        swiftSettings: [.swiftLanguageMode(.v5)])
     ]
 )
