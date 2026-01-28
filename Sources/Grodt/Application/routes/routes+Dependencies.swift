@@ -246,7 +246,7 @@ func scheduleBackups(_ app: Application, _ container: AppContainer) throws {
     let backupJob = BackupJob(transactionsBackup: transactionBackup)
 
     app.queues.schedule(backupJob)
-        .weekly()
-        .on(.sunday)
+        .monthly()
+        .on(1)
         .at(22, 0)
 }
