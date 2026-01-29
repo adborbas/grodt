@@ -76,11 +76,20 @@ extension User {
         var name: String { "CreatePreconfiguredUser" }
 
         func prepare(on database: Database) async throws {
-            if let preconfigured = preconfigured {
+            guard let preconfigured = preconfigured else {
+                logger.info("No preconfigured user created.")
+                return
+            }
+
+            let existingUser = try await User.query(on: database)
+                .filter(\.$email == preconfigured.email)
+                .first()
+
+            if existingUser != nil {
+                logger.info("Preconfigured user already exists: \(preconfigured.email)")
+            } else {
                 logger.info("Creating preconfigured user: \(preconfigured.email)")
                 try await preconfigured.save(on: database)
-            } else {
-                logger.info("No preconfigured user created.")
             }
         }
 
