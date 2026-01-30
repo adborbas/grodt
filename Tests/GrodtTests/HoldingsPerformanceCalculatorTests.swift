@@ -2,7 +2,7 @@
 import Testing
 import Foundation
 
-@Suite struct HoldingsPerformanceCalculatorTests {
+struct HoldingsPerformanceCalculatorTests {
 
     @Test func series_SingleTicker_CarryForwardAndCumulativeMoneyIn() async throws {
         // Given

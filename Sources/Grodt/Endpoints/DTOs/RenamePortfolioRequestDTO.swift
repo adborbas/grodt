@@ -1,5 +1,5 @@
-import Foundation
+import Vapor
 
-struct RenamePortfolioRequestDTO: Codable {
+struct RenamePortfolioRequestDTO: Content {
     let name: String
 }

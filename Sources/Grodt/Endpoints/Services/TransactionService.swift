@@ -1,6 +1,11 @@
 import Vapor
 
-class TransactionService {
+protocol TransactionServicing: Sendable {
+    func all(for user: User.IDValue) async throws -> [TransactionDTO]
+    func create(_ transaction: CreateTransactionRequestDTO, on portfolioID: Portfolio.IDValue) async throws -> TransactionDTO
+}
+
+class TransactionService: TransactionServicing {
     private let transactionsRepository: TransactionsRepository
     private let currencyRepository: CurrencyRepository
     private let dataMapper: TransactionDTOMapper

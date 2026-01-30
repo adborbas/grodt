@@ -2,15 +2,15 @@ import Vapor
 import Fluent
 
 class PortfolioRoute: RouteCollection {
-    private let service: PortfolioService
-    private let transactionService: TransactionService
-    private let tickersService: TickersService
-    private let brokerageService: BrokerageService
-    
-    init(service: PortfolioService,
-         transactionService: TransactionService,
-         tickersService: TickersService,
-         brokerageService: BrokerageService) {
+    private let service: PortfolioServicing
+    private let transactionService: TransactionServicing
+    private let tickersService: TickersServicing
+    private let brokerageService: BrokerageServicing
+
+    init(service: PortfolioServicing,
+         transactionService: TransactionServicing,
+         tickersService: TickersServicing,
+         brokerageService: BrokerageServicing) {
         self.service = service
         self.transactionService = transactionService
         self.tickersService = tickersService

@@ -1,6 +1,6 @@
-import Foundation
+import Vapor
 
-struct CreatePortfolioRequestDTO: Codable {
+struct CreatePortfolioRequestDTO: Content {
     let name: String
     let currency: String
 }

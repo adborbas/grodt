@@ -1,7 +1,15 @@
 import Vapor
 import Fluent
 
-struct BrokerageService {
+protocol BrokerageServicing: Sendable {
+    func allBrokerages(for userID: UUID) async throws -> [BrokerageDTO]
+    func createBrokerage(named: String, for userID: UUID) async throws -> BrokerageDTO
+    func brokerageDetail(id: UUID, for userID: UUID, on db: Database) async throws -> BrokerageDTO
+    func updateBrokerage(id: UUID, update: CreateUpdateBrokerageRequestDTO, for userID: UUID) async throws -> BrokerageDTO
+    func deleteBrokerage(id: UUID, for userID: UUID) async throws
+}
+
+struct BrokerageService: BrokerageServicing {
     private let brokerageRepository: BrokerageRepository
     private let dtoMapper: BrokerageDTOMapper
     private let accountsRepository: BrokerageAccountRepository

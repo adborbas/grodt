@@ -6,7 +6,13 @@ protocol TickersControllerDelegate: AnyObject {
     func tickerCreated(_ ticker: Ticker)
 }
 
-class TickersService {
+protocol TickersServicing: Sendable {
+    func allTickers() async throws -> [TickerDTO]
+    func create(_ ticker: Ticker) async throws -> TickerDTO
+    func search(keyword: String) async throws -> [TickerDTO]
+}
+
+class TickersService: TickersServicing {
     private let tickerRepository: TickerRepository
     private let dataMapper: TickerDTOMapper
     private let tickerService: AlphaVantageService

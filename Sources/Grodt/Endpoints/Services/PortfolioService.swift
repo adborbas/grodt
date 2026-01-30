@@ -1,7 +1,16 @@
 import Vapor
 import Fluent
 
-class PortfolioService {
+protocol PortfolioServicing: Sendable {
+    func allPortfolios(userID: User.IDValue) async throws -> [PortfolioInfoDTO]
+    func create(request: CreatePortfolioRequestDTO, userID: User.IDValue) async throws -> PortfolioDTO
+    func portfolioDetail(for id: Portfolio.IDValue, userID: User.IDValue) async throws -> PortfolioDTO
+    func updateName(with id: Portfolio.IDValue, forUser userID: User.IDValue, newName: String) async throws -> PortfolioDTO
+    func delete(for id: Portfolio.IDValue, userID: User.IDValue) async throws -> HTTPStatus
+    func historicalPerformance(for id: Portfolio.IDValue, userID: User.IDValue) async throws -> PerformanceTimeSeriesDTO
+}
+
+class PortfolioService: PortfolioServicing {
     private let portfolioRepository: PortfolioRepository
     private let portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository
     private let currencyRepository: CurrencyRepository
