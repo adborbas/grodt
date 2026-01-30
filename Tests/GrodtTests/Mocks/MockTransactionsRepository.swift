@@ -5,6 +5,8 @@ final class MockTransactionsRepository: TransactionsRepository, @unchecked Senda
     var transactionResult: Result<Transaction?, Error> = .success(nil)
     var allResult: Result<[Transaction], Error> = .success([])
     var transactionsResult: Result<[Transaction], Error> = .success([])
+    var accountTransactionsResult: Result<[Transaction], Error> = .success([])
+    var hasTransactionsResult: Result<Bool, Error> = .success(false)
     var saveResult: Result<Void, Error> = .success(())
     var deleteResult: Result<Void, Error> = .success(())
     var updateResult: Result<Void, Error> = .success(())
@@ -26,6 +28,14 @@ final class MockTransactionsRepository: TransactionsRepository, @unchecked Senda
 
     func transactions(for userID: User.IDValue, ticker: String) async throws -> [Transaction] {
         try transactionsResult.get()
+    }
+
+    func transactions(for accountID: BrokerageAccount.IDValue) async throws -> [Transaction] {
+        try accountTransactionsResult.get()
+    }
+
+    func hasTransactions(for accountID: BrokerageAccount.IDValue) async throws -> Bool {
+        try hasTransactionsResult.get()
     }
 
     func save(_ transaction: Transaction) async throws {

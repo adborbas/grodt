@@ -8,7 +8,6 @@ final class MockBrokerageAccountRepository: BrokerageAccountRepository, @uncheck
     var updateResult: Result<Void, Error> = .success(())
     var deleteResult: Result<Void, Error> = .success(())
     var performanceResult: Result<PerformanceDTO, Error> = .success(.zero)
-    var transactionsResult: Result<[Transaction], Error> = .success([])
 
     private(set) var createCalled = false
     private(set) var updateCalled = false
@@ -39,9 +38,5 @@ final class MockBrokerageAccountRepository: BrokerageAccountRepository, @uncheck
 
     func performance(for accountID: BrokerageAccount.IDValue) async throws -> PerformanceDTO {
         try performanceResult.get()
-    }
-
-    func transactions(for accountID: BrokerageAccount.IDValue) async throws -> [Transaction] {
-        try transactionsResult.get()
     }
 }

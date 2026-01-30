@@ -152,6 +152,7 @@ struct BrokerageAccountsServiceTests {
     private func makeSUT(
         brokerageRepository: BrokerageRepository = MockBrokerageRepository(),
         brokerageAccountRepository: BrokerageAccountRepository = MockBrokerageAccountRepository(),
+        transactionsRepository: TransactionsRepository = MockTransactionsRepository(),
         performanceRepository: BrokerageAccountDailyPerformanceReading = MockBrokerageAccountDailyPerformanceReading(),
         performanceDTOMapper: DatedPerformanceDTOMapping = MockDatedPerformanceDTOMapper(),
         currencyMapper: CurrencyDTOMapping = MockCurrencyDTOMapper(),
@@ -161,6 +162,7 @@ struct BrokerageAccountsServiceTests {
         BrokerageAccountsService(
             brokerageRepository: brokerageRepository,
             brokerageAccountRepository: brokerageAccountRepository,
+            transactionsRepository: transactionsRepository,
             performanceRepository: performanceRepository,
             performanceDTOMapper: performanceDTOMapper,
             currencyMapper: currencyMapper,

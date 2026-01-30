@@ -74,7 +74,10 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
     let portfolioRepository = PostgresPortfolioRepository(database: app.db)
     let transactionRepository = PostgresTransactionRepository(database: app.db)
     let brokerageRepository = PostgresBrokerageRepository(database: app.db)
-    let brokerageAccountRepository = PostgresBrokerageAccountRepository(database: app.db)
+    let brokerageAccountRepository = PostgresBrokerageAccountRepository(
+        database: app.db,
+        transactionsRepository: transactionRepository
+    )
 
     let brokerageAccountDailyPerformanceRepository = PostgresBrokerageAccountDailyPerformanceRepository(database: app.db)
     let brokerageDailyPerformanceRepository = PostgresBrokerageDailyPerformanceRepository(database: app.db)
@@ -159,6 +162,7 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
     let brokerageAccountsService = BrokerageAccountsService(
         brokerageRepository: brokerageRepository,
         brokerageAccountRepository: brokerageAccountRepository,
+        transactionsRepository: transactionRepository,
         performanceRepository: brokerageAccountDailyPerformanceRepository,
         performanceDTOMapper: performanceDTOMapper,
         currencyMapper: currencyDTOMapper,

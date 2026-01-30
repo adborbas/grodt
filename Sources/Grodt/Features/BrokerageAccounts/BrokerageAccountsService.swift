@@ -4,6 +4,7 @@ import Fluent
 struct BrokerageAccountsService: BrokerageAccountsServicing {
     private let brokerageRepository: BrokerageRepository
     private let brokerageAccountRepository: BrokerageAccountRepository
+    private let transactionsRepository: TransactionsRepository
     private let performanceRepository: BrokerageAccountDailyPerformanceReading
     private let currencyMapper: CurrencyDTOMapping
     private let performanceDTOMapper: DatedPerformanceDTOMapping
@@ -12,6 +13,7 @@ struct BrokerageAccountsService: BrokerageAccountsServicing {
 
     init(brokerageRepository: BrokerageRepository,
          brokerageAccountRepository: BrokerageAccountRepository,
+         transactionsRepository: TransactionsRepository,
          performanceRepository: BrokerageAccountDailyPerformanceReading,
          performanceDTOMapper: DatedPerformanceDTOMapping,
          currencyMapper: CurrencyDTOMapping,
@@ -19,6 +21,7 @@ struct BrokerageAccountsService: BrokerageAccountsServicing {
          currencyRepository: CurrencyRepository) {
         self.brokerageRepository = brokerageRepository
         self.brokerageAccountRepository = brokerageAccountRepository
+        self.transactionsRepository = transactionsRepository
         self.performanceRepository = performanceRepository
         self.performanceDTOMapper = performanceDTOMapper
         self.currencyMapper = currencyMapper
@@ -44,7 +47,7 @@ struct BrokerageAccountsService: BrokerageAccountsServicing {
     func detail(for id: UUID, userID: User.IDValue) async throws -> BrokerageAccountDTO {
         let model = try await requireAccount(id, userID: userID)
         let brokerage = model.brokerage
-        let transactions = try await brokerageAccountRepository.transactions(for: id)
+        let transactions = try await transactionsRepository.transactions(for: id)
         let performance = try await brokerageAccountRepository.performance(for: model.requireID())
         let historicalPerformance = try await performanceSeries(for: id, userID: userID)
 

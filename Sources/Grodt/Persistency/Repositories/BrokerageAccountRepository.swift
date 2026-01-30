@@ -8,14 +8,15 @@ protocol BrokerageAccountRepository {
     func update(_ account: BrokerageAccount) async throws
     func delete(_ account: BrokerageAccount) async throws
     func performance(for accountID: BrokerageAccount.IDValue) async throws -> PerformanceDTO
-    func transactions(for accountID: BrokerageAccount.IDValue) async throws -> [Transaction]
 }
 
 class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
     private let database: Database
-    
-    init(database: Database) {
+    private let transactionsRepository: TransactionsRepository
+
+    init(database: Database, transactionsRepository: TransactionsRepository) {
         self.database = database
+        self.transactionsRepository = transactionsRepository
     }
     
     func all(for userID: User.IDValue) async throws -> [BrokerageAccount] {
@@ -39,8 +40,8 @@ class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
     func update(_ account: BrokerageAccount) async throws { try await account.update(on: database) }
     
     func delete(_ account: BrokerageAccount) async throws {
-        let count = try await Transaction.query(on: database).filter(\.$brokerageAccount.$id == account.requireID()).count()
-        guard count == 0 else { throw Abort(.conflict, reason: "BrokerageAccount has transactions.") }
+        let hasTransactions = try await transactionsRepository.hasTransactions(for: account.requireID())
+        guard !hasTransactions else { throw Abort(.conflict, reason: "BrokerageAccount has transactions.") }
         try await account.delete(on: database)
     }
     
@@ -60,11 +61,5 @@ class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
                               moneyOut: moneyOut,
                               profit: profit,
                               totalReturn: totalReturn)
-    }
-
-    func transactions(for accountID: BrokerageAccount.IDValue) async throws -> [Transaction] {
-        try await Transaction.query(on: database)
-            .filter(\.$brokerageAccount.$id == accountID)
-            .all()
     }
 }
