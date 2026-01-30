@@ -87,4 +87,14 @@ struct UserPreferencesPayload: Codable {
     init(monthlyEmail: MonthlyEmailConfig) {
         self.monthlyEmail = monthlyEmail
     }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.monthlyEmail = try container.decodeIfPresent(MonthlyEmailConfig.self, forKey: .monthlyEmail)
+            ?? MonthlyEmailConfig(isEnabled: false, configuration: nil)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case monthlyEmail
+    }
 }
