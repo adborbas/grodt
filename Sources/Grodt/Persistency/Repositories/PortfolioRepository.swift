@@ -7,7 +7,9 @@ protocol PortfolioRepository {
     func create(_ portfolio: Portfolio) async throws -> Portfolio
     func update(_ portfolio: Portfolio) async throws -> Portfolio
     func delete(for userID: User.IDValue, with id: Portfolio.IDValue) async throws
-    
+    func allTransactions(for userID: User.IDValue) async throws -> [Transaction]
+    func transactions(for userID: User.IDValue, ticker: String) async throws -> [Transaction]
+
     func expandPortfolio(on transaction: Transaction) async throws -> Portfolio
 }
 
@@ -87,5 +89,15 @@ class PostgresPortfolioRepository: PortfolioRepository {
             .first()
         else { throw FluentError.noResults }
         return result
+    }
+
+    func allTransactions(for userID: User.IDValue) async throws -> [Transaction] {
+        let portfolios = try await allPortfolios(for: userID)
+        return portfolios.flatMap { $0.transactions }
+    }
+
+    func transactions(for userID: User.IDValue, ticker: String) async throws -> [Transaction] {
+        let allTransactions = try await allTransactions(for: userID)
+        return allTransactions.filter { $0.ticker == ticker }
     }
 }

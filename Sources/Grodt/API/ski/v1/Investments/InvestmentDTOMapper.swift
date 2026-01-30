@@ -1,7 +1,7 @@
 import Foundation
 import CollectionConcurrencyKit
 
-class InvestmentDTOMapper {
+class InvestmentDTOMapper: InvestmentDTOMapping {
     enum InvestmentError: Error {
         case invalidPrice(for: String)
     }
