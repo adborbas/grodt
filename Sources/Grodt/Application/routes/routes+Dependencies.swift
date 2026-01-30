@@ -32,7 +32,9 @@ struct AppContainer {
     // Calculators / updaters
     let performanceCalculator: HoldingsPerformanceCalculating
     let portfolioPerformanceUpdater: PortfolioPerformanceUpdater
-    
+    let brokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdater
+    let brokeragePerformanceUpdater: BrokeragePerformanceUpdater
+
     let portfolioService: PortfolioService
     let accountService: AccountService
     let brokerageService: BrokerageService
@@ -104,7 +106,22 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         performanceCalculator: performanceCalculator,
         portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db)
     )
-    
+
+    let brokerageAccountPerformanceUpdater = BrokerageAccountPerformanceUpdater(
+        transactionRepository: transactionRepository,
+        brokerageAccountRepository: brokerageAccountRepository,
+        accountDailyRepository: brokerageAccountDailyPerformanceRepository,
+        userRepository: userRepository,
+        calculator: performanceCalculator
+    )
+
+    let brokeragePerformanceUpdater = BrokeragePerformanceUpdater(
+        userRepository: userRepository,
+        brokerageAccountRepository: brokerageAccountRepository,
+        accountDailyRepository: brokerageAccountDailyPerformanceRepository,
+        brokerageDailyRepository: brokerageDailyPerformanceRepository
+    )
+
     let portfolioService = PortfolioService(portfolioRepository: portfolioRepository,
                                             currencyRepository: currencyRepository,
                                             portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db),
@@ -147,7 +164,10 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
 
     transactionService.delegate = TransactionChangedHandler(
         portfolioRepository: portfolioRepository,
-        historicalPerformanceUpdater: portfolioPerformanceUpdater
+        brokerageAccountRepository: brokerageAccountRepository,
+        portfolioPerformanceUpdater: portfolioPerformanceUpdater,
+        brokerageAccountPerformanceUpdater: brokerageAccountPerformanceUpdater,
+        brokeragePerformanceUpdater: brokeragePerformanceUpdater
     )
 
     let tickersService = TickersService(
@@ -199,6 +219,8 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         currencyRepository: currencyRepository,
         performanceCalculator: performanceCalculator,
         portfolioPerformanceUpdater: portfolioPerformanceUpdater,
+        brokerageAccountPerformanceUpdater: brokerageAccountPerformanceUpdater,
+        brokeragePerformanceUpdater: brokeragePerformanceUpdater,
         portfolioService: portfolioService,
         accountService: accountService,
         brokerageService: brokerageService,
@@ -227,19 +249,8 @@ func scheduleNightlyJobs(_ app: Application, _ container: AppContainer) throws {
             priceService: container.priceService
         ),
         portfolioPerformanceUpdater: container.portfolioPerformanceUpdater,
-        brokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdater(
-            transactionRepository: container.transactionRepository,
-            brokerageAccountRepository: container.brokerageAccountRepository,
-            accountDailyRepository: container.brokerageAccountDailyPerformanceRepository,
-            userRepository: container.userRepository,
-            calculator: container.performanceCalculator
-        ),
-        brokeragePerformanceUpdater: BrokeragePerformanceUpdater(
-            userRepository: container.userRepository,
-            brokerageAccountRepository: container.brokerageAccountRepository,
-            accountDailyRepository: container.brokerageAccountDailyPerformanceRepository,
-            brokerageDailyRepository: container.brokerageDailyPerformanceRepository
-        )
+        brokerageAccountPerformanceUpdater: container.brokerageAccountPerformanceUpdater,
+        brokeragePerformanceUpdater: container.brokeragePerformanceUpdater
     )
 
     app.queues.schedule(nightlyUpdaterJob)

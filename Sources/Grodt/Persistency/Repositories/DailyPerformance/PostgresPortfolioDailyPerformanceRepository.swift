@@ -1,5 +1,6 @@
 import Foundation
 import Fluent
+import SQLKit
 
 struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
     typealias OwnerID = UUID
@@ -71,6 +72,41 @@ struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
     func deleteAll(for ownerID: UUID) async throws {
         try await HistoricalPortfolioPerformanceDaily.query(on: db)
             .filter(\.$portfolio.$id == ownerID)
+            .delete()
+    }
+
+    func batchUpsert(points: [DatedPerformance], for ownerID: UUID) async throws {
+        guard !points.isEmpty else { return }
+        guard let sql = db as? SQLDatabase else {
+            // Fallback to regular upsert if not SQL database
+            try await upsert(points: points, for: ownerID)
+            return
+        }
+
+        // Process in batches of 100 to avoid overly large queries
+        let batchSize = 100
+        for batch in points.chunked(into: batchSize) {
+            var values: [SQLQueryString] = []
+            for point in batch {
+                let dateStr = ISO8601DateFormatter().string(from: point.date.date)
+                values.append("\(literal: UUID().uuidString), \(literal: ownerID.uuidString), \(literal: dateStr)::date, \(unsafeRaw: point.moneyIn.description), \(unsafeRaw: point.value.description)")
+            }
+
+            let valuesList = SQLQueryString(values.map { "(\($0))" }.joined(separator: ", "))
+
+            try await sql.raw("""
+                INSERT INTO historical_portfolio_performance_daily (id, portfolio_id, date, money_in, value)
+                VALUES \(valuesList)
+                ON CONFLICT (portfolio_id, date)
+                DO UPDATE SET money_in = EXCLUDED.money_in, value = EXCLUDED.value
+                """).run()
+        }
+    }
+
+    func deleteFrom(date: YearMonthDayDate, for ownerID: UUID) async throws {
+        try await HistoricalPortfolioPerformanceDaily.query(on: db)
+            .filter(\.$portfolio.$id == ownerID)
+            .filter(\.$date >= date.date)
             .delete()
     }
 }

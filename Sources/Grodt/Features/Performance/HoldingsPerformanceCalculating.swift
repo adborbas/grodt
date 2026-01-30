@@ -2,6 +2,14 @@ import Foundation
 
 protocol HoldingsPerformanceCalculating {
     func performanceSeries(for transactions: [Transaction], from startDate: YearMonthDayDate, to endDate: YearMonthDayDate) async throws -> [DatedPerformance]
+
+    /// Overload that accepts pre-fetched prices to enable sharing price data between calculations.
+    func performanceSeries(
+        for transactions: [Transaction],
+        from startDate: YearMonthDayDate,
+        to endDate: YearMonthDayDate,
+        priceCache: [String: [DatedQuote]]
+    ) async throws -> [DatedPerformance]
 }
 
 struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
@@ -18,18 +26,37 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
         guard !transactions.isEmpty else { return [] }
         guard endDate >= startDate else { return [] }
 
+        let symbols = distinctTickers(from: transactions)
+        var priceCache: [String: [DatedQuote]] = [:]
+        for symbol in symbols {
+            priceCache[symbol] = try await priceService.historicalPrice(for: symbol)
+        }
+        return try await performanceSeries(for: transactions, from: startDate, to: endDate, priceCache: priceCache)
+    }
+
+    /// Overload that accepts pre-fetched prices to enable sharing price data between calculations.
+    func performanceSeries(
+        for transactions: [Transaction],
+        from startDate: YearMonthDayDate,
+        to endDate: YearMonthDayDate,
+        priceCache: [String: [DatedQuote]]
+    ) async throws -> [DatedPerformance] {
+        guard !transactions.isEmpty else { return [] }
+        guard endDate >= startDate else { return [] }
+
         // 1) Normalize inputs and build the day range.
         let sortedTransactions = transactions.sorted { $0.purchaseDate < $1.purchaseDate }
         let days = YearMonthDayDate.days(from: startDate, to: endDate)
         let symbols = distinctTickers(from: sortedTransactions)
 
-        // 2) Prefetch quotes and build price-change events per day + baselines at start.
+        // 2) Build price-change events per day + baselines at start from the cache.
         var baselinePrices: [Symbol: Decimal] = [:]
-        let priceEventsByDay = try await buildPriceEvents(
+        let priceEventsByDay = buildPriceEventsFromCache(
             for: symbols,
             baseline: &baselinePrices,
             startingAt: startDate,
-            endingAt: endDate
+            endingAt: endDate,
+            priceCache: priceCache
         )
 
         // 3) Establish initial running state at start date (moneyIn/qty/value and transaction cursor).
@@ -63,19 +90,20 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
 
     // MARK: - Private helpers (pure functions)
 
-    /// Prefetches quotes once per symbol and returns (a) a day-indexed map of price-change events and
+    /// Builds price events from a pre-fetched cache of quotes.
+    /// Returns (a) a day-indexed map of price-change events and
     /// (b) the baseline price for each symbol as of `startDate` (last quote on or before start).
-    private func buildPriceEvents(
+    private func buildPriceEventsFromCache(
         for symbols: [Symbol],
         baseline: inout [Symbol: Decimal],
         startingAt startDate: YearMonthDayDate,
-        endingAt endDate: YearMonthDayDate
-    ) async throws -> [Date: [(Symbol, Decimal)]] {
+        endingAt endDate: YearMonthDayDate,
+        priceCache: [String: [DatedQuote]]
+    ) -> [Date: [(Symbol, Decimal)]] {
         var eventsByDay: [Date: [(Symbol, Decimal)]] = [:]
 
         for symbol in symbols {
-            var quotes = try await priceService.historicalPrice(for: symbol)
-            guard !quotes.isEmpty else { continue }
+            guard var quotes = priceCache[symbol], !quotes.isEmpty else { continue }
             quotes.sort { $0.date < $1.date }
 
             // Establish baseline ≤ startDate

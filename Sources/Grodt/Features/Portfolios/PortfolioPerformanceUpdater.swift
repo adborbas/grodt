@@ -3,6 +3,7 @@ import Fluent
 
 protocol PortfolioPerformanceUpdating {
     func recalculatePerformance(of portfolio: Portfolio) async throws
+    func recalculatePerformance(of portfolio: Portfolio, from date: YearMonthDayDate) async throws
     func updateAllPortfolioPerformance() async throws
 }
 
@@ -35,11 +36,17 @@ class PortfolioPerformanceUpdater: PortfolioPerformanceUpdating {
 
     func updateAllPortfolioPerformance() async throws {
         let users = try await userRepository.allUsers()
-        for user in users {
-            let allPortfolios = try await portfolioRepository.allPortfolios(for: user.id!)
-            for portfolio in allPortfolios {
-                try await recalculatePerformance(of: portfolio)
+
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for user in users {
+                group.addTask {
+                    let allPortfolios = try await self.portfolioRepository.allPortfolios(for: user.id!)
+                    for portfolio in allPortfolios {
+                        try await self.recalculatePerformance(of: portfolio)
+                    }
+                }
             }
+            try await group.waitForAll()
         }
     }
 
@@ -63,6 +70,30 @@ class PortfolioPerformanceUpdater: PortfolioPerformanceUpdating {
         )
 
         try await portfolioDailyRepo.replaceSeries(for: try portfolio.requireID(), with: datedPerformance)
+    }
+
+    func recalculatePerformance(of portfolio: Portfolio, from date: YearMonthDayDate) async throws {
+        let transactions = portfolio.transactions
+        let portfolioID = try portfolio.requireID()
+
+        // No transactions: clear daily rows and return
+        guard !transactions.isEmpty else {
+            try await portfolioDailyRepo.deleteAll(for: portfolioID)
+            return
+        }
+
+        let end = YearMonthDayDate(Date())
+
+        // Calculate performance series from the specified date
+        let datedPerformance = try await performanceCalculator.performanceSeries(
+            for: transactions,
+            from: date,
+            to: end
+        )
+
+        // Delete existing data from the date onwards and batch insert new data
+        try await portfolioDailyRepo.deleteFrom(date: date, for: portfolioID)
+        try await portfolioDailyRepo.batchUpsert(points: datedPerformance, for: portfolioID)
     }
 
     private func dateRangeUntilToday(from startDate: Date) -> [YearMonthDayDate] {

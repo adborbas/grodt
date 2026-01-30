@@ -17,7 +17,15 @@ final class MockBrokerageAccountRepository: BrokerageAccountRepository, @uncheck
         try allResult.get()
     }
 
+    func accounts(for brokerageID: Brokerage.IDValue) async throws -> [BrokerageAccount] {
+        try allResult.get()
+    }
+
     func find(_ id: BrokerageAccount.IDValue, for userID: User.IDValue) async throws -> BrokerageAccount? {
+        try findResult.get()
+    }
+
+    func account(for id: BrokerageAccount.IDValue) async throws -> BrokerageAccount? {
         try findResult.get()
     }
 

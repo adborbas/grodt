@@ -3,7 +3,9 @@ import Fluent
 
 protocol BrokerageAccountRepository {
     func all(for userID: User.IDValue) async throws -> [BrokerageAccount]
+    func accounts(for brokerageID: Brokerage.IDValue) async throws -> [BrokerageAccount]
     func find(_ id: BrokerageAccount.IDValue, for userID: User.IDValue) async throws -> BrokerageAccount?
+    func account(for id: BrokerageAccount.IDValue) async throws -> BrokerageAccount?
     func create(_ account: BrokerageAccount) async throws
     func update(_ account: BrokerageAccount) async throws
     func delete(_ account: BrokerageAccount) async throws
@@ -26,7 +28,21 @@ class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
             .with(\.$brokerage)
         return try await query.all()
     }
-    
+
+    func accounts(for brokerageID: Brokerage.IDValue) async throws -> [BrokerageAccount] {
+        try await BrokerageAccount.query(on: database)
+            .filter(\.$brokerage.$id == brokerageID)
+            .with(\.$brokerage)
+            .all()
+    }
+
+    func account(for id: BrokerageAccount.IDValue) async throws -> BrokerageAccount? {
+        try await BrokerageAccount.query(on: database)
+            .filter(\.$id == id)
+            .with(\.$brokerage)
+            .first()
+    }
+
     func find(_ id: BrokerageAccount.IDValue, for userID: User.IDValue) async throws -> BrokerageAccount? {
         try await BrokerageAccount.query(on: database)
             .filter(\.$id == id)

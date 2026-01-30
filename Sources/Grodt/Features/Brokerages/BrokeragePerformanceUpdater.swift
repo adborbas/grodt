@@ -3,6 +3,7 @@ import Fluent
 
 protocol BrokeragePerformanceUpdating {
     func updateAllBrokeragePerformance() async throws
+    func recalculatePerformance(for brokerageID: UUID, from date: YearMonthDayDate) async throws
 }
 
 final class BrokeragePerformanceUpdater: BrokeragePerformanceUpdating {
@@ -25,8 +26,14 @@ final class BrokeragePerformanceUpdater: BrokeragePerformanceUpdating {
 
     func updateAllBrokeragePerformance() async throws {
         let users = try await userRepository.allUsers()
-        for user in users {
-            try await updateAllBrokerages(for: user)
+
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for user in users {
+                group.addTask {
+                    try await self.updateAllBrokerages(for: user)
+                }
+            }
+            try await group.waitForAll()
         }
     }
 
@@ -103,5 +110,51 @@ final class BrokeragePerformanceUpdater: BrokeragePerformanceUpdating {
 
         // Replace the brokerage's series
         try await brokerageDailyRepository.replaceSeries(for: brokerageID, with: summed)
+    }
+
+    func recalculatePerformance(for brokerageID: UUID, from date: YearMonthDayDate) async throws {
+        // Get all accounts for this brokerage
+        let accounts = try await brokerageAccountRepository.accounts(for: brokerageID)
+
+        guard !accounts.isEmpty else {
+            try await brokerageDailyRepository.deleteAll(for: brokerageID)
+            return
+        }
+
+        // Read each account's series from the specified date
+        var perAccountSeries: [[YearMonthDayDate: DatedPerformance]] = []
+        perAccountSeries.reserveCapacity(accounts.count)
+
+        for account in accounts {
+            let accountID = try account.requireID()
+            let series = try await accountDailyRepository.readSeries(for: accountID, from: date, to: nil)
+            var map: [YearMonthDayDate: DatedPerformance] = [:]
+            map.reserveCapacity(series.count)
+            for point in series { map[point.date] = point }
+            perAccountSeries.append(map)
+        }
+
+        let end = YearMonthDayDate(Date())
+        let days = YearMonthDayDate.days(from: date, to: end)
+
+        // Sum across accounts for each day
+        var summed: [DatedPerformance] = []
+        summed.reserveCapacity(days.count)
+
+        for day in days {
+            var moneyIn: Decimal = 0
+            var value: Decimal = 0
+            for seriesMap in perAccountSeries {
+                if let point = seriesMap[day] {
+                    moneyIn += point.moneyIn
+                    value += point.value
+                }
+            }
+            summed.append(DatedPerformance(moneyIn: moneyIn, value: value, date: day))
+        }
+
+        // Delete existing data from the date onwards and batch insert new data
+        try await brokerageDailyRepository.deleteFrom(date: date, for: brokerageID)
+        try await brokerageDailyRepository.batchUpsert(points: summed, for: brokerageID)
     }
 }

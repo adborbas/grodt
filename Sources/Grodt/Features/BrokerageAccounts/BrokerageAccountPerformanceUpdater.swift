@@ -3,6 +3,7 @@ import Fluent
 
 protocol BrokerageAccountPerformanceUpdating {
     func updateAllBrokerageAccountPerformance() async throws
+    func recalculatePerformance(for accountID: UUID, from date: YearMonthDayDate) async throws
 }
 
 class BrokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdating {
@@ -26,8 +27,14 @@ class BrokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdating {
 
     func updateAllBrokerageAccountPerformance() async throws {
         let users = try await userRepository.allUsers()
-        for user in users {
-            try await updateAllAccounts(for: user)
+
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for user in users {
+                group.addTask {
+                    try await self.updateAllAccounts(for: user)
+                }
+            }
+            try await group.waitForAll()
         }
     }
 
@@ -71,5 +78,27 @@ class BrokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdating {
         )
 
         try await accountDailyRepository.replaceSeries(for: accountID, with: series)
+    }
+
+    func recalculatePerformance(for accountID: UUID, from date: YearMonthDayDate) async throws {
+        let accountTransactions = try await transactionRepository.transactions(for: accountID)
+
+        // No transactions → clear any stored series
+        guard !accountTransactions.isEmpty else {
+            try await accountDailyRepository.deleteAll(for: accountID)
+            return
+        }
+
+        let end = YearMonthDayDate(Date())
+
+        let series = try await calculator.performanceSeries(
+            for: accountTransactions,
+            from: date,
+            to: end
+        )
+
+        // Delete existing data from the date onwards and batch insert new data
+        try await accountDailyRepository.deleteFrom(date: date, for: accountID)
+        try await accountDailyRepository.batchUpsert(points: series, for: accountID)
     }
 }
