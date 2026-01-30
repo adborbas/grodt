@@ -5,14 +5,14 @@ class InvestmentDTOMapper: InvestmentDTOMapping {
     enum InvestmentError: Error {
         case invalidPrice(for: String)
     }
-    
+
     private let currencyDTOMapper: CurrencyDTOMapper
-    private let transactionDTOMapper: TransactionDTOMapper
+    private let transactionDTOMapper: TransactionDTOMapping
     private let tickerRepository: TickerRepository
     private let priceService: PriceService
-    
+
     init(currencyDTOMapper: CurrencyDTOMapper,
-         transactionDTOMapper: TransactionDTOMapper,
+         transactionDTOMapper: TransactionDTOMapping,
          tickerRepository: TickerRepository,
          priceService: PriceService) {
         self.currencyDTOMapper = currencyDTOMapper
