@@ -1,5 +1,5 @@
 @testable import Grodt
-import XCTest
+import Testing
 
 protocol EquatableExceptID {
     func equalToExceptIDWith(_ other: Self) -> Bool
@@ -22,6 +22,6 @@ extension PortfolioDTO: EquatableExceptID {
     }
 }
 
-func XCTAssertEqualExceptID<T>(_ lhs: T, _ rhs: T) where T: EquatableExceptID {
-    XCTAssert(lhs.equalToExceptIDWith(rhs))
+func expectEqualExceptID<T>(_ lhs: T, _ rhs: T, sourceLocation: SourceLocation = #_sourceLocation) where T: EquatableExceptID {
+    #expect(lhs.equalToExceptIDWith(rhs), sourceLocation: sourceLocation)
 }
