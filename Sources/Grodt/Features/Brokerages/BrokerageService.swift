@@ -11,18 +11,12 @@ protocol BrokerageServicing: Sendable {
 
 struct BrokerageService: BrokerageServicing {
     private let brokerageRepository: BrokerageRepository
-    private let dtoMapper: BrokerageDTOMapper
-    private let accountsRepository: BrokerageAccountRepository
-    private let currencyMapper: CurrencyDTOMapper
-    
+    private let dtoMapper: BrokerageDTOMapping
+
     init(brokerageRepository: BrokerageRepository,
-         dtoMapper: BrokerageDTOMapper,
-         accounts: BrokerageAccountRepository,
-         currencyMapper: CurrencyDTOMapper) {
+         dtoMapper: BrokerageDTOMapping) {
         self.brokerageRepository = brokerageRepository
         self.dtoMapper = dtoMapper
-        self.accountsRepository = accounts
-        self.currencyMapper = currencyMapper
     }
     
     func allBrokerages(for userID: UUID) async throws -> [BrokerageDTO] {

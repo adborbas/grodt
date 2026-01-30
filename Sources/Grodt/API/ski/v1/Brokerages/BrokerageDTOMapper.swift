@@ -1,6 +1,6 @@
 import Fluent
 
-struct BrokerageDTOMapper {
+struct BrokerageDTOMapper: BrokerageDTOMapping {
     private let brokerageRepository: BrokerageRepository
     private let accountDTOMapper: BrokerageAccountDTOMapper
     private let performanceRepository: PostgresBrokerageDailyPerformanceRepository
