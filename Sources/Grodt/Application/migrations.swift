@@ -31,6 +31,12 @@ func migrations(_ app: Application) throws {
     // Migrate currency column from TEXT to JSONB (safe for both fresh and existing databases)
     app.migrations.add(MigrateTransactionCurrencyToJsonb())
 
+    // Add transaction type, rename columns, and update performance tables
+    if app.environment != .testing {
+        app.migrations.add(Transaction.Migration_AddTypeAndRenameColumns())
+        app.migrations.add(RenamePerformanceColumns())
+    }
+
     app.migrations.add(Currency.Migration())
     app.migrations.add(Ticker.Migration())
     app.migrations.add(Quote.Migration())

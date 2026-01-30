@@ -4,7 +4,8 @@ import Foundation
 protocol TransactionsRepository {
     func transaction(for id: UUID) async throws -> Transaction?
     func all(for userID: User.IDValue) async throws -> [Transaction]
-    func transactions(for userID: User.IDValue, ticker: String) async throws -> [Transaction]
+    func transactionsForUser(_ userID: User.IDValue, ticker: String) async throws -> [Transaction]
+    func transactionsForPortfolio(_ portfolioID: Portfolio.IDValue, ticker: String) async throws -> [Transaction]
     func transactions(for accountID: BrokerageAccount.IDValue) async throws -> [Transaction]
     func hasTransactions(for accountID: BrokerageAccount.IDValue) async throws -> Bool
     func save(_ transaction: Transaction) async throws
@@ -32,18 +33,26 @@ class PostgresTransactionRepository: TransactionsRepository {
             .filter(Portfolio.self, \.$user.$id == userID)
             .with(\.$portfolio)
             .with(\.$brokerageAccount)
-            .sort(\.$purchaseDate, .descending)
+            .sort(\.$transactionDate, .descending)
             .all()
     }
 
-    func transactions(for userID: User.IDValue, ticker: String) async throws -> [Transaction] {
+    func transactionsForUser(_ userID: User.IDValue, ticker: String) async throws -> [Transaction] {
         return try await Transaction.query(on: database)
             .join(parent: \Transaction.$portfolio)
             .filter(Portfolio.self, \.$user.$id == userID)
             .filter(\.$ticker == ticker)
             .with(\.$portfolio)
             .with(\.$brokerageAccount)
-            .sort(\.$purchaseDate, .descending)
+            .sort(\.$transactionDate, .descending)
+            .all()
+    }
+
+    func transactionsForPortfolio(_ portfolioID: Portfolio.IDValue, ticker: String) async throws -> [Transaction] {
+        return try await Transaction.query(on: database)
+            .filter(\.$portfolio.$id == portfolioID)
+            .filter(\.$ticker == ticker)
+            .sort(\.$transactionDate, .ascending)
             .all()
     }
 

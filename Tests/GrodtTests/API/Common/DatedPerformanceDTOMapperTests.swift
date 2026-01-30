@@ -10,36 +10,39 @@ struct DatedPerformanceDTOMapperTests {
 
     @Test func performancePoint_withPositiveProfit_calculatesCorrectly() {
         let performance = DatedPerformance(
-            moneyIn: 1000,
-            value: 1500,
+            invested: 1000,
+            realized: 0,
+            currentValue: 1500,
             date: YearMonthDayDate()
         )
 
         let dto = mapper.performancePoint(from: performance)
 
-        #expect(dto.moneyIn == 1000)
-        #expect(dto.moneyOut == 1500)
+        #expect(dto.invested == 1000)
+        #expect(dto.currentValue == 1500)
         #expect(dto.profit == 500)
     }
 
     @Test func performancePoint_withNegativeProfit_calculatesCorrectly() {
         let performance = DatedPerformance(
-            moneyIn: 1000,
-            value: 800,
+            invested: 1000,
+            realized: 0,
+            currentValue: 800,
             date: YearMonthDayDate()
         )
 
         let dto = mapper.performancePoint(from: performance)
 
-        #expect(dto.moneyIn == 1000)
-        #expect(dto.moneyOut == 800)
+        #expect(dto.invested == 1000)
+        #expect(dto.currentValue == 800)
         #expect(dto.profit == -200)
     }
 
     @Test func performancePoint_withZeroProfit_calculatesCorrectly() {
         let performance = DatedPerformance(
-            moneyIn: 1000,
-            value: 1000,
+            invested: 1000,
+            realized: 0,
+            currentValue: 1000,
             date: YearMonthDayDate()
         )
 
@@ -48,12 +51,29 @@ struct DatedPerformanceDTOMapperTests {
         #expect(dto.profit == 0)
     }
 
+    @Test func performancePoint_withRealizedGains_calculatesCorrectly() {
+        let performance = DatedPerformance(
+            invested: 500,
+            realized: 200,
+            currentValue: 600,
+            date: YearMonthDayDate()
+        )
+
+        let dto = mapper.performancePoint(from: performance)
+
+        #expect(dto.invested == 500)
+        #expect(dto.currentValue == 600)
+        // profit = currentValue + realized - invested = 600 + 200 - 500 = 300
+        #expect(dto.profit == 300)
+    }
+
     // MARK: - Total Return Calculation
 
     @Test func performancePoint_totalReturn_calculatesPercentageCorrectly() {
         let performance = DatedPerformance(
-            moneyIn: 1000,
-            value: 1100,
+            invested: 1000,
+            realized: 0,
+            currentValue: 1100,
             date: YearMonthDayDate()
         )
 
@@ -65,8 +85,9 @@ struct DatedPerformanceDTOMapperTests {
 
     @Test func performancePoint_totalReturn_roundsToTwoDecimalPlaces() {
         let performance = DatedPerformance(
-            moneyIn: 1000,
-            value: 1333,
+            invested: 1000,
+            realized: 0,
+            currentValue: 1333,
             date: YearMonthDayDate()
         )
 
@@ -76,10 +97,11 @@ struct DatedPerformanceDTOMapperTests {
         #expect(dto.totalReturn == Decimal(string: "0.33")!)
     }
 
-    @Test func performancePoint_totalReturn_withZeroMoneyIn_returnsZero() {
+    @Test func performancePoint_totalReturn_withZeroInvested_returnsZero() {
         let performance = DatedPerformance(
-            moneyIn: 0,
-            value: 100,
+            invested: 0,
+            realized: 0,
+            currentValue: 100,
             date: YearMonthDayDate()
         )
 
@@ -91,8 +113,9 @@ struct DatedPerformanceDTOMapperTests {
 
     @Test func performancePoint_totalReturn_withNegativeReturn_calculatesCorrectly() {
         let performance = DatedPerformance(
-            moneyIn: 1000,
-            value: 750,
+            invested: 1000,
+            realized: 0,
+            currentValue: 750,
             date: YearMonthDayDate()
         )
 
@@ -111,8 +134,9 @@ struct DatedPerformanceDTOMapperTests {
         let specificDate = calendar.date(from: dateComponents)!
         let date = YearMonthDayDate(specificDate)
         let performance = DatedPerformance(
-            moneyIn: 1000,
-            value: 1000,
+            invested: 1000,
+            realized: 0,
+            currentValue: 1000,
             date: date
         )
 
@@ -125,8 +149,9 @@ struct DatedPerformanceDTOMapperTests {
 
     @Test func performancePoint_withLargeNumbers_calculatesCorrectly() {
         let performance = DatedPerformance(
-            moneyIn: Decimal(string: "1000000000")!, // 1 billion
-            value: Decimal(string: "1500000000")!,   // 1.5 billion
+            invested: Decimal(string: "1000000000")!, // 1 billion
+            realized: 0,
+            currentValue: Decimal(string: "1500000000")!,   // 1.5 billion
             date: YearMonthDayDate()
         )
 
@@ -138,8 +163,9 @@ struct DatedPerformanceDTOMapperTests {
 
     @Test func performancePoint_withSmallDecimals_calculatesCorrectly() {
         let performance = DatedPerformance(
-            moneyIn: Decimal(string: "100.50")!,
-            value: Decimal(string: "110.75")!,
+            invested: Decimal(string: "100.50")!,
+            realized: 0,
+            currentValue: Decimal(string: "110.75")!,
             date: YearMonthDayDate()
         )
 

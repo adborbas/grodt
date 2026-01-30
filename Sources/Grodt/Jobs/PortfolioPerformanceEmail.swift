@@ -62,10 +62,10 @@ class PortfolioPerformanceEmail {
         dateFormatter.dateFormat = "MMMM yyyy"
         let monthName = dateFormatter.string(from: Date())
 
-        let totalValue = portfolios.reduce(Decimal(0)) { $0 + $1.performance.moneyOut }
-        let totalProfit = portfolios.reduce(Decimal(0)) { $0 + $1.performance.profit }
-        let totalMoneyIn = portfolios.reduce(Decimal(0)) { $0 + $1.performance.moneyIn }
-        let overallReturn = totalMoneyIn > 0 ? (totalProfit / totalMoneyIn * 100) : 0
+        let totalValue = portfolios.reduce(into: Decimal(0)) { $0 += $1.performance.currentValue }
+        let totalProfit = portfolios.reduce(into: Decimal(0)) { $0 += $1.performance.profit }
+        let totalInvested = portfolios.reduce(into: Decimal(0)) { $0 += $1.performance.invested }
+        let overallReturn = totalInvested > 0 ? (totalProfit / totalInvested * 100) : 0
 
         let profitSign = totalProfit >= 0 ? "+" : ""
 
@@ -76,7 +76,7 @@ class PortfolioPerformanceEmail {
                 portfolioRows += """
                 <tr>
                     <td>\(portfolio.name)</td>
-                    <td>\(portfolio.currency.symbol)\(formatDecimal(portfolio.performance.moneyOut))</td>
+                    <td>\(portfolio.currency.symbol)\(formatDecimal(portfolio.performance.currentValue))</td>
                     <td>\(pSign)\(portfolio.currency.symbol)\(formatDecimal(portfolio.performance.profit))</td>
                     <td>\(formatDecimal(portfolio.performance.totalReturn * 100))%</td>
                 </tr>
@@ -125,10 +125,10 @@ class PortfolioPerformanceEmail {
         dateFormatter.dateFormat = "MMMM yyyy"
         let monthName = dateFormatter.string(from: Date())
 
-        let totalValue = portfolios.reduce(Decimal(0)) { $0 + $1.performance.moneyOut }
-        let totalProfit = portfolios.reduce(Decimal(0)) { $0 + $1.performance.profit }
-        let totalMoneyIn = portfolios.reduce(Decimal(0)) { $0 + $1.performance.moneyIn }
-        let overallReturn = totalMoneyIn > 0 ? (totalProfit / totalMoneyIn * 100) : 0
+        let totalValue = portfolios.reduce(into: Decimal(0)) { $0 += $1.performance.currentValue }
+        let totalProfit = portfolios.reduce(into: Decimal(0)) { $0 += $1.performance.profit }
+        let totalInvested = portfolios.reduce(into: Decimal(0)) { $0 += $1.performance.invested }
+        let overallReturn = totalInvested > 0 ? (totalProfit / totalInvested * 100) : 0
 
         let profitSign = totalProfit >= 0 ? "+" : ""
 
@@ -151,7 +151,7 @@ class PortfolioPerformanceEmail {
             text += "\nPORTFOLIO BREAKDOWN\n-------------------\n"
             for portfolio in portfolios {
                 let pSign = portfolio.performance.profit >= 0 ? "+" : ""
-                text += "\(portfolio.name): \(portfolio.currency.symbol)\(formatDecimal(portfolio.performance.moneyOut)) (\(pSign)\(formatDecimal(portfolio.performance.totalReturn * 100))%)\n"
+                text += "\(portfolio.name): \(portfolio.currency.symbol)\(formatDecimal(portfolio.performance.currentValue)) (\(pSign)\(formatDecimal(portfolio.performance.totalReturn * 100))%)\n"
             }
         }
 

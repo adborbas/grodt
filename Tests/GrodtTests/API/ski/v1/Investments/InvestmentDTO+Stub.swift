@@ -9,7 +9,7 @@ extension InvestmentDetailDTO {
         latestPrice: Decimal = 175,
         totalReturn: Decimal = 0.167,
         profit: Decimal = 25,
-        value: Decimal = 175,
+        currentValue: Decimal = 175,
         numberOfShares: Decimal = 1,
         currency: CurrencyDTO = CurrencyDTO(code: "USD", symbol: "$"),
         transactions: [TransactionDTO] = []
@@ -21,7 +21,7 @@ extension InvestmentDetailDTO {
             latestPrice: latestPrice,
             totalReturn: totalReturn,
             profit: profit,
-            value: value,
+            currentValue: currentValue,
             numberOfShares: numberOfShares,
             currency: currency,
             transactions: transactions

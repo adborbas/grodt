@@ -97,15 +97,17 @@ final class BrokeragePerformanceUpdater: BrokeragePerformanceUpdating {
         summed.reserveCapacity(days.count)
 
         for day in days {
-            var moneyIn: Decimal = 0
-            var value: Decimal = 0
+            var invested: Decimal = 0
+            var realized: Decimal = 0
+            var currentValue: Decimal = 0
             for seriesMap in perAccountSeries {
                 if let point = seriesMap[day] {
-                    moneyIn += point.moneyIn
-                    value += point.value
+                    invested += point.invested
+                    realized += point.realized
+                    currentValue += point.currentValue
                 }
             }
-            summed.append(DatedPerformance(moneyIn: moneyIn, value: value, date: day))
+            summed.append(DatedPerformance(invested: invested, realized: realized, currentValue: currentValue, date: day))
         }
 
         // Replace the brokerage's series
@@ -142,15 +144,17 @@ final class BrokeragePerformanceUpdater: BrokeragePerformanceUpdating {
         summed.reserveCapacity(days.count)
 
         for day in days {
-            var moneyIn: Decimal = 0
-            var value: Decimal = 0
+            var invested: Decimal = 0
+            var realized: Decimal = 0
+            var currentValue: Decimal = 0
             for seriesMap in perAccountSeries {
                 if let point = seriesMap[day] {
-                    moneyIn += point.moneyIn
-                    value += point.value
+                    invested += point.invested
+                    realized += point.realized
+                    currentValue += point.currentValue
                 }
             }
-            summed.append(DatedPerformance(moneyIn: moneyIn, value: value, date: day))
+            summed.append(DatedPerformance(invested: invested, realized: realized, currentValue: currentValue, date: day))
         }
 
         // Delete existing data from the date onwards and batch insert new data

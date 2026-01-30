@@ -23,15 +23,16 @@ class TransactionDTOMapper: TransactionDTOMapping {
                                                        performance: PerformanceDTO.zero)
         }
         let portfolio = try await transaction.$portfolio.get(on: database)
-        
+
         return TransactionDTO(id: transaction.id?.uuidString ?? "",
                               portfolioName: portfolio.name,
-                              purchaseDate: transaction.purchaseDate,
+                              type: TransactionTypeDTO(from: transaction.type),
+                              transactionDate: transaction.transactionDate,
                               ticker: transaction.ticker,
                               currency: currencyDTOMapper.currency(from: transaction.currency),
                               fees: transaction.fees,
                               numberOfShares: transaction.numberOfShares,
-                              pricePerShareAtPurchase: transaction.pricePerShareAtPurchase,
+                              pricePerShare: transaction.pricePerShare,
                               brokerageAccount: brokerageAccount
         )
     }

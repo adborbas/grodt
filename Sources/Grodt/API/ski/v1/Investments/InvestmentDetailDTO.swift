@@ -7,7 +7,7 @@ struct InvestmentDetailDTO: Codable, Equatable {
     let latestPrice: Decimal
     let totalReturn: Decimal
     let profit: Decimal
-    let value: Decimal
+    let currentValue: Decimal
     let numberOfShares: Decimal
     let currency: CurrencyDTO
     let transactions: [TransactionDTO]

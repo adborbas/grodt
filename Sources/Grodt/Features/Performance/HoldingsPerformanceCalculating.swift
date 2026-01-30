@@ -18,6 +18,8 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
     /// Computes an inclusive daily time series from `startDate` to `endDate`.
     /// The implementation is **event-driven**: it updates state only when a transaction occurs
     /// or when a quote changes, and carries prices forward across non-trading days.
+    ///
+    /// Supports both buy and sell transactions using Average Cost method for cost basis.
     func performanceSeries(
         for transactions: [Transaction],
         from startDate: YearMonthDayDate,
@@ -45,7 +47,7 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
         guard endDate >= startDate else { return [] }
 
         // 1) Normalize inputs and build the day range.
-        let sortedTransactions = transactions.sorted { $0.purchaseDate < $1.purchaseDate }
+        let sortedTransactions = transactions.sorted { $0.transactionDate < $1.transactionDate }
         let days = YearMonthDayDate.days(from: startDate, to: endDate)
         let symbols = distinctTickers(from: sortedTransactions)
 
@@ -59,7 +61,7 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
             priceCache: priceCache
         )
 
-        // 3) Establish initial running state at start date (moneyIn/qty/value and transaction cursor).
+        // 3) Establish initial running state at start date.
         var state = Self.initialState(at: startDate, with: sortedTransactions, baselinePrices: baselinePrices)
 
         // 4) Sweep day-by-day, applying new transactions and price-change events.
@@ -69,7 +71,7 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
         for day in days {
             advanceTransactions(upToAndIncluding: day, transactions: sortedTransactions, state: &state)
             applyPriceEvents(on: day, events: priceEventsByDay[day.date] ?? [], state: &state)
-            series.append(.init(moneyIn: state.moneyIn, value: state.value, date: day))
+            series.append(.init(invested: state.invested, realized: state.realized, currentValue: state.currentValue, date: day))
         }
 
         return series
@@ -79,11 +81,23 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
 
     private typealias Symbol = String
 
+    /// Per-ticker tracking for Average Cost calculation.
+    private struct TickerHolding {
+        var shares: Decimal = 0
+        var costBasis: Decimal = 0  // Total cost of shares currently held
+
+        var averageCostPerShare: Decimal {
+            guard shares > 0 else { return 0 }
+            return costBasis / shares
+        }
+    }
+
     /// Rolling state that evolves over time while we sweep days.
     private struct RunningState {
-        var moneyIn: Decimal
-        var value: Decimal
-        var quantityByTicker: [Symbol: Decimal]
+        var invested: Decimal        // Net invested capital (cost basis of current holdings)
+        var realized: Decimal        // Cumulative realized gains/losses from sells
+        var currentValue: Decimal    // Current market value of holdings
+        var holdingsByTicker: [Symbol: TickerHolding]
         var lastPriceByTicker: [Symbol: Decimal]
         var txCursor: Int
     }
@@ -131,42 +145,54 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
         with sortedTransactions: [Transaction],
         baselinePrices: [Symbol: Decimal]
     ) -> RunningState {
-        var moneyIn: Decimal = 0
-        var value: Decimal = 0
-        var quantityByTicker: [Symbol: Decimal] = [:]
+        var invested: Decimal = 0
+        var realized: Decimal = 0
+        var currentValue: Decimal = 0
+        var holdingsByTicker: [Symbol: TickerHolding] = [:]
         var cursor = 0
 
         // Apply all transactions up to and including the start day
         while cursor < sortedTransactions.count {
             let tx = sortedTransactions[cursor]
-            let txDay = YearMonthDayDate(tx.purchaseDate)
+            let txDay = YearMonthDayDate(tx.transactionDate)
             if txDay > startDate { break }
 
-            moneyIn += (tx.numberOfShares * tx.pricePerShareAtPurchase) + tx.fees
-            let newQty = (quantityByTicker[tx.ticker] ?? 0) + tx.numberOfShares
-            quantityByTicker[tx.ticker] = newQty
+            var holding = holdingsByTicker[tx.ticker] ?? TickerHolding()
 
-            if let px = baselinePrices[tx.ticker] {
-                // Adjust value by the contribution of this delta quantity at baseline price
-                value += tx.numberOfShares * px
+            switch tx.type {
+            case .buy:
+                let cost = tx.totalAmount
+                holding.shares += tx.numberOfShares
+                holding.costBasis += cost
+
+            case .sell:
+                let avgCost = holding.averageCostPerShare
+                let costBasisOfSoldShares = avgCost * tx.numberOfShares
+                let proceeds = tx.pricePerShare * tx.numberOfShares - tx.fees
+                let realizedGain = proceeds - costBasisOfSoldShares
+
+                holding.shares -= tx.numberOfShares
+                holding.costBasis -= costBasisOfSoldShares
+                realized += realizedGain
             }
 
+            holdingsByTicker[tx.ticker] = holding
             cursor += 1
         }
 
-        // If we have quantities but no baseline prices yet, compute value from whatever baselines exist
-        if value == 0, !quantityByTicker.isEmpty {
-            var v: Decimal = 0
-            for (symbol, qty) in quantityByTicker where qty != 0 {
-                if let px = baselinePrices[symbol] { v += qty * px }
+        // Calculate invested (sum of cost bases) and currentValue from baseline prices
+        for (symbol, holding) in holdingsByTicker where holding.shares > 0 {
+            invested += holding.costBasis
+            if let px = baselinePrices[symbol] {
+                currentValue += holding.shares * px
             }
-            value = v
         }
 
         return RunningState(
-            moneyIn: moneyIn,
-            value: value,
-            quantityByTicker: quantityByTicker,
+            invested: invested,
+            realized: realized,
+            currentValue: currentValue,
+            holdingsByTicker: holdingsByTicker,
             lastPriceByTicker: baselinePrices,
             txCursor: cursor
         )
@@ -180,20 +206,41 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
     ) {
         while state.txCursor < transactions.count {
             let tx = transactions[state.txCursor]
-            let txDay = YearMonthDayDate(tx.purchaseDate)
+            let txDay = YearMonthDayDate(tx.transactionDate)
             if txDay > day { break }
 
-            state.moneyIn += (tx.numberOfShares * tx.pricePerShareAtPurchase) + tx.fees
+            var holding = state.holdingsByTicker[tx.ticker] ?? TickerHolding()
 
-            let prevQty = state.quantityByTicker[tx.ticker] ?? 0
-            let newQty = prevQty + tx.numberOfShares
-            state.quantityByTicker[tx.ticker] = newQty
+            switch tx.type {
+            case .buy:
+                let cost = tx.totalAmount
+                holding.shares += tx.numberOfShares
+                holding.costBasis += cost
+                state.invested += cost
 
-            if let px = state.lastPriceByTicker[tx.ticker] {
-                // Adjust current value by the contribution of the delta quantity at current price
-                state.value += tx.numberOfShares * px
+                // Update current value if we have a price
+                if let px = state.lastPriceByTicker[tx.ticker] {
+                    state.currentValue += tx.numberOfShares * px
+                }
+
+            case .sell:
+                let avgCost = holding.averageCostPerShare
+                let costBasisOfSoldShares = avgCost * tx.numberOfShares
+                let proceeds = tx.pricePerShare * tx.numberOfShares - tx.fees
+                let realizedGain = proceeds - costBasisOfSoldShares
+
+                holding.shares -= tx.numberOfShares
+                holding.costBasis -= costBasisOfSoldShares
+                state.invested -= costBasisOfSoldShares
+                state.realized += realizedGain
+
+                // Update current value if we have a price
+                if let px = state.lastPriceByTicker[tx.ticker] {
+                    state.currentValue -= tx.numberOfShares * px
+                }
             }
 
+            state.holdingsByTicker[tx.ticker] = holding
             state.txCursor += 1
         }
     }
@@ -206,15 +253,15 @@ struct HoldingsPerformanceCalculator: HoldingsPerformanceCalculating {
             let oldPx = state.lastPriceByTicker[symbol]
             state.lastPriceByTicker[symbol] = newPx
 
-            guard let qty = state.quantityByTicker[symbol], qty != 0 else { continue }
+            guard let holding = state.holdingsByTicker[symbol], holding.shares > 0 else { continue }
             if let oldPx {
-                state.value += qty * (newPx - oldPx)
+                state.currentValue += holding.shares * (newPx - oldPx)
             } else {
-                state.value += qty * newPx
+                state.currentValue += holding.shares * newPx
             }
         }
     }
-    
+
     private func distinctTickers(from array: [Transaction]) -> [Symbol] {
         Array(Set(array.map { $0.ticker }))
     }

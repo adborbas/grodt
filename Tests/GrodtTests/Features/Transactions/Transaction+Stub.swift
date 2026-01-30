@@ -6,23 +6,25 @@ extension Transaction {
         id: UUID = UUID(),
         portfolioID: UUID = UUID(),
         brokerageAccountID: UUID? = nil,
-        purchaseDate: Date = Date(),
+        type: TransactionType = .buy,
+        transactionDate: Date = Date(),
         ticker: String = "AAPL",
         currency: Currency = .stub(),
         fees: Decimal = 0,
         numberOfShares: Decimal = 10,
-        pricePerShareAtPurchase: Decimal = 150
+        pricePerShare: Decimal = 150
     ) -> Transaction {
         Transaction(
             id: id,
             portfolioID: portfolioID,
             brokerageAccountID: brokerageAccountID,
-            purchaseDate: purchaseDate,
+            type: type,
+            transactionDate: transactionDate,
             ticker: ticker,
             currency: currency,
             fees: fees,
             numberOfShares: numberOfShares,
-            pricePerShareAtPurchase: pricePerShareAtPurchase
+            pricePerShare: pricePerShare
         )
     }
 }

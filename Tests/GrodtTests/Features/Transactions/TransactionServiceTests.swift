@@ -73,7 +73,7 @@ struct TransactionServiceTests {
 
         let request = CreateTransactionRequestDTO(
             brokerageAccountID: nil,
-            purchaseDate: Date(),
+            transactionDate: Date(),
             ticker: "AAPL",
             currency: "USD",
             fees: 0,
@@ -103,7 +103,7 @@ struct TransactionServiceTests {
 
         let request = CreateTransactionRequestDTO(
             brokerageAccountID: nil,
-            purchaseDate: Date(),
+            transactionDate: Date(),
             ticker: "AAPL",
             currency: "INVALID",
             fees: 0,
@@ -113,6 +113,178 @@ struct TransactionServiceTests {
 
         await #expect(throws: Abort.self) {
             _ = try await service.create(request, on: UUID())
+        }
+    }
+
+    @Test func create_sellTransaction_withSufficientShares_succeeds() async throws {
+        let portfolioID = UUID()
+        let currency = Currency.stub(code: "USD")
+
+        // Existing buy transaction with 10 shares
+        let existingBuy = Transaction.stub(
+            portfolioID: portfolioID,
+            type: .buy,
+            ticker: "AAPL",
+            numberOfShares: 10
+        )
+
+        let mockTransactionsRepo = MockTransactionsRepository()
+        mockTransactionsRepo.transactionsResult = .success([existingBuy])
+        mockTransactionsRepo.saveResult = .success(())
+
+        let mockCurrencyRepo = MockCurrencyRepository()
+        mockCurrencyRepo.currencyResult = .success(currency)
+
+        let expectedDTO = TransactionDTO.stub(type: .sell, ticker: "AAPL")
+        let mockMapper = MockTransactionDTOMapper()
+        mockMapper.transactionResult = .success(expectedDTO)
+
+        let service = TransactionService(
+            transactionsRepository: mockTransactionsRepo,
+            currencyRepository: mockCurrencyRepo,
+            dataMapper: mockMapper
+        )
+
+        let request = CreateTransactionRequestDTO(
+            brokerageAccountID: nil,
+            type: "sell",
+            transactionDate: Date(),
+            ticker: "AAPL",
+            currency: "USD",
+            fees: 0,
+            numberOfShares: 5,
+            pricePerShare: 200
+        )
+
+        let result = try await service.create(request, on: portfolioID)
+
+        #expect(mockTransactionsRepo.saveCalled)
+        #expect(result.type == .sell)
+    }
+
+    @Test func create_sellTransaction_withInsufficientShares_throwsError() async throws {
+        let portfolioID = UUID()
+        let currency = Currency.stub(code: "USD")
+
+        // Existing buy transaction with only 5 shares
+        let existingBuy = Transaction.stub(
+            portfolioID: portfolioID,
+            type: .buy,
+            ticker: "AAPL",
+            numberOfShares: 5
+        )
+
+        let mockTransactionsRepo = MockTransactionsRepository()
+        mockTransactionsRepo.transactionsResult = .success([existingBuy])
+
+        let mockCurrencyRepo = MockCurrencyRepository()
+        mockCurrencyRepo.currencyResult = .success(currency)
+
+        let mockMapper = MockTransactionDTOMapper()
+
+        let service = TransactionService(
+            transactionsRepository: mockTransactionsRepo,
+            currencyRepository: mockCurrencyRepo,
+            dataMapper: mockMapper
+        )
+
+        // Try to sell 10 shares when only 5 available
+        let request = CreateTransactionRequestDTO(
+            brokerageAccountID: nil,
+            type: "sell",
+            transactionDate: Date(),
+            ticker: "AAPL",
+            currency: "USD",
+            fees: 0,
+            numberOfShares: 10,
+            pricePerShare: 200
+        )
+
+        await #expect(throws: TransactionService.TransactionError.self) {
+            _ = try await service.create(request, on: portfolioID)
+        }
+    }
+
+    @Test func create_sellTransaction_withNoExistingShares_throwsError() async throws {
+        let portfolioID = UUID()
+        let currency = Currency.stub(code: "USD")
+
+        let mockTransactionsRepo = MockTransactionsRepository()
+        mockTransactionsRepo.transactionsResult = .success([]) // No existing transactions
+
+        let mockCurrencyRepo = MockCurrencyRepository()
+        mockCurrencyRepo.currencyResult = .success(currency)
+
+        let mockMapper = MockTransactionDTOMapper()
+
+        let service = TransactionService(
+            transactionsRepository: mockTransactionsRepo,
+            currencyRepository: mockCurrencyRepo,
+            dataMapper: mockMapper
+        )
+
+        let request = CreateTransactionRequestDTO(
+            brokerageAccountID: nil,
+            type: "sell",
+            transactionDate: Date(),
+            ticker: "AAPL",
+            currency: "USD",
+            fees: 0,
+            numberOfShares: 5,
+            pricePerShare: 200
+        )
+
+        await #expect(throws: TransactionService.TransactionError.self) {
+            _ = try await service.create(request, on: portfolioID)
+        }
+    }
+
+    @Test func create_sellTransaction_afterPartialSell_validatesRemainingShares() async throws {
+        let portfolioID = UUID()
+        let currency = Currency.stub(code: "USD")
+
+        // Buy 10, sell 3 = 7 remaining
+        let existingBuy = Transaction.stub(
+            portfolioID: portfolioID,
+            type: .buy,
+            ticker: "AAPL",
+            numberOfShares: 10
+        )
+        let existingSell = Transaction.stub(
+            portfolioID: portfolioID,
+            type: .sell,
+            ticker: "AAPL",
+            numberOfShares: 3
+        )
+
+        let mockTransactionsRepo = MockTransactionsRepository()
+        mockTransactionsRepo.transactionsResult = .success([existingBuy, existingSell])
+
+        let mockCurrencyRepo = MockCurrencyRepository()
+        mockCurrencyRepo.currencyResult = .success(currency)
+
+        let mockMapper = MockTransactionDTOMapper()
+
+        let service = TransactionService(
+            transactionsRepository: mockTransactionsRepo,
+            currencyRepository: mockCurrencyRepo,
+            dataMapper: mockMapper
+        )
+
+        // Try to sell 8 shares when only 7 remaining
+        let request = CreateTransactionRequestDTO(
+            brokerageAccountID: nil,
+            type: "sell",
+            transactionDate: Date(),
+            ticker: "AAPL",
+            currency: "USD",
+            fees: 0,
+            numberOfShares: 8,
+            pricePerShare: 200
+        )
+
+        await #expect(throws: TransactionService.TransactionError.self) {
+            _ = try await service.create(request, on: portfolioID)
         }
     }
 

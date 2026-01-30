@@ -14,7 +14,7 @@ class InvestmentService: InvestmentServicing {
     }
 
     func investmentDetail(for ticker: String, userID: User.IDValue) async throws -> InvestmentDetailDTO {
-        let transactions = try await transactionsRepository.transactions(for: userID, ticker: ticker)
+        let transactions = try await transactionsRepository.transactionsForUser(userID, ticker: ticker)
         return try await dataMapper.investmentDetail(from: transactions)
     }
 }

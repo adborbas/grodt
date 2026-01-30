@@ -68,13 +68,13 @@ class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
             .first()
         else { return PerformanceDTO.zero }
 
-        let moneyIn = last.moneyIn
-        let moneyOut = last.value
-        let profit = moneyOut - moneyIn
-        let totalReturn: Decimal = moneyIn > 0 ? (profit / moneyIn).rounded(to: 2) : 0
+        let invested = last.invested
+        let currentValue = last.currentValue
+        let profit = currentValue + last.realized - invested
+        let totalReturn: Decimal = invested > 0 ? (profit / invested).rounded(to: 2) : 0
 
-        return PerformanceDTO(moneyIn: moneyIn,
-                              moneyOut: moneyOut,
+        return PerformanceDTO(invested: invested,
+                              currentValue: currentValue,
                               profit: profit,
                               totalReturn: totalReturn)
     }

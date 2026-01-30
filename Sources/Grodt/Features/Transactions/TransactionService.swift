@@ -9,6 +9,10 @@ protocol TransactionServicing: Sendable {
 }
 
 class TransactionService: TransactionServicing {
+    enum TransactionError: Error {
+        case insufficientShares(ticker: String, requested: Decimal, available: Decimal)
+    }
+
     private let transactionsRepository: TransactionsRepository
     private let currencyRepository: CurrencyRepository
     private let dataMapper: TransactionDTOMapping
@@ -31,22 +35,39 @@ class TransactionService: TransactionServicing {
         guard let currency = try await currencyRepository.currency(for: transaction.currency) else {
             throw Abort(.badRequest)
         }
-        
+
         let brokerageAccountId: UUID? = {
             guard let id = transaction.brokerageAccountID else { return nil }
             return UUID(uuidString: id)
         }()
-        
-        
+
+        // Validate sell transactions
+        if transaction.transactionType == .sell {
+            let existingTransactions = try await transactionsRepository.transactionsForPortfolio(
+                portfolioID,
+                ticker: transaction.ticker
+            )
+            let currentShares = existingTransactions.reduce(Decimal(0)) { $0 + $1.signedShares }
+
+            if transaction.numberOfShares > currentShares {
+                throw TransactionError.insufficientShares(
+                    ticker: transaction.ticker,
+                    requested: transaction.numberOfShares,
+                    available: currentShares
+                )
+            }
+        }
+
         let newTransaction = Transaction(portfolioID: portfolioID,
                                          brokerageAccountID: brokerageAccountId,
-                                         purchaseDate: transaction.purchaseDate,
+                                         type: transaction.transactionType,
+                                         transactionDate: transaction.transactionDate,
                                          ticker: transaction.ticker,
                                          currency: currency,
                                          fees: transaction.fees,
                                          numberOfShares: transaction.numberOfShares,
-                                         pricePerShareAtPurchase: transaction.pricePerShare)
-        
+                                         pricePerShare: transaction.pricePerShare)
+
         try await transactionsRepository.save(newTransaction)
         try await delegate?.transactionCreated(newTransaction)
         return try await dataMapper.transaction(from: newTransaction)

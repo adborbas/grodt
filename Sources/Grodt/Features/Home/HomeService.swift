@@ -23,7 +23,7 @@ struct HomeService: HomeServicing {
         let brokerages = try await brokerageService.allBrokerages(for: userID)
             .compactMap { BrokerageInfoDTO(id: $0.id,
                                            name: $0.name,
-                                           value: $0.performance.moneyOut,
+                                           value: $0.performance.currentValue,
                                            currency: CurrencyDTO(code: "EUR", symbol: "€"),
                                            accountCount: $0.accounts.count)
             }
@@ -37,19 +37,19 @@ struct HomeService: HomeServicing {
     }
 
     private func totalPerformance(of portfolios: [PortfolioInfoDTO]) -> PerformanceDTO {
-        let (moneyIn, moneyOut) = portfolios
+        let (invested, currentValue, profit) = portfolios
             .compactMap { $0.performance }
-            .reduce(into: (Decimal.zero, Decimal.zero)) { acc, p in
-                acc.0 += p.moneyIn
-                acc.1 += p.moneyOut
+            .reduce(into: (Decimal.zero, Decimal.zero, Decimal.zero)) { acc, p in
+                acc.0 += p.invested
+                acc.1 += p.currentValue
+                acc.2 += p.profit
             }
 
-        let profit = moneyOut - moneyIn
-        let totalReturn: Decimal = moneyIn > 0 ? (profit / moneyIn).rounded(to: 2) : .zero
+        let totalReturn: Decimal = invested > 0 ? (profit / invested).rounded(to: 2) : .zero
 
         return PerformanceDTO(
-            moneyIn: moneyIn,
-            moneyOut: moneyOut,
+            invested: invested,
+            currentValue: currentValue,
             profit: profit,
             totalReturn: totalReturn
         )

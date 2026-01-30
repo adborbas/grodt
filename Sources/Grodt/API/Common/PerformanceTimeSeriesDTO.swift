@@ -6,8 +6,8 @@ struct PerformanceTimeSeriesDTO: Codable, Equatable {
 
 struct DatedPerformanceDTO: Codable, Equatable {
     let date: Date
-    let moneyIn: Decimal
-    let moneyOut: Decimal
+    let invested: Decimal
+    let currentValue: Decimal
     let profit: Decimal
     let totalReturn: Decimal
 }

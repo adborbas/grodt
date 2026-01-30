@@ -26,7 +26,11 @@ final class MockTransactionsRepository: TransactionsRepository, @unchecked Senda
         try allResult.get()
     }
 
-    func transactions(for userID: User.IDValue, ticker: String) async throws -> [Transaction] {
+    func transactionsForUser(_ userID: User.IDValue, ticker: String) async throws -> [Transaction] {
+        try transactionsResult.get()
+    }
+
+    func transactionsForPortfolio(_ portfolioID: Portfolio.IDValue, ticker: String) async throws -> [Transaction] {
         try transactionsResult.get()
     }
 

@@ -11,8 +11,8 @@ struct HomeServiceTests {
 
         let mockPortfolioService = MockPortfolioService()
         mockPortfolioService.allPortfoliosResult = .success([
-            .stub(name: "Portfolio 1", performance: PerformanceDTO(moneyIn: 100, moneyOut: 110, profit: 10, totalReturn: 0.1)),
-            .stub(name: "Portfolio 2", performance: PerformanceDTO(moneyIn: 200, moneyOut: 220, profit: 20, totalReturn: 0.1))
+            .stub(name: "Portfolio 1", performance: PerformanceDTO(invested: 100, currentValue: 110, profit: 10, totalReturn: 0.1)),
+            .stub(name: "Portfolio 2", performance: PerformanceDTO(invested: 200, currentValue: 220, profit: 20, totalReturn: 0.1))
         ])
 
         let mockAccountService = MockAccountService()
@@ -20,7 +20,7 @@ struct HomeServiceTests {
 
         let mockBrokerageService = MockBrokerageService()
         mockBrokerageService.allBrokeragesResult = .success([
-            .stub(name: "Brokerage 1", accounts: [.stub()], performance: PerformanceDTO(moneyIn: 1000, moneyOut: 1100, profit: 100, totalReturn: 0.1))
+            .stub(name: "Brokerage 1", accounts: [.stub()], performance: PerformanceDTO(invested: 1000, currentValue: 1100, profit: 100, totalReturn: 0.1))
         ])
 
         let mockInvestmentService = MockInvestmentService()
@@ -42,8 +42,8 @@ struct HomeServiceTests {
         #expect(result.portfolios.count == 2)
         #expect(result.brokerages.count == 1)
         #expect(result.investments.count == 2)
-        #expect(result.networth.moneyIn == 300)
-        #expect(result.networth.moneyOut == 330)
+        #expect(result.networth.invested == 300)
+        #expect(result.networth.currentValue == 330)
         #expect(result.networth.profit == 30)
     }
 
@@ -72,8 +72,8 @@ struct HomeServiceTests {
         #expect(result.portfolios.isEmpty)
         #expect(result.brokerages.isEmpty)
         #expect(result.investments.isEmpty)
-        #expect(result.networth.moneyIn == 0)
-        #expect(result.networth.moneyOut == 0)
+        #expect(result.networth.invested == 0)
+        #expect(result.networth.currentValue == 0)
         #expect(result.networth.profit == 0)
     }
 
@@ -171,9 +171,9 @@ struct HomeServiceTests {
     @Test func home_calculatesNetworthCorrectly() async throws {
         let mockPortfolioService = MockPortfolioService()
         mockPortfolioService.allPortfoliosResult = .success([
-            .stub(performance: PerformanceDTO(moneyIn: 1000, moneyOut: 1500, profit: 500, totalReturn: 0.5)),
-            .stub(performance: PerformanceDTO(moneyIn: 2000, moneyOut: 2100, profit: 100, totalReturn: 0.05)),
-            .stub(performance: PerformanceDTO(moneyIn: 500, moneyOut: 400, profit: -100, totalReturn: -0.2))
+            .stub(performance: PerformanceDTO(invested: 1000, currentValue: 1500, profit: 500, totalReturn: 0.5)),
+            .stub(performance: PerformanceDTO(invested: 2000, currentValue: 2100, profit: 100, totalReturn: 0.05)),
+            .stub(performance: PerformanceDTO(invested: 500, currentValue: 400, profit: -100, totalReturn: -0.2))
         ])
 
         let mockAccountService = MockAccountService()
@@ -194,8 +194,8 @@ struct HomeServiceTests {
 
         let result = try await service.home(for: UUID())
 
-        #expect(result.networth.moneyIn == 3500)
-        #expect(result.networth.moneyOut == 4000)
+        #expect(result.networth.invested == 3500)
+        #expect(result.networth.currentValue == 4000)
         #expect(result.networth.profit == 500)
         #expect(result.networth.totalReturn == Decimal(string: "0.14")!) // 500/3500 rounded to 2 decimals
     }

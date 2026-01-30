@@ -4,7 +4,7 @@ import SQLKit
 
 struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
     typealias OwnerID = UUID
-    
+
     let db: Database
 
     func replaceSeries(for ownerID: UUID, with points: [DatedPerformance]) async throws {
@@ -15,8 +15,9 @@ struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
             let row = HistoricalPortfolioPerformanceDaily(
                 portfolioID: ownerID,
                 date: point.date.date,
-                moneyIn: point.moneyIn,
-                value: point.value
+                invested: point.invested,
+                realized: point.realized,
+                currentValue: point.currentValue
             )
             try await row.save(on: db)
         }
@@ -41,15 +42,17 @@ struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
 
         for point in points {
             if let row = existingByDate[point.date.date] {
-                row.moneyIn = point.moneyIn
-                row.value = point.value
+                row.invested = point.invested
+                row.realized = point.realized
+                row.currentValue = point.currentValue
                 try await row.save(on: db)
             } else {
                 let newRow = HistoricalPortfolioPerformanceDaily(
                     portfolioID: ownerID,
                     date: point.date.date,
-                    moneyIn: point.moneyIn,
-                    value: point.value
+                    invested: point.invested,
+                    realized: point.realized,
+                    currentValue: point.currentValue
                 )
                 try await newRow.save(on: db)
             }
@@ -65,7 +68,14 @@ struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
         if let to { query = query.filter(\.$date <= to.date) }
 
         let rows = try await query.all()
-        return rows.map { DatedPerformance(moneyIn: $0.moneyIn, value: $0.value, date: YearMonthDayDate($0.date)) }
+        return rows.map {
+            DatedPerformance(
+                invested: $0.invested,
+                realized: $0.realized,
+                currentValue: $0.currentValue,
+                date: YearMonthDayDate($0.date)
+            )
+        }
     }
 
     // Delete all rows for a portfolio.
@@ -89,16 +99,16 @@ struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
             var values: [SQLQueryString] = []
             for point in batch {
                 let dateStr = ISO8601DateFormatter().string(from: point.date.date)
-                values.append("\(literal: UUID().uuidString), \(literal: ownerID.uuidString), \(literal: dateStr)::date, \(unsafeRaw: point.moneyIn.description), \(unsafeRaw: point.value.description)")
+                values.append("\(literal: UUID().uuidString), \(literal: ownerID.uuidString), \(literal: dateStr)::date, \(unsafeRaw: point.invested.description), \(unsafeRaw: point.realized.description), \(unsafeRaw: point.currentValue.description)")
             }
 
             let valuesList = SQLQueryString(values.map { "(\($0))" }.joined(separator: ", "))
 
             try await sql.raw("""
-                INSERT INTO historical_portfolio_performance_daily (id, portfolio_id, date, money_in, value)
+                INSERT INTO historical_portfolio_performance_daily (id, portfolio_id, date, invested, realized, current_value)
                 VALUES \(valuesList)
                 ON CONFLICT (portfolio_id, date)
-                DO UPDATE SET money_in = EXCLUDED.money_in, value = EXCLUDED.value
+                DO UPDATE SET invested = EXCLUDED.invested, realized = EXCLUDED.realized, current_value = EXCLUDED.current_value
                 """).run()
         }
     }

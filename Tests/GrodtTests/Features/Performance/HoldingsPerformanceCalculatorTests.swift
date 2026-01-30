@@ -4,14 +4,14 @@ import Foundation
 
 struct HoldingsPerformanceCalculatorTests {
 
-    @Test func series_SingleTicker_CarryForwardAndCumulativeMoneyIn() async throws {
+    @Test func series_SingleTicker_CarryForwardAndCumulativeInvested() async throws {
         // Given
         let mockPriceService = MockPriceService()
         let calculator = HoldingsPerformanceCalculator(priceService: mockPriceService)
 
         let ticker = "AAPL"
         let buy = givenTransaction(purchasedOn: YearMonthDayDate(2024, 1, 10), ticker: ticker, fees: 1, shares: 10, pricePerShare: 5)
-        let start = YearMonthDayDate(buy.purchaseDate)
+        let start = YearMonthDayDate(buy.transactionDate)
         let end   = YearMonthDayDate(2024, 1, 15)
 
         mockPriceService.pricesByTicker = [
@@ -27,12 +27,12 @@ struct HoldingsPerformanceCalculatorTests {
 
         // Then
         let expected: [DatedPerformance] = [
-            DatedPerformance(moneyIn: 51, value: 60, date: YearMonthDayDate(2024, 1, 10)),
-            DatedPerformance(moneyIn: 51, value: 60, date: YearMonthDayDate(2024, 1, 11)),
-            DatedPerformance(moneyIn: 51, value: 70, date: YearMonthDayDate(2024, 1, 12)),
-            DatedPerformance(moneyIn: 51, value: 70, date: YearMonthDayDate(2024, 1, 13)),
-            DatedPerformance(moneyIn: 51, value: 70, date: YearMonthDayDate(2024, 1, 14)),
-            DatedPerformance(moneyIn: 51, value: 90, date: YearMonthDayDate(2024, 1, 15))
+            DatedPerformance(invested: 51, realized: 0, currentValue: 60, date: YearMonthDayDate(2024, 1, 10)),
+            DatedPerformance(invested: 51, realized: 0, currentValue: 60, date: YearMonthDayDate(2024, 1, 11)),
+            DatedPerformance(invested: 51, realized: 0, currentValue: 70, date: YearMonthDayDate(2024, 1, 12)),
+            DatedPerformance(invested: 51, realized: 0, currentValue: 70, date: YearMonthDayDate(2024, 1, 13)),
+            DatedPerformance(invested: 51, realized: 0, currentValue: 70, date: YearMonthDayDate(2024, 1, 14)),
+            DatedPerformance(invested: 51, realized: 0, currentValue: 90, date: YearMonthDayDate(2024, 1, 15))
         ]
         #expect(series == expected)
         #expect(mockPriceService.historicalPriceCallCount[ticker] ?? 0 == 1)
@@ -65,12 +65,12 @@ struct HoldingsPerformanceCalculatorTests {
 
         // Then
         let expected: [DatedPerformance] = [
-            DatedPerformance(moneyIn: 30,  value: 60,  date: YearMonthDayDate(2024, 1, 10)),
-            DatedPerformance(moneyIn: 30,  value: 60,  date: YearMonthDayDate(2024, 1, 11)),
-            DatedPerformance(moneyIn: 54,  value: 100, date: YearMonthDayDate(2024, 1, 12)),
-            DatedPerformance(moneyIn: 54,  value: 100, date: YearMonthDayDate(2024, 1, 13)),
-            DatedPerformance(moneyIn: 156, value: 107, date: YearMonthDayDate(2024, 1, 14)),
-            DatedPerformance(moneyIn: 156, value: 132, date: YearMonthDayDate(2024, 1, 15))
+            DatedPerformance(invested: 30,  realized: 0, currentValue: 60,  date: YearMonthDayDate(2024, 1, 10)),
+            DatedPerformance(invested: 30,  realized: 0, currentValue: 60,  date: YearMonthDayDate(2024, 1, 11)),
+            DatedPerformance(invested: 54,  realized: 0, currentValue: 100, date: YearMonthDayDate(2024, 1, 12)),
+            DatedPerformance(invested: 54,  realized: 0, currentValue: 100, date: YearMonthDayDate(2024, 1, 13)),
+            DatedPerformance(invested: 156, realized: 0, currentValue: 107, date: YearMonthDayDate(2024, 1, 14)),
+            DatedPerformance(invested: 156, realized: 0, currentValue: 132, date: YearMonthDayDate(2024, 1, 15))
         ]
         #expect(series == expected)
         // One historical fetch per ticker during prefetch
@@ -107,16 +107,47 @@ struct HoldingsPerformanceCalculatorTests {
 
         // Then: no contribution
         let expected: [DatedPerformance] = [
-            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 10)),
-            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 11)),
-            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 12)),
-            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 13)),
-            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 14)),
-            DatedPerformance(moneyIn: 0, value: 0, date: YearMonthDayDate(2024, 1, 15))
+            DatedPerformance(invested: 0, realized: 0, currentValue: 0, date: YearMonthDayDate(2024, 1, 10)),
+            DatedPerformance(invested: 0, realized: 0, currentValue: 0, date: YearMonthDayDate(2024, 1, 11)),
+            DatedPerformance(invested: 0, realized: 0, currentValue: 0, date: YearMonthDayDate(2024, 1, 12)),
+            DatedPerformance(invested: 0, realized: 0, currentValue: 0, date: YearMonthDayDate(2024, 1, 13)),
+            DatedPerformance(invested: 0, realized: 0, currentValue: 0, date: YearMonthDayDate(2024, 1, 14)),
+            DatedPerformance(invested: 0, realized: 0, currentValue: 0, date: YearMonthDayDate(2024, 1, 15))
         ]
         #expect(series == expected)
         // Prefetch may still fetch NVDA once
         #expect(mockPriceService.historicalPriceCallCount["NVDA"] ?? 0 == 1)
+    }
+
+    @Test func series_BuyAndSell_CalculatesRealizedGain() async throws {
+        let mockPriceService = MockPriceService()
+        let calculator = HoldingsPerformanceCalculator(priceService: mockPriceService)
+
+        let ticker = "AAPL"
+        let buy = givenTransaction(purchasedOn: YearMonthDayDate(2024, 1, 10), ticker: ticker, fees: 0, shares: 10, pricePerShare: 10, type: .buy)
+        let sell = givenTransaction(purchasedOn: YearMonthDayDate(2024, 1, 12), ticker: ticker, fees: 0, shares: 5, pricePerShare: 15, type: .sell)
+        let start = YearMonthDayDate(2024, 1, 10)
+        let end   = YearMonthDayDate(2024, 1, 12)
+
+        mockPriceService.pricesByTicker = [
+            ticker: [
+                DatedQuote(price: 10, date: start),
+                DatedQuote(price: 15, date: end)
+            ]
+        ]
+
+        // When
+        let series = try await calculator.performanceSeries(for: [buy, sell], from: start, to: end)
+
+        // Buy: 10 shares @ $10 = $100 invested
+        // Sell: 5 shares @ $15 = $75 proceeds, cost basis = $50 (avg cost $10), realized gain = $25
+        // Remaining: 5 shares, cost basis = $50, value @ $15 = $75
+        let expected: [DatedPerformance] = [
+            DatedPerformance(invested: 100, realized: 0, currentValue: 100, date: YearMonthDayDate(2024, 1, 10)),
+            DatedPerformance(invested: 100, realized: 0, currentValue: 100, date: YearMonthDayDate(2024, 1, 11)),
+            DatedPerformance(invested: 50, realized: 25, currentValue: 75, date: YearMonthDayDate(2024, 1, 12))
+        ]
+        #expect(series == expected)
     }
 
     @Test func performance_40Years_10Tickers() async throws {
@@ -165,7 +196,7 @@ struct HoldingsPerformanceCalculatorTests {
                     givenTransaction(
                         purchasedOn: buyDay,
                         ticker: ticker,
-                        fees: 1,                                  // small fee to exercise moneyIn
+                        fees: 1,                                  // small fee to exercise invested
                         shares: shares,
                         pricePerShare: purchasePrice
                     )
@@ -200,17 +231,19 @@ private func givenTransaction(
     currency: Currency = TestConstant.Currencies.eur,
     fees: Decimal = 0,
     shares: Decimal,
-    pricePerShare: Decimal
+    pricePerShare: Decimal,
+    type: TransactionType = .buy
 ) -> Transaction {
     Transaction(
         portfolioID: portfolioID,
         brokerageAccountID: brokerageAccountID,
-        purchaseDate: purchasedOn.date,
+        type: type,
+        transactionDate: purchasedOn.date,
         ticker: ticker,
         currency: currency,
         fees: fees,
         numberOfShares: shares,
-        pricePerShareAtPurchase: pricePerShare
+        pricePerShare: pricePerShare
     )
 }
 

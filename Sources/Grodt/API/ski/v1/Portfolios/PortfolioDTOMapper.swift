@@ -21,7 +21,7 @@ class PortfolioDTOMapper: PortfolioDTOMapping {
         
         let investments = try await investmentDTOMapper.investments(from: portfolio.transactions)
         let transactions = try await portfolio.transactions
-            .sorted { $0.purchaseDate > $1.purchaseDate }
+            .sorted { $0.transactionDate > $1.transactionDate }
             .asyncMap { try await transactionDTOMapper.transaction(from: $0) }
         return try await  PortfolioDTO(id: portfolio.id?.uuidString ?? "",
                                        name: portfolio.name,
@@ -48,14 +48,14 @@ class PortfolioDTOMapper: PortfolioDTOMapping {
             return PerformanceDTO.zero
         }
 
-        let moneyIn = latest.moneyIn
-        let moneyOut = latest.value
-        let profit = moneyOut - moneyIn
-        let totalReturn: Decimal = moneyIn > 0 ? (profit / moneyIn).rounded(to: 2) : 0
+        let invested = latest.invested
+        let currentValue = latest.currentValue
+        let profit = currentValue + latest.realized - invested
+        let totalReturn: Decimal = invested > 0 ? (profit / invested).rounded(to: 2) : 0
 
         return PerformanceDTO(
-            moneyIn: moneyIn,
-            moneyOut: moneyOut,
+            invested: invested,
+            currentValue: currentValue,
             profit: profit,
             totalReturn: totalReturn
         )

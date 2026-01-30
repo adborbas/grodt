@@ -14,7 +14,7 @@ struct HomeRouteTests: RouteTestable {
         let expectedPortfolio = PortfolioInfoDTO.stub(name: "My Portfolio")
         let expectedBrokerage = BrokerageInfoDTO.stub(name: "My Brokerage")
         let expectedInvestment = InvestmentDTO.stub(name: "Apple Inc", shortName: "AAPL")
-        let expectedNetworth = PerformanceDTO(moneyIn: 1000, moneyOut: 1100, profit: 100, totalReturn: 0.1)
+        let expectedNetworth = PerformanceDTO(invested: 1000, currentValue: 1100, profit: 100, totalReturn: 0.1)
 
         let expectedResponse = HomeResponseDTO.stub(
             user: expectedUser,

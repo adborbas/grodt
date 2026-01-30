@@ -1,16 +1,13 @@
 import Foundation
 
 struct DatedPerformanceDTOMapper {
-    func performancePoint(from enity: DatedPerformance) -> DatedPerformanceDTO {
-        let moneyIn = enity.moneyIn
-        let moneyOut = enity.value
-        let profit = moneyOut - moneyIn
-        let totalReturn: Decimal = moneyIn > 0 ? (profit / moneyIn).rounded(to: 2) : 0
-        
-        return DatedPerformanceDTO(date: enity.date.date,
-                                   moneyIn: moneyIn,
-                                   moneyOut: moneyOut,
-                                   profit: profit,
-                                   totalReturn: totalReturn)
+    func performancePoint(from entity: DatedPerformance) -> DatedPerformanceDTO {
+        return DatedPerformanceDTO(
+            date: entity.date.date,
+            invested: entity.invested,
+            currentValue: entity.currentValue,
+            profit: entity.profit,
+            totalReturn: entity.totalReturn
+        )
     }
 }

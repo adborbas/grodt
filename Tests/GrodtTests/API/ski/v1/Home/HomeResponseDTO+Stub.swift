@@ -61,7 +61,7 @@ extension InvestmentDTO {
         latestPrice: Decimal = 110,
         totalReturn: Decimal = 0.1,
         profit: Decimal = 10,
-        value: Decimal = 110,
+        currentValue: Decimal = 110,
         numberOfShares: Decimal = 1,
         currency: CurrencyDTO = CurrencyDTO(code: "EUR", symbol: "€")
     ) -> InvestmentDTO {
@@ -72,7 +72,7 @@ extension InvestmentDTO {
             latestPrice: latestPrice,
             totalReturn: totalReturn,
             profit: profit,
-            value: value,
+            currentValue: currentValue,
             numberOfShares: numberOfShares,
             currency: currency
         )

@@ -31,7 +31,7 @@ struct TransactionChangedHandlerTests {
 
         #expect(mockPortfolioUpdater.recalculateFromCalled)
         #expect(mockPortfolioUpdater.recalculatedPortfolio?.id == portfolioID)
-        #expect(mockPortfolioUpdater.recalculateFromDate == YearMonthDayDate(transaction.purchaseDate))
+        #expect(mockPortfolioUpdater.recalculateFromDate == YearMonthDayDate(transaction.transactionDate))
     }
 
     @Test func transactionCreated_withBrokerageAccount_cascadesToBrokerageAccountAndBrokerage() async throws {
@@ -70,12 +70,12 @@ struct TransactionChangedHandlerTests {
         // BrokerageAccount updated
         #expect(mockAccountUpdater.recalculateCalled)
         #expect(mockAccountUpdater.recalculateAccountID == accountID)
-        #expect(mockAccountUpdater.recalculateFromDate == YearMonthDayDate(transaction.purchaseDate))
+        #expect(mockAccountUpdater.recalculateFromDate == YearMonthDayDate(transaction.transactionDate))
 
         // Brokerage updated
         #expect(mockBrokerageUpdater.recalculateCalled)
         #expect(mockBrokerageUpdater.recalculateBrokerageID == brokerageID)
-        #expect(mockBrokerageUpdater.recalculateFromDate == YearMonthDayDate(transaction.purchaseDate))
+        #expect(mockBrokerageUpdater.recalculateFromDate == YearMonthDayDate(transaction.transactionDate))
     }
 
     @Test func transactionCreated_withoutBrokerageAccount_onlyUpdatesPortfolio() async throws {
@@ -117,14 +117,14 @@ struct TransactionChangedHandlerTests {
         let portfolioID = UUID()
         let brokerageID = UUID()
         let accountID = UUID()
-        let purchaseDate = Calendar.current.date(byAdding: .month, value: -3, to: Date())!
+        let transactionDate = Calendar.current.date(byAdding: .month, value: -3, to: Date())!
 
         let portfolio = Portfolio.stub(id: portfolioID)
         let account = BrokerageAccount.stub(id: accountID, brokerageID: brokerageID)
         let transaction = Transaction.stub(
             portfolioID: portfolioID,
             brokerageAccountID: accountID,
-            purchaseDate: purchaseDate
+            transactionDate: transactionDate
         )
 
         let mockPortfolioRepo = MockPortfolioRepository()
@@ -147,7 +147,7 @@ struct TransactionChangedHandlerTests {
 
         try await handler.transactionDeleted(transaction)
 
-        let expectedDate = YearMonthDayDate(purchaseDate)
+        let expectedDate = YearMonthDayDate(transactionDate)
 
         // All updaters called with the transaction's purchase date
         #expect(mockPortfolioUpdater.recalculateFromDate == expectedDate)
