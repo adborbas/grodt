@@ -2,10 +2,10 @@ import Vapor
 import Fluent
 
 class InvestmentRoute: RouteCollection {
-    private let serivce: InvestmentService
-    
-    init(serivce: InvestmentService) {
-        self.serivce = serivce
+    private let service: InvestmentServicing
+
+    init(service: InvestmentServicing) {
+        self.service = service
     }
     
     func boot(routes: Vapor.RoutesBuilder) throws {
@@ -22,7 +22,7 @@ class InvestmentRoute: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        return try await serivce.allInvestments(for: userID)
+        return try await service.allInvestments(for: userID)
     }
     
     func invesetmentDetail(req: Request) async throws -> InvestmentDetailDTO {
@@ -32,7 +32,7 @@ class InvestmentRoute: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        return try await serivce.investmentDetail(for: ticker, userID: userID)
+        return try await service.investmentDetail(for: ticker, userID: userID)
     }
 }
 

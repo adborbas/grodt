@@ -1,4 +1,4 @@
-class InvestmentService {
+class InvestmentService: InvestmentServicing {
     private let portfolioRepository: PortfolioRepository
     private let dataMapper: InvestmentDTOMapper
     

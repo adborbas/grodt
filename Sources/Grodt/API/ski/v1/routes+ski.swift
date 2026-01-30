@@ -12,11 +12,8 @@ func registerSkiRoutes(_ app: Application, _ container: AppContainer) throws {
         ])
 
         try protected.register(collection: HomeRoute(
-            portfolioService: container.portfolioService,
-            accountService: container.accountService,
-            brokeragesService: container.brokerageService,
-            investmentService: container.investmentService)
-        )
+            service: container.homeService
+        ))
         
         try protected.register(collection: PortfolioRoute(
             service: container.portfolioService,
@@ -51,8 +48,8 @@ func registerSkiRoutes(_ app: Application, _ container: AppContainer) throws {
         ))
         
         try protected.register(collection: InvestmentRoute(
-            serivce: container.investmentService)
-        )
+            service: container.investmentService
+        ))
         
         try protected.register(collection: AccountRoute(
             service: container.accountService)
