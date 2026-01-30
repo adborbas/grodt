@@ -11,15 +11,15 @@ struct InvestmentServiceTests {
         let transaction1 = Transaction.stub(ticker: "AAPL")
         let transaction2 = Transaction.stub(ticker: "GOOGL")
 
-        let mockPortfolioRepo = MockPortfolioRepository()
-        mockPortfolioRepo.allTransactionsResult = .success([transaction1, transaction2])
+        let mockTransactionsRepo = MockTransactionsRepository()
+        mockTransactionsRepo.allResult = .success([transaction1, transaction2])
 
         let expectedInvestments = [InvestmentDTO.stub(shortName: "AAPL"), InvestmentDTO.stub(shortName: "GOOGL")]
         let mockMapper = MockInvestmentDTOMapper()
         mockMapper.investmentsResult = .success(expectedInvestments)
 
         let service = InvestmentService(
-            portfolioRepository: mockPortfolioRepo,
+            transactionsRepository: mockTransactionsRepo,
             dataMapper: mockMapper
         )
 
@@ -31,14 +31,14 @@ struct InvestmentServiceTests {
     }
 
     @Test func allInvestments_noTransactions_returnsEmptyArray() async throws {
-        let mockPortfolioRepo = MockPortfolioRepository()
-        mockPortfolioRepo.allTransactionsResult = .success([])
+        let mockTransactionsRepo = MockTransactionsRepository()
+        mockTransactionsRepo.allResult = .success([])
 
         let mockMapper = MockInvestmentDTOMapper()
         mockMapper.investmentsResult = .success([])
 
         let service = InvestmentService(
-            portfolioRepository: mockPortfolioRepo,
+            transactionsRepository: mockTransactionsRepo,
             dataMapper: mockMapper
         )
 
@@ -48,14 +48,14 @@ struct InvestmentServiceTests {
     }
 
     @Test func allInvestments_mapperThrows_throws() async throws {
-        let mockPortfolioRepo = MockPortfolioRepository()
-        mockPortfolioRepo.allTransactionsResult = .success([Transaction.stub()])
+        let mockTransactionsRepo = MockTransactionsRepository()
+        mockTransactionsRepo.allResult = .success([Transaction.stub()])
 
         let mockMapper = MockInvestmentDTOMapper()
         mockMapper.investmentsResult = .failure(Abort(.internalServerError))
 
         let service = InvestmentService(
-            portfolioRepository: mockPortfolioRepo,
+            transactionsRepository: mockTransactionsRepo,
             dataMapper: mockMapper
         )
 
@@ -65,13 +65,13 @@ struct InvestmentServiceTests {
     }
 
     @Test func allInvestments_repositoryThrows_throws() async throws {
-        let mockPortfolioRepo = MockPortfolioRepository()
-        mockPortfolioRepo.allTransactionsResult = .failure(Abort(.internalServerError))
+        let mockTransactionsRepo = MockTransactionsRepository()
+        mockTransactionsRepo.allResult = .failure(Abort(.internalServerError))
 
         let mockMapper = MockInvestmentDTOMapper()
 
         let service = InvestmentService(
-            portfolioRepository: mockPortfolioRepo,
+            transactionsRepository: mockTransactionsRepo,
             dataMapper: mockMapper
         )
 
@@ -86,15 +86,15 @@ struct InvestmentServiceTests {
         let userID = UUID()
         let transaction = Transaction.stub(ticker: "AAPL")
 
-        let mockPortfolioRepo = MockPortfolioRepository()
-        mockPortfolioRepo.transactionsResult = .success([transaction])
+        let mockTransactionsRepo = MockTransactionsRepository()
+        mockTransactionsRepo.transactionsResult = .success([transaction])
 
         let expectedDetail = InvestmentDetailDTO.stub(shortName: "AAPL")
         let mockMapper = MockInvestmentDTOMapper()
         mockMapper.investmentDetailResult = .success(expectedDetail)
 
         let service = InvestmentService(
-            portfolioRepository: mockPortfolioRepo,
+            transactionsRepository: mockTransactionsRepo,
             dataMapper: mockMapper
         )
 
@@ -104,14 +104,14 @@ struct InvestmentServiceTests {
     }
 
     @Test func investmentDetail_mapperThrows_throws() async throws {
-        let mockPortfolioRepo = MockPortfolioRepository()
-        mockPortfolioRepo.transactionsResult = .success([Transaction.stub()])
+        let mockTransactionsRepo = MockTransactionsRepository()
+        mockTransactionsRepo.transactionsResult = .success([Transaction.stub()])
 
         let mockMapper = MockInvestmentDTOMapper()
         mockMapper.investmentDetailResult = .failure(Abort(.notFound))
 
         let service = InvestmentService(
-            portfolioRepository: mockPortfolioRepo,
+            transactionsRepository: mockTransactionsRepo,
             dataMapper: mockMapper
         )
 
@@ -121,13 +121,13 @@ struct InvestmentServiceTests {
     }
 
     @Test func investmentDetail_repositoryThrows_throws() async throws {
-        let mockPortfolioRepo = MockPortfolioRepository()
-        mockPortfolioRepo.transactionsResult = .failure(Abort(.internalServerError))
+        let mockTransactionsRepo = MockTransactionsRepository()
+        mockTransactionsRepo.transactionsResult = .failure(Abort(.internalServerError))
 
         let mockMapper = MockInvestmentDTOMapper()
 
         let service = InvestmentService(
-            portfolioRepository: mockPortfolioRepo,
+            transactionsRepository: mockTransactionsRepo,
             dataMapper: mockMapper
         )
 

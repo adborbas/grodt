@@ -129,7 +129,7 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
     )
     
     let investmentService = InvestmentService(
-        portfolioRepository: portfolioRepository,
+        transactionsRepository: transactionRepository,
         dataMapper: InvestmentDTOMapper(
             currencyDTOMapper: currencyDTOMapper,
             transactionDTOMapper: transactionDTOMapper,

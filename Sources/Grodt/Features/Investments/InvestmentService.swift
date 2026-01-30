@@ -1,20 +1,20 @@
 class InvestmentService: InvestmentServicing {
-    private let portfolioRepository: PortfolioRepository
+    private let transactionsRepository: TransactionsRepository
     private let dataMapper: InvestmentDTOMapping
 
-    init(portfolioRepository: PortfolioRepository,
+    init(transactionsRepository: TransactionsRepository,
          dataMapper: InvestmentDTOMapping) {
-        self.portfolioRepository = portfolioRepository
+        self.transactionsRepository = transactionsRepository
         self.dataMapper = dataMapper
     }
-    
+
     func allInvestments(for userID: User.IDValue) async throws -> [InvestmentDTO] {
-        let transactions = try await portfolioRepository.allTransactions(for: userID)
+        let transactions = try await transactionsRepository.all(for: userID)
         return try await dataMapper.investments(from: transactions)
     }
 
     func investmentDetail(for ticker: String, userID: User.IDValue) async throws -> InvestmentDetailDTO {
-        let transactions = try await portfolioRepository.transactions(for: userID, ticker: ticker)
+        let transactions = try await transactionsRepository.transactions(for: userID, ticker: ticker)
         return try await dataMapper.investmentDetail(from: transactions)
     }
 }

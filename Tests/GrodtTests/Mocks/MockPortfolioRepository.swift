@@ -8,8 +8,6 @@ final class MockPortfolioRepository: PortfolioRepository, @unchecked Sendable {
     var updateResult: Result<Portfolio, Error>?
     var deleteResult: Result<Void, Error> = .success(())
     var expandPortfolioResult: Result<Portfolio, Error>?
-    var allTransactionsResult: Result<[Transaction], Error> = .success([])
-    var transactionsResult: Result<[Transaction], Error> = .success([])
 
     private(set) var createCalled = false
     private(set) var createCalledWith: Portfolio?
@@ -57,14 +55,6 @@ final class MockPortfolioRepository: PortfolioRepository, @unchecked Sendable {
             throw TestError.notImplemented
         }
         return try result.get()
-    }
-
-    func allTransactions(for userID: User.IDValue) async throws -> [Transaction] {
-        try allTransactionsResult.get()
-    }
-
-    func transactions(for userID: User.IDValue, ticker: String) async throws -> [Transaction] {
-        try transactionsResult.get()
     }
 }
 

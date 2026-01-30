@@ -4,6 +4,7 @@ import Foundation
 final class MockTransactionsRepository: TransactionsRepository, @unchecked Sendable {
     var transactionResult: Result<Transaction?, Error> = .success(nil)
     var allResult: Result<[Transaction], Error> = .success([])
+    var transactionsResult: Result<[Transaction], Error> = .success([])
     var saveResult: Result<Void, Error> = .success(())
     var deleteResult: Result<Void, Error> = .success(())
     var updateResult: Result<Void, Error> = .success(())
@@ -21,6 +22,10 @@ final class MockTransactionsRepository: TransactionsRepository, @unchecked Senda
 
     func all(for userID: User.IDValue) async throws -> [Transaction] {
         try allResult.get()
+    }
+
+    func transactions(for userID: User.IDValue, ticker: String) async throws -> [Transaction] {
+        try transactionsResult.get()
     }
 
     func save(_ transaction: Transaction) async throws {

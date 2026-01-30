@@ -4,6 +4,7 @@ import Foundation
 protocol TransactionsRepository {
     func transaction(for id: UUID) async throws -> Transaction?
     func all(for userID: User.IDValue) async throws -> [Transaction]
+    func transactions(for userID: User.IDValue, ticker: String) async throws -> [Transaction]
     func save(_ transaction: Transaction) async throws
     func delete(_ transaction: Transaction) async throws
     func update(_ transaction: Transaction) async throws
@@ -32,7 +33,18 @@ class PostgresTransactionRepository: TransactionsRepository {
             .sort(\.$purchaseDate, .descending)
             .all()
     }
-    
+
+    func transactions(for userID: User.IDValue, ticker: String) async throws -> [Transaction] {
+        return try await Transaction.query(on: database)
+            .join(parent: \Transaction.$portfolio)
+            .filter(Portfolio.self, \.$user.$id == userID)
+            .filter(\.$ticker == ticker)
+            .with(\.$portfolio)
+            .with(\.$brokerageAccount)
+            .sort(\.$purchaseDate, .descending)
+            .all()
+    }
+
     func save(_ transaction: Transaction) async throws {
         _ = try await transaction.save(on: database)
     }
