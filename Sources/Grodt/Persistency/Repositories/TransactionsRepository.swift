@@ -5,6 +5,8 @@ protocol TransactionsRepository {
     func transaction(for id: UUID) async throws -> Transaction?
     func all(for userID: User.IDValue) async throws -> [Transaction]
     func save(_ transaction: Transaction) async throws
+    func delete(_ transaction: Transaction) async throws
+    func update(_ transaction: Transaction) async throws
 }
 
 class PostgresTransactionRepository: TransactionsRepository {
@@ -33,5 +35,13 @@ class PostgresTransactionRepository: TransactionsRepository {
     
     func save(_ transaction: Transaction) async throws {
         _ = try await transaction.save(on: database)
+    }
+
+    func delete(_ transaction: Transaction) async throws {
+        try await transaction.delete(on: database)
+    }
+
+    func update(_ transaction: Transaction) async throws {
+        try await transaction.update(on: database)
     }
 }

@@ -22,17 +22,9 @@ func registerSkiRoutes(_ app: Application, _ container: AppContainer) throws {
             brokerageService: container.brokerageService)
         )
         
-        let transactionsRoute = TransactionsRoute(
-            transactionsRepository: container.transactionRepository,
-            currencyRepository: container.currencyRepository,
-            dataMapper: container.transactionDTOMapper)
-        
-        try protected.register(collection: transactionsRoute)
-        
-        transactionsRoute.delegate = TransactionChangedHandler(
-            portfolioRepository: container.portfolioRepository,
-            historicalPerformanceUpdater: container.portfolioPerformanceUpdater
-        )
+        try protected.register(collection: TransactionsRoute(
+            service: container.transactionService
+        ))
         
         try protected.register(collection: TickersRoute(
             service: container.tickersService)

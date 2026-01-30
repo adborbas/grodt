@@ -4,7 +4,7 @@ import Fluent
 protocol BrokerageServicing: Sendable {
     func allBrokerages(for userID: UUID) async throws -> [BrokerageDTO]
     func createBrokerage(named: String, for userID: UUID) async throws -> BrokerageDTO
-    func brokerageDetail(id: UUID, for userID: UUID, on db: Database) async throws -> BrokerageDTO
+    func brokerageDetail(id: UUID, for userID: UUID) async throws -> BrokerageDTO
     func updateBrokerage(id: UUID, update: CreateUpdateBrokerageRequestDTO, for userID: UUID) async throws -> BrokerageDTO
     func deleteBrokerage(id: UUID, for userID: UUID) async throws
 }
@@ -37,8 +37,7 @@ struct BrokerageService: BrokerageServicing {
     }
     
     func brokerageDetail(id: UUID,
-                         for userID: UUID,
-                         on db: Database) async throws -> BrokerageDTO {
+                         for userID: UUID) async throws -> BrokerageDTO {
         guard let brokerage = try await brokerageRepository.find(id, for: userID) else {
             throw Abort(.notFound)
         }

@@ -1,6 +1,5 @@
 @testable import Grodt
 import Vapor
-import Fluent
 
 final class MockBrokerageService: BrokerageServicing, @unchecked Sendable {
     var allBrokeragesResult: Result<[BrokerageDTO], Error> = .success([])
@@ -20,7 +19,7 @@ final class MockBrokerageService: BrokerageServicing, @unchecked Sendable {
         return try result.get()
     }
 
-    func brokerageDetail(id: UUID, for userID: UUID, on db: Database) async throws -> BrokerageDTO {
+    func brokerageDetail(id: UUID, for userID: UUID) async throws -> BrokerageDTO {
         guard let result = brokerageDetailResult else {
             throw Abort(.notImplemented)
         }

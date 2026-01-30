@@ -144,7 +144,12 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
     let transactionService = TransactionService(transactionsRepository: transactionRepository,
                                                 currencyRepository: currencyRepository,
                                                 dataMapper: transactionDTOMapper)
-    
+
+    transactionService.delegate = TransactionChangedHandler(
+        portfolioRepository: portfolioRepository,
+        historicalPerformanceUpdater: portfolioPerformanceUpdater
+    )
+
     let tickersService = TickersService(
         tickerRepository: tickerRepository,
         dataMapper: tickerDTOMapper,

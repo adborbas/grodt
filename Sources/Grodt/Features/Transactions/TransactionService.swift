@@ -3,6 +3,9 @@ import Vapor
 protocol TransactionServicing: Sendable {
     func all(for user: User.IDValue) async throws -> [TransactionDTO]
     func create(_ transaction: CreateTransactionRequestDTO, on portfolioID: Portfolio.IDValue) async throws -> TransactionDTO
+    func detail(for id: UUID) async throws -> TransactionDTO
+    func delete(id: UUID) async throws -> HTTPStatus
+    func updateBrokerageAccount(id: UUID, brokerageAccountId: String?) async throws -> TransactionDTO
 }
 
 class TransactionService: TransactionServicing {
@@ -47,6 +50,37 @@ class TransactionService: TransactionServicing {
         try await transactionsRepository.save(newTransaction)
         try await delegate?.transactionCreated(newTransaction)
         return try await dataMapper.transaction(from: newTransaction)
+    }
+
+    func detail(for id: UUID) async throws -> TransactionDTO {
+        guard let transaction = try await transactionsRepository.transaction(for: id) else {
+            throw Abort(.notFound)
+        }
+        return try await dataMapper.transaction(from: transaction)
+    }
+
+    func delete(id: UUID) async throws -> HTTPStatus {
+        guard let transaction = try await transactionsRepository.transaction(for: id) else {
+            throw Abort(.notFound)
+        }
+        try await transactionsRepository.delete(transaction)
+        try await delegate?.transactionDeleted(transaction)
+        return .ok
+    }
+
+    func updateBrokerageAccount(id: UUID, brokerageAccountId: String?) async throws -> TransactionDTO {
+        guard let transaction = try await transactionsRepository.transaction(for: id) else {
+            throw Abort(.notFound)
+        }
+
+        let brokerageAccountID: UUID? = {
+            guard let raw = brokerageAccountId?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return nil }
+            return UUID(uuidString: raw)
+        }()
+
+        transaction.$brokerageAccount.id = brokerageAccountID
+        try await transactionsRepository.update(transaction)
+        return try await dataMapper.transaction(from: transaction)
     }
 }
 

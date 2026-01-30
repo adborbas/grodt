@@ -12,6 +12,7 @@ func withTestApp(
     accountService: AccountServicing = MockAccountService(),
     brokerageAccountsService: BrokerageAccountsServicing = MockBrokerageAccountsService(),
     homeService: HomeServicing = MockHomeService(),
+    investmentService: InvestmentServicing = MockInvestmentService(),
     _ body: (Application, String) async throws -> Void
 ) async throws {
     let app = try await makeApp(
@@ -21,7 +22,8 @@ func withTestApp(
         brokerageService: brokerageService,
         accountService: accountService,
         brokerageAccountsService: brokerageAccountsService,
-        homeService: homeService
+        homeService: homeService,
+        investmentService: investmentService
     )
     defer { Task { try? await app.asyncShutdown() } }
 
@@ -46,7 +48,8 @@ func makeApp(
     brokerageService: BrokerageServicing = MockBrokerageService(),
     accountService: AccountServicing = MockAccountService(),
     brokerageAccountsService: BrokerageAccountsServicing = MockBrokerageAccountsService(),
-    homeService: HomeServicing = MockHomeService()
+    homeService: HomeServicing = MockHomeService(),
+    investmentService: InvestmentServicing = MockInvestmentService()
 ) async throws -> Application {
     let app = try await Application.make(.testing)
 
@@ -73,6 +76,23 @@ func makeApp(
 
         try protected.register(collection: BrokerageAccountsRoute(
             service: brokerageAccountsService
+        ))
+
+        try protected.register(collection: InvestmentRoute(
+            service: investmentService
+        ))
+
+        try protected.register(collection: TickersRoute(
+            service: tickersService
+        ))
+
+        try protected.register(collection: TransactionsRoute(
+            service: transactionService
+        ))
+
+        try protected.register(collection: BrokeragesRoute(
+            service: brokerageService,
+            accountsService: brokerageAccountsService
         ))
     }
 

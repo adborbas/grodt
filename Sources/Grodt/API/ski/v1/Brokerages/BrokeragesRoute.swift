@@ -2,11 +2,11 @@ import Vapor
 import Fluent
 
 struct BrokeragesRoute: RouteCollection {
-    private let service: BrokerageService
-    private let accountsService: BrokerageAccountsService
-    
-    init(service: BrokerageService,
-         accountsService: BrokerageAccountsService) {
+    private let service: BrokerageServicing
+    private let accountsService: BrokerageAccountsServicing
+
+    init(service: BrokerageServicing,
+         accountsService: BrokerageAccountsServicing) {
         self.service = service
         self.accountsService = accountsService
     }
@@ -40,7 +40,7 @@ struct BrokeragesRoute: RouteCollection {
     private func detail(req: Request) async throws -> BrokerageDTO {
         let userID = try req.requireUserID()
         let id = try req.requiredID()
-        return try await service.brokerageDetail(id: id, for: userID, on: req.db)
+        return try await service.brokerageDetail(id: id, for: userID)
     }
     
     private func update(req: Request) async throws -> HTTPStatus {

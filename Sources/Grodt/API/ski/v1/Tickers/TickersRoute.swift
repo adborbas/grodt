@@ -2,9 +2,9 @@ import Vapor
 import CollectionConcurrencyKit
 
 class TickersRoute: RouteCollection {
-    private let service: TickersService
-    
-    init(service: TickersService) {
+    private let service: TickersServicing
+
+    init(service: TickersServicing) {
         self.service = service
     }
     
