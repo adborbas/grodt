@@ -1,7 +1,7 @@
 import Foundation
 import CollectionConcurrencyKit
 
-class PortfolioDTOMapper {
+class PortfolioDTOMapper: PortfolioDTOMapping {
     private let investmentDTOMapper: InvestmentDTOMapper
     private let currencyDTOMapper: CurrencyDTOMapper
     private let transactionDTOMapper: TransactionDTOMapper

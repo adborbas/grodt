@@ -12,19 +12,16 @@ protocol PortfolioServicing: Sendable {
 
 class PortfolioService: PortfolioServicing {
     private let portfolioRepository: PortfolioRepository
-    private let portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository
+    private let portfolioDailyRepo: PortfolioDailyPerformanceReading
     private let currencyRepository: CurrencyRepository
-    private let dataMapper: PortfolioDTOMapper
-    private let portfolioPerformanceUpdater: PortfolioPerformanceUpdating
-    
+    private let dataMapper: PortfolioDTOMapping
+
     init(portfolioRepository: PortfolioRepository,
          currencyRepository: CurrencyRepository,
-         historicalPortfolioPerformanceUpdater: PortfolioPerformanceUpdating,
-         portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository,
-         dataMapper: PortfolioDTOMapper) {
+         portfolioDailyRepo: PortfolioDailyPerformanceReading,
+         dataMapper: PortfolioDTOMapping) {
         self.portfolioRepository = portfolioRepository
         self.currencyRepository = currencyRepository
-        self.portfolioPerformanceUpdater = historicalPortfolioPerformanceUpdater
         self.portfolioDailyRepo = portfolioDailyRepo
         self.dataMapper = dataMapper
     }
