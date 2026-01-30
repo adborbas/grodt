@@ -52,6 +52,7 @@ func makeApp(
     investmentService: InvestmentServicing = MockInvestmentService()
 ) async throws -> Application {
     let app = try await Application.make(.testing)
+    app.logger.logLevel = .critical
 
     try app.group("ski", "v1") { ski in
         let protected = ski.grouped([

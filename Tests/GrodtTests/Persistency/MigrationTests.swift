@@ -213,6 +213,7 @@ import FluentSQLiteDriver
 
 private func makeApp(migrations: [any Migration]) async throws -> Application {
     let app = try await Application.make(.testing)
+    app.logger.logLevel = .critical
     let configuration = SQLiteConfiguration(storage: .memory, enableForeignKeys: true)
     app.databases.use(.sqlite(configuration), as: .sqlite)
     migrations.forEach { app.migrations.add($0) }

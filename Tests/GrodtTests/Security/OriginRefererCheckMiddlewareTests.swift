@@ -191,6 +191,7 @@ struct OriginRefererCheckMiddlewareTests {
 
     private func withMiddlewareApp(_ body: (Application) async throws -> Void) async throws {
         let app = try await Application.make(.testing)
+        app.logger.logLevel = .critical
         defer { Task { try? await app.asyncShutdown() } }
 
         app.middleware.use(OriginRefererCheckMiddleware())
