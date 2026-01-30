@@ -4,7 +4,8 @@ import Fluent
 protocol UserRepository {
     func allUsers(with: Set<UserExpansion>) async throws -> [User]
     func user(for userID: User.IDValue, with: Set<UserExpansion>) async throws -> User?
-    func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws
+    @discardableResult
+    func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws -> UserPreferences
     func setMailjetApiSecret(_ secret: String?, for user: User) async throws
     func getMailjetApiSecret(for user: User) async throws -> String?
 }
@@ -56,10 +57,12 @@ class PostgresUserRepository: UserRepository {
             .first()
     }
 
-    func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws {
+    @discardableResult
+    func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws -> UserPreferences {
         try await user.$preferences.load(on: database)
         user.preferences!.data.monthlyEmail = config
         try await user.preferences!.save(on: database)
+        return user.preferences!
     }
 
     func setMailjetApiSecret(_ secret: String?, for user: User) async throws {

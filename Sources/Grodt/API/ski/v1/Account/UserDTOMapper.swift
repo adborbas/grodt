@@ -1,6 +1,6 @@
 import FluentKit
 
-final class UserDTOMapper {
+final class UserDTOMapper: UserDTOMapping, @unchecked Sendable {
     private let preferencesMapper: UserPreferencesDTOMapper
 
     init(preferencesMapper: UserPreferencesDTOMapper) {

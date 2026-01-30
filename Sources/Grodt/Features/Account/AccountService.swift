@@ -3,9 +3,9 @@ import Vapor
 
 class AccountService: AccountServicing {
     private let userRepository: UserRepository
-    private let userDataMapper: UserDTOMapper
-    
-    init(userRepository: UserRepository, userDataMapper: UserDTOMapper) {
+    private let userDataMapper: UserDTOMapping
+
+    init(userRepository: UserRepository, userDataMapper: UserDTOMapping) {
         self.userRepository = userRepository
         self.userDataMapper = userDataMapper
     }
@@ -58,12 +58,14 @@ class AccountService: AccountServicing {
             try await userRepository.setMailjetApiSecret(apiSecret, for: user)
         }
 
+        let updatedPreferences: UserPreferences
         do {
-            try await userRepository.setMonthlyEmailConfig(newMonthlyEmailConfig, for: user)
+            updatedPreferences = try await userRepository.setMonthlyEmailConfig(newMonthlyEmailConfig, for: user)
         } catch {
             try await userRepository.setMailjetApiSecret(nil, for: user)
             throw Abort(.internalServerError)
         }
-        return try await userDataMapper.preferences(from: user.preferences!, for: user.requireID())
+
+        return try await userDataMapper.preferences(from: updatedPreferences, for: userID)
     }
 }
