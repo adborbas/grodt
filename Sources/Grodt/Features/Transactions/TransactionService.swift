@@ -11,12 +11,12 @@ protocol TransactionServicing: Sendable {
 class TransactionService: TransactionServicing {
     private let transactionsRepository: TransactionsRepository
     private let currencyRepository: CurrencyRepository
-    private let dataMapper: TransactionDTOMapper
+    private let dataMapper: TransactionDTOMapping
     var delegate: TransactionsControllerDelegate? // TODO: Weak
-    
+
     init(transactionsRepository: TransactionsRepository,
          currencyRepository: CurrencyRepository,
-         dataMapper: TransactionDTOMapper) {
+         dataMapper: TransactionDTOMapping) {
         self.transactionsRepository = transactionsRepository
         self.currencyRepository = currencyRepository
         self.dataMapper = dataMapper

@@ -8,7 +8,23 @@ struct CreateTransactionRequestDTO: Decodable {
     let fees: Decimal
     let numberOfShares: Decimal
     let pricePerShare: Decimal
-    
+
+    init(brokerageAccountID: String? = nil,
+         purchaseDate: Date,
+         ticker: String,
+         currency: String,
+         fees: Decimal,
+         numberOfShares: Decimal,
+         pricePerShare: Decimal) {
+        self.brokerageAccountID = brokerageAccountID
+        self.purchaseDate = purchaseDate
+        self.ticker = ticker
+        self.currency = currency
+        self.fees = fees
+        self.numberOfShares = numberOfShares
+        self.pricePerShare = pricePerShare
+    }
+
     enum CodingKeys: String, CodingKey {
         case brokerageAccountID, purchaseDate, ticker, currency, fees, numberOfShares, pricePerShare
     }

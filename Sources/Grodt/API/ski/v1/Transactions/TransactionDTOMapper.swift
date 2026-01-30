@@ -1,7 +1,7 @@
 import Foundation
 import Fluent
 
-class TransactionDTOMapper {
+class TransactionDTOMapper: TransactionDTOMapping {
     private let currencyDTOMapper: CurrencyDTOMapper
     private let database: Database
     
