@@ -2,9 +2,9 @@ import Vapor
 import Fluent
 
 class AccountRoute: RouteCollection {
-    private let service: AccountService
+    private let service: AccountServicing
 
-    init(service: AccountService) {
+    init(service: AccountServicing) {
         self.service = service
     }
 
@@ -42,7 +42,7 @@ class AccountRoute: RouteCollection {
     }
 }
 
-struct UpdateMonthlyEmailConfigDTO: Codable {
+struct UpdateMonthlyEmailConfigDTO: Content {
     let isEnabled: Bool
     let senderEmail: String?
     let senderName: String?

@@ -1,7 +1,7 @@
 import Foundation
 import Vapor
 
-class AccountService {
+class AccountService: AccountServicing {
     private let userRepository: UserRepository
     private let userDataMapper: UserDTOMapper
     
