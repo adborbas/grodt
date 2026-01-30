@@ -4,18 +4,18 @@ import Fluent
 struct BrokerageAccountsService: BrokerageAccountsServicing {
     private let brokerageRepository: BrokerageRepository
     private let brokerageAccountRepository: BrokerageAccountRepository
-    private let performanceRepository: PostgresBrokerageAccountDailyPerformanceRepository
-    private let currencyMapper: CurrencyDTOMapper
-    private let performanceDTOMapper: DatedPerformanceDTOMapper
+    private let performanceRepository: BrokerageAccountDailyPerformanceReading
+    private let currencyMapper: CurrencyDTOMapping
+    private let performanceDTOMapper: DatedPerformanceDTOMapping
     private let currencyRepository: CurrencyRepository
-    private let transactionDTOMapper: TransactionDTOMapper
+    private let transactionDTOMapper: TransactionDTOMapping
 
     init(brokerageRepository: BrokerageRepository,
          brokerageAccountRepository: BrokerageAccountRepository,
-         performanceRepository: PostgresBrokerageAccountDailyPerformanceRepository,
-         performanceDTOMapper: DatedPerformanceDTOMapper,
-         currencyMapper: CurrencyDTOMapper,
-         transactionDTOMapper: TransactionDTOMapper,
+         performanceRepository: BrokerageAccountDailyPerformanceReading,
+         performanceDTOMapper: DatedPerformanceDTOMapping,
+         currencyMapper: CurrencyDTOMapping,
+         transactionDTOMapper: TransactionDTOMapping,
          currencyRepository: CurrencyRepository) {
         self.brokerageRepository = brokerageRepository
         self.brokerageAccountRepository = brokerageAccountRepository
