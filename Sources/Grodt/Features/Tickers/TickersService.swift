@@ -1,6 +1,5 @@
 import Vapor
 import CollectionConcurrencyKit
-import AlphaSwiftage
 
 protocol TickersControllerDelegate: AnyObject {
     func tickerCreated(_ ticker: Ticker)
@@ -14,14 +13,14 @@ protocol TickersServicing: Sendable {
 
 class TickersService: TickersServicing {
     private let tickerRepository: TickerRepository
-    private let dataMapper: TickerDTOMapper
-    private let tickerService: AlphaVantageService
-    
+    private let dataMapper: TickerDTOMapping
+    private let tickerService: SymbolSearching
+
     var delegate: TickersControllerDelegate? // TODO: Weak
-    
+
     init(tickerRepository: TickerRepository,
-         dataMapper: TickerDTOMapper,
-         tickerService: AlphaVantageService) {
+         dataMapper: TickerDTOMapping,
+         tickerService: SymbolSearching) {
         self.tickerRepository = tickerRepository
         self.dataMapper = dataMapper
         self.tickerService = tickerService
