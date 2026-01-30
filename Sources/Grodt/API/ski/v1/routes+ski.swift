@@ -47,14 +47,7 @@ func registerSkiRoutes(_ app: Application, _ container: AppContainer) throws {
         )
         
         try protected.register(collection: BrokerageAccountsRoute(
-            service: container.brokerageAccountsService,
-            brokerageRepository: container.brokerageRepository,
-            brokerageAccountRepository: container.brokerageAccountRepository,
-            performanceRepository: container.brokerageAccountDailyPerformanceRepository,
-            performanceDTOMapper: container.performanceDTOMapper,
-            currencyMapper: container.currencyDTOMapper,
-            transactionDTOMapper: container.transactionDTOMapper,
-            currencyRepository: container.currencyRepository
+            service: container.brokerageAccountsService
         ))
         
         try protected.register(collection: InvestmentRoute(

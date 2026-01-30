@@ -8,6 +8,7 @@ protocol BrokerageAccountRepository {
     func update(_ account: BrokerageAccount) async throws
     func delete(_ account: BrokerageAccount) async throws
     func performance(for accountID: BrokerageAccount.IDValue) async throws -> PerformanceDTO
+    func transactions(for accountID: BrokerageAccount.IDValue) async throws -> [Transaction]
 }
 
 class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
@@ -49,15 +50,21 @@ class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
             .sort(\.$date, .descending)
             .first()
         else { return PerformanceDTO.zero }
-        
+
         let moneyIn = last.moneyIn
         let moneyOut = last.value
         let profit = moneyOut - moneyIn
         let totalReturn: Decimal = moneyIn > 0 ? (profit / moneyIn).rounded(to: 2) : 0
-        
+
         return PerformanceDTO(moneyIn: moneyIn,
                               moneyOut: moneyOut,
                               profit: profit,
                               totalReturn: totalReturn)
+    }
+
+    func transactions(for accountID: BrokerageAccount.IDValue) async throws -> [Transaction] {
+        try await Transaction.query(on: database)
+            .filter(\.$brokerageAccount.$id == accountID)
+            .all()
     }
 }
