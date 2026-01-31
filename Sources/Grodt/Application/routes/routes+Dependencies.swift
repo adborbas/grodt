@@ -71,7 +71,7 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         priceService: priceService
     )
 
-    let secretsEncryptor = try SecretsEncryptor.loadOrCreate(from: ".secrets-key")
+    let secretsEncryptor = try SecretsEncryptor.fromEnvironment()
     let userRepository = PostgresUserRepository(database: app.db, secretsEncryptor: secretsEncryptor)
     let portfolioRepository = PostgresPortfolioRepository(database: app.db)
     let transactionRepository = PostgresTransactionRepository(database: app.db)

@@ -1,4 +1,5 @@
 import Foundation
+import Vapor
 #if canImport(CryptoKit)
 import CryptoKit
 #else
@@ -10,6 +11,7 @@ enum SecretsEncryptorError: Error, LocalizedError {
     case invalidCiphertext
     case decryptionFailed
     case keyFileWriteFailed
+    case missingPassword
 
     var errorDescription: String? {
         switch self {
@@ -21,6 +23,8 @@ enum SecretsEncryptorError: Error, LocalizedError {
             return "Failed to decrypt secret"
         case .keyFileWriteFailed:
             return "Failed to write encryption key file"
+        case .missingPassword:
+            return "SECRETS_PASSWORD environment variable is required"
         }
     }
 }
@@ -83,5 +87,32 @@ final class SecretsEncryptor: SecretsEncrypting {
         }
 
         return SecretsEncryptor(key: key)
+    }
+
+    /// Creates a SecretsEncryptor by deriving a key from a password and salt using HKDF.
+    /// This ensures the same key is derived consistently across container restarts.
+    static func fromPassword(_ password: String, salt: String) -> SecretsEncryptor {
+        let passwordData = Data(password.utf8)
+        let saltData = Data(salt.utf8)
+
+        let inputKey = SymmetricKey(data: passwordData)
+        let derivedKey = HKDF<SHA256>.deriveKey(
+            inputKeyMaterial: inputKey,
+            salt: saltData,
+            info: Data("grodt-secrets-encryption".utf8),
+            outputByteCount: 32
+        )
+
+        return SecretsEncryptor(key: derivedKey)
+    }
+
+    /// Creates a SecretsEncryptor from environment variables.
+    /// Requires SECRETS_PASSWORD to be set. SECRETS_SALT is optional (defaults to "grodt-default-salt").
+    static func fromEnvironment() throws -> SecretsEncryptor {
+        guard let password = Environment.get("SECRETS_PASSWORD") else {
+            throw SecretsEncryptorError.missingPassword
+        }
+        let salt = Environment.get("SECRETS_SALT") ?? "grodt-default-salt"
+        return fromPassword(password, salt: salt)
     }
 }
