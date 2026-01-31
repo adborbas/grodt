@@ -32,7 +32,9 @@ struct AppContainer {
     // Calculators / updaters
     let performanceCalculator: HoldingsPerformanceCalculating
     let portfolioPerformanceUpdater: PortfolioPerformanceUpdater
-    
+    let brokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdater
+    let brokeragePerformanceUpdater: BrokeragePerformanceUpdater
+
     let portfolioService: PortfolioService
     let accountService: AccountService
     let brokerageService: BrokerageService
@@ -40,6 +42,7 @@ struct AppContainer {
     let transactionService: TransactionService
     let tickersService: TickersService
     let brokerageAccountsService: BrokerageAccountsService
+    let homeService: HomeService
 }
 
 func buildAppContainer(_ app: Application) async throws -> AppContainer {
@@ -73,7 +76,10 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
     let portfolioRepository = PostgresPortfolioRepository(database: app.db)
     let transactionRepository = PostgresTransactionRepository(database: app.db)
     let brokerageRepository = PostgresBrokerageRepository(database: app.db)
-    let brokerageAccountRepository = PostgresBrokerageAccountRepository(database: app.db)
+    let brokerageAccountRepository = PostgresBrokerageAccountRepository(
+        database: app.db,
+        transactionsRepository: transactionRepository
+    )
 
     let brokerageAccountDailyPerformanceRepository = PostgresBrokerageAccountDailyPerformanceRepository(database: app.db)
     let brokerageDailyPerformanceRepository = PostgresBrokerageDailyPerformanceRepository(database: app.db)
@@ -100,10 +106,24 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         performanceCalculator: performanceCalculator,
         portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db)
     )
-    
+
+    let brokerageAccountPerformanceUpdater = BrokerageAccountPerformanceUpdater(
+        transactionRepository: transactionRepository,
+        brokerageAccountRepository: brokerageAccountRepository,
+        accountDailyRepository: brokerageAccountDailyPerformanceRepository,
+        userRepository: userRepository,
+        calculator: performanceCalculator
+    )
+
+    let brokeragePerformanceUpdater = BrokeragePerformanceUpdater(
+        userRepository: userRepository,
+        brokerageAccountRepository: brokerageAccountRepository,
+        accountDailyRepository: brokerageAccountDailyPerformanceRepository,
+        brokerageDailyRepository: brokerageDailyPerformanceRepository
+    )
+
     let portfolioService = PortfolioService(portfolioRepository: portfolioRepository,
                                             currencyRepository: currencyRepository,
-                                            historicalPortfolioPerformanceUpdater: portfolioPerformanceUpdater,
                                             portfolioDailyRepo: PostgresPortfolioDailyPerformanceRepository(db: app.db),
                                             dataMapper: portfolioDTOMapper)
     
@@ -125,13 +145,11 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
             performanceRepository: brokerageDailyPerformanceRepository,
             performanceDTOMapper: performanceDTOMapper,
             database: app.db
-        ),
-        accounts: brokerageAccountRepository,
-        currencyMapper: currencyDTOMapper
+        )
     )
     
     let investmentService = InvestmentService(
-        portfolioRepository: portfolioRepository,
+        transactionsRepository: transactionRepository,
         dataMapper: InvestmentDTOMapper(
             currencyDTOMapper: currencyDTOMapper,
             transactionDTOMapper: transactionDTOMapper,
@@ -143,7 +161,15 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
     let transactionService = TransactionService(transactionsRepository: transactionRepository,
                                                 currencyRepository: currencyRepository,
                                                 dataMapper: transactionDTOMapper)
-    
+
+    transactionService.delegate = TransactionChangedHandler(
+        portfolioRepository: portfolioRepository,
+        brokerageAccountRepository: brokerageAccountRepository,
+        portfolioPerformanceUpdater: portfolioPerformanceUpdater,
+        brokerageAccountPerformanceUpdater: brokerageAccountPerformanceUpdater,
+        brokeragePerformanceUpdater: brokeragePerformanceUpdater
+    )
+
     let tickersService = TickersService(
         tickerRepository: tickerRepository,
         dataMapper: tickerDTOMapper,
@@ -156,13 +182,20 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
     let brokerageAccountsService = BrokerageAccountsService(
         brokerageRepository: brokerageRepository,
         brokerageAccountRepository: brokerageAccountRepository,
+        transactionsRepository: transactionRepository,
         performanceRepository: brokerageAccountDailyPerformanceRepository,
         performanceDTOMapper: performanceDTOMapper,
         currencyMapper: currencyDTOMapper,
         transactionDTOMapper: transactionDTOMapper,
         currencyRepository: currencyRepository
     )
-        
+
+    let homeService = HomeService(
+        portfolioService: portfolioService,
+        accountService: accountService,
+        brokerageService: brokerageService,
+        investmentService: investmentService
+    )
 
     return AppContainer(
         alphavantage: alphavantage,
@@ -186,13 +219,16 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
         currencyRepository: currencyRepository,
         performanceCalculator: performanceCalculator,
         portfolioPerformanceUpdater: portfolioPerformanceUpdater,
+        brokerageAccountPerformanceUpdater: brokerageAccountPerformanceUpdater,
+        brokeragePerformanceUpdater: brokeragePerformanceUpdater,
         portfolioService: portfolioService,
         accountService: accountService,
         brokerageService: brokerageService,
         investmentService: investmentService,
         transactionService: transactionService,
         tickersService: tickersService,
-        brokerageAccountsService: brokerageAccountsService
+        brokerageAccountsService: brokerageAccountsService,
+        homeService: homeService
     )
 }
 
@@ -213,19 +249,8 @@ func scheduleNightlyJobs(_ app: Application, _ container: AppContainer) throws {
             priceService: container.priceService
         ),
         portfolioPerformanceUpdater: container.portfolioPerformanceUpdater,
-        brokerageAccountPerformanceUpdater: BrokerageAccountPerformanceUpdater(
-            transactionRepository: container.transactionRepository,
-            brokerageAccountRepository: container.brokerageAccountRepository,
-            accountDailyRepository: container.brokerageAccountDailyPerformanceRepository,
-            userRepository: container.userRepository,
-            calculator: container.performanceCalculator
-        ),
-        brokeragePerformanceUpdater: BrokeragePerformanceUpdater(
-            userRepository: container.userRepository,
-            brokerageAccountRepository: container.brokerageAccountRepository,
-            accountDailyRepository: container.brokerageAccountDailyPerformanceRepository,
-            brokerageDailyRepository: container.brokerageDailyPerformanceRepository
-        )
+        brokerageAccountPerformanceUpdater: container.brokerageAccountPerformanceUpdater,
+        brokeragePerformanceUpdater: container.brokeragePerformanceUpdater
     )
 
     app.queues.schedule(nightlyUpdaterJob)

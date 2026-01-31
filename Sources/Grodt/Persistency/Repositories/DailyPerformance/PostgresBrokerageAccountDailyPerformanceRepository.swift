@@ -1,9 +1,10 @@
 import Foundation
 import Fluent
+import SQLKit
 
 struct PostgresBrokerageAccountDailyPerformanceRepository: DailyPerformanceRepository {
     typealias OwnerID = UUID
-    
+
     let database: Database
 
     func replaceSeries(for ownerID: UUID, with points: [DatedPerformance]) async throws {
@@ -14,8 +15,9 @@ struct PostgresBrokerageAccountDailyPerformanceRepository: DailyPerformanceRepos
             let row = HistoricalBrokerageAccountPerformanceDaily(
                 accountID: ownerID,
                 date: point.date.date,
-                moneyIn: point.moneyIn,
-                value: point.value
+                invested: point.invested,
+                realized: point.realized,
+                currentValue: point.currentValue
             )
             try await row.save(on: database)
         }
@@ -39,15 +41,17 @@ struct PostgresBrokerageAccountDailyPerformanceRepository: DailyPerformanceRepos
 
         for point in points {
             if let row = existingByDate[point.date.date] {
-                row.moneyIn = point.moneyIn
-                row.value = point.value
+                row.invested = point.invested
+                row.realized = point.realized
+                row.currentValue = point.currentValue
                 try await row.save(on: database)
             } else {
                 let newRow = HistoricalBrokerageAccountPerformanceDaily(
                     accountID: ownerID,
                     date: point.date.date,
-                    moneyIn: point.moneyIn,
-                    value: point.value
+                    invested: point.invested,
+                    realized: point.realized,
+                    currentValue: point.currentValue
                 )
                 try await newRow.save(on: database)
             }
@@ -63,12 +67,52 @@ struct PostgresBrokerageAccountDailyPerformanceRepository: DailyPerformanceRepos
         if let to { query = query.filter(\.$date <= to.date) }
 
         let rows = try await query.all()
-        return rows.map { DatedPerformance(moneyIn: $0.moneyIn, value: $0.value, date: YearMonthDayDate($0.date)) }
+        return rows.map {
+            DatedPerformance(
+                invested: $0.invested,
+                realized: $0.realized,
+                currentValue: $0.currentValue,
+                date: YearMonthDayDate($0.date)
+            )
+        }
     }
 
     func deleteAll(for ownerID: UUID) async throws {
         try await HistoricalBrokerageAccountPerformanceDaily.query(on: database)
             .filter(\.$account.$id == ownerID)
+            .delete()
+    }
+
+    func batchUpsert(points: [DatedPerformance], for ownerID: UUID) async throws {
+        guard !points.isEmpty else { return }
+        guard let sql = database as? SQLDatabase else {
+            try await upsert(points: points, for: ownerID)
+            return
+        }
+
+        let batchSize = 100
+        for batch in points.chunked(into: batchSize) {
+            var values: [SQLQueryString] = []
+            for point in batch {
+                let dateStr = ISO8601DateFormatter().string(from: point.date.date)
+                values.append("\(literal: UUID().uuidString), \(literal: ownerID.uuidString), \(literal: dateStr)::date, \(unsafeRaw: point.invested.description), \(unsafeRaw: point.realized.description), \(unsafeRaw: point.currentValue.description)")
+            }
+
+            let valuesList = SQLQueryString(values.map { "(\($0))" }.joined(separator: ", "))
+
+            try await sql.raw("""
+                INSERT INTO historical_brokerage_account_performance_daily (id, brokerage_account_id, date, invested, realized, current_value)
+                VALUES \(valuesList)
+                ON CONFLICT (brokerage_account_id, date)
+                DO UPDATE SET invested = EXCLUDED.invested, realized = EXCLUDED.realized, current_value = EXCLUDED.current_value
+                """).run()
+        }
+    }
+
+    func deleteFrom(date: YearMonthDayDate, for ownerID: UUID) async throws {
+        try await HistoricalBrokerageAccountPerformanceDaily.query(on: database)
+            .filter(\.$account.$id == ownerID)
+            .filter(\.$date >= date.date)
             .delete()
     }
 }

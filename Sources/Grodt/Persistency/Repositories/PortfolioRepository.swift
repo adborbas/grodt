@@ -7,7 +7,7 @@ protocol PortfolioRepository {
     func create(_ portfolio: Portfolio) async throws -> Portfolio
     func update(_ portfolio: Portfolio) async throws -> Portfolio
     func delete(for userID: User.IDValue, with id: Portfolio.IDValue) async throws
-    
+
     func expandPortfolio(on transaction: Transaction) async throws -> Portfolio
 }
 

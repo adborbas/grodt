@@ -69,52 +69,57 @@ struct SeedDevelopmentData: AsyncMigration {
             Transaction(
                 portfolioID: try portfolio.requireID(),
                 brokerageAccountID: try ibAccount1.requireID(),
-                purchaseDate: Date().addingTimeInterval(-86400 * 365), // 1 year ago
+                type: .buy,
+                transactionDate: Date().addingTimeInterval(-86400 * 365), // 1 year ago
                 ticker: "AAPL",
                 currency: usd,
                 fees: Decimal(9.99),
                 numberOfShares: Decimal(10),
-                pricePerShareAtPurchase: Decimal(150.00)
+                pricePerShare: Decimal(150.00)
             ),
             Transaction(
                 portfolioID: try portfolio.requireID(),
                 brokerageAccountID: try ibAccount1.requireID(),
-                purchaseDate: Date().addingTimeInterval(-86400 * 180), // 6 months ago
+                type: .buy,
+                transactionDate: Date().addingTimeInterval(-86400 * 180), // 6 months ago
                 ticker: "MSFT",
                 currency: usd,
                 fees: Decimal(9.99),
                 numberOfShares: Decimal(5),
-                pricePerShareAtPurchase: Decimal(300.00)
+                pricePerShare: Decimal(300.00)
             ),
             Transaction(
                 portfolioID: try portfolio.requireID(),
                 brokerageAccountID: try ibAccount2.requireID(),
-                purchaseDate: Date().addingTimeInterval(-86400 * 90), // 3 months ago
+                type: .buy,
+                transactionDate: Date().addingTimeInterval(-86400 * 90), // 3 months ago
                 ticker: "GOOGL",
                 currency: usd,
                 fees: Decimal(9.99),
                 numberOfShares: Decimal(3),
-                pricePerShareAtPurchase: Decimal(2800.00)
+                pricePerShare: Decimal(2800.00)
             ),
             Transaction(
                 portfolioID: try portfolio.requireID(),
                 brokerageAccountID: try fidelityAccount.requireID(),
-                purchaseDate: Date().addingTimeInterval(-86400 * 30), // 1 month ago
+                type: .buy,
+                transactionDate: Date().addingTimeInterval(-86400 * 30), // 1 month ago
                 ticker: "TSLA",
                 currency: usd,
                 fees: Decimal(9.99),
                 numberOfShares: Decimal(8),
-                pricePerShareAtPurchase: Decimal(220.00)
+                pricePerShare: Decimal(220.00)
             ),
             Transaction(
                 portfolioID: try portfolio.requireID(),
                 brokerageAccountID: try fidelityAccount.requireID(),
-                purchaseDate: Date().addingTimeInterval(-86400 * 7), // 1 week ago
+                type: .buy,
+                transactionDate: Date().addingTimeInterval(-86400 * 7), // 1 week ago
                 ticker: "NVDA",
                 currency: usd,
                 fees: Decimal(9.99),
                 numberOfShares: Decimal(2),
-                pricePerShareAtPurchase: Decimal(500.00)
+                pricePerShare: Decimal(500.00)
             )
         ]
 

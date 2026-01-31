@@ -3,7 +3,9 @@ import Fluent
 
 protocol BrokerageAccountRepository {
     func all(for userID: User.IDValue) async throws -> [BrokerageAccount]
+    func accounts(for brokerageID: Brokerage.IDValue) async throws -> [BrokerageAccount]
     func find(_ id: BrokerageAccount.IDValue, for userID: User.IDValue) async throws -> BrokerageAccount?
+    func account(for id: BrokerageAccount.IDValue) async throws -> BrokerageAccount?
     func create(_ account: BrokerageAccount) async throws
     func update(_ account: BrokerageAccount) async throws
     func delete(_ account: BrokerageAccount) async throws
@@ -12,9 +14,11 @@ protocol BrokerageAccountRepository {
 
 class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
     private let database: Database
-    
-    init(database: Database) {
+    private let transactionsRepository: TransactionsRepository
+
+    init(database: Database, transactionsRepository: TransactionsRepository) {
         self.database = database
+        self.transactionsRepository = transactionsRepository
     }
     
     func all(for userID: User.IDValue) async throws -> [BrokerageAccount] {
@@ -24,7 +28,21 @@ class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
             .with(\.$brokerage)
         return try await query.all()
     }
-    
+
+    func accounts(for brokerageID: Brokerage.IDValue) async throws -> [BrokerageAccount] {
+        try await BrokerageAccount.query(on: database)
+            .filter(\.$brokerage.$id == brokerageID)
+            .with(\.$brokerage)
+            .all()
+    }
+
+    func account(for id: BrokerageAccount.IDValue) async throws -> BrokerageAccount? {
+        try await BrokerageAccount.query(on: database)
+            .filter(\.$id == id)
+            .with(\.$brokerage)
+            .first()
+    }
+
     func find(_ id: BrokerageAccount.IDValue, for userID: User.IDValue) async throws -> BrokerageAccount? {
         try await BrokerageAccount.query(on: database)
             .filter(\.$id == id)
@@ -38,8 +56,8 @@ class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
     func update(_ account: BrokerageAccount) async throws { try await account.update(on: database) }
     
     func delete(_ account: BrokerageAccount) async throws {
-        let count = try await Transaction.query(on: database).filter(\.$brokerageAccount.$id == account.requireID()).count()
-        guard count == 0 else { throw Abort(.conflict, reason: "BrokerageAccount has transactions.") }
+        let hasTransactions = try await transactionsRepository.hasTransactions(for: account.requireID())
+        guard !hasTransactions else { throw Abort(.conflict, reason: "BrokerageAccount has transactions.") }
         try await account.delete(on: database)
     }
     
@@ -49,14 +67,14 @@ class PostgresBrokerageAccountRepository: BrokerageAccountRepository {
             .sort(\.$date, .descending)
             .first()
         else { return PerformanceDTO.zero }
-        
-        let moneyIn = last.moneyIn
-        let moneyOut = last.value
-        let profit = moneyOut - moneyIn
-        let totalReturn: Decimal = moneyIn > 0 ? (profit / moneyIn).rounded(to: 2) : 0
-        
-        return PerformanceDTO(moneyIn: moneyIn,
-                              moneyOut: moneyOut,
+
+        let invested = last.invested
+        let currentValue = last.currentValue
+        let profit = currentValue + last.realized - invested
+        let totalReturn: Decimal = invested > 0 ? (profit / invested).rounded(to: 2) : 0
+
+        return PerformanceDTO(invested: invested,
+                              currentValue: currentValue,
                               profit: profit,
                               totalReturn: totalReturn)
     }

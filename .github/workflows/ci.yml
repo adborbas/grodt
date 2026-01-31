@@ -8,21 +8,36 @@ jobs:
   build-and-test-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Build on macOS
-        run: swift build
+      - uses: actions/checkout@v4
+
+      - name: Cache Swift dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-swift-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-
+
       - name: Test on macOS
         run: swift test
 
   build-and-test-ubuntu:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
       - name: Set up Swift on Ubuntu
         uses: swift-actions/setup-swift@v2
         with:
           swift-version: '6.1'
-      - name: Build on Ubuntu
-        run: swift build
+
+      - name: Cache Swift dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-swift-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-
+
       - name: Test on Ubuntu
         run: swift test

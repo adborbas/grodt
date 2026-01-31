@@ -13,25 +13,30 @@ final class HistoricalPortfolioPerformanceDaily: Model, @unchecked Sendable {
     @Field(key: Keys.date)
     var date: Date
 
-    @Field(key: Keys.moneyIn)
-    var moneyIn: Decimal
+    @Field(key: Keys.invested)
+    var invested: Decimal
 
-    @Field(key: Keys.value)
-    var value: Decimal
+    @Field(key: Keys.realized)
+    var realized: Decimal
+
+    @Field(key: Keys.currentValue)
+    var currentValue: Decimal
 
     required init() {}
 
     init(id: UUID? = nil,
          portfolioID: Portfolio.IDValue,
          date: Date,
-         moneyIn: Decimal,
-         value: Decimal)
+         invested: Decimal,
+         realized: Decimal = 0,
+         currentValue: Decimal)
     {
         self.id = id
         self.$portfolio.id = portfolioID
         self.date = date
-        self.moneyIn = moneyIn
-        self.value = value
+        self.invested = invested
+        self.realized = realized
+        self.currentValue = currentValue
     }
 }
 
@@ -39,6 +44,11 @@ extension HistoricalPortfolioPerformanceDaily {
     enum Keys {
         static let portfolioID: FieldKey = "portfolio_id"
         static let date: FieldKey = "date"
+        static let invested: FieldKey = "invested"
+        static let realized: FieldKey = "realized"
+        static let currentValue: FieldKey = "current_value"
+
+        // Deprecated keys for migration
         static let moneyIn: FieldKey = "money_in"
         static let value: FieldKey = "value"
     }
@@ -51,8 +61,9 @@ extension HistoricalPortfolioPerformanceDaily {
                 .id()
                 .field(Keys.portfolioID, .uuid, .required, .references(Portfolio.schema, "id", onDelete: .cascade))
                 .field(Keys.date, .date, .required)
-                .field(Keys.moneyIn, .sql(unsafeRaw: "NUMERIC(64,4)"), .required)
-                .field(Keys.value, .sql(unsafeRaw: "NUMERIC(64,4)"), .required)
+                .field(Keys.invested, .sql(unsafeRaw: "NUMERIC(64,4)"), .required)
+                .field(Keys.realized, .sql(unsafeRaw: "NUMERIC(64,4)"), .required, .sql(.default(0)))
+                .field(Keys.currentValue, .sql(unsafeRaw: "NUMERIC(64,4)"), .required)
                 .unique(on: Keys.portfolioID, Keys.date)
                 .create()
         }
