@@ -5,6 +5,12 @@ struct SeedDevelopmentData: AsyncMigration {
     var name: String { "SeedDevelopmentData" }
 
     func prepare(on db: Database) async throws {
+        // Skip seeding if any transactions exist (e.g., restored from backup)
+        let transactionCount = try await Transaction.query(on: db).count()
+        if transactionCount > 0 {
+            return
+        }
+
         // Get the preconfigured user
         guard let user = try await User.query(on: db)
             .filter(\.$email == "test@grodt.com")
@@ -13,16 +19,6 @@ struct SeedDevelopmentData: AsyncMigration {
         }
 
         guard let userID = user.id else { return }
-
-        // Check if data already exists (for idempotency)
-        let existingBrokerageCount = try await Brokerage.query(on: db)
-            .filter(\.$user.$id == userID)
-            .count()
-
-        if existingBrokerageCount > 0 {
-            // Data already seeded
-            return
-        }
 
         // Get existing currencies (created by Currency.Migration)
         guard let usd = try await Currency.query(on: db)

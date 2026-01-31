@@ -81,16 +81,15 @@ extension User {
                 return
             }
 
-            let existingUser = try await User.query(on: database)
-                .filter(\.$email == preconfigured.email)
-                .first()
-
-            if existingUser != nil {
-                logger.info("Preconfigured user already exists: \(preconfigured.email)")
-            } else {
-                logger.info("Creating preconfigured user: \(preconfigured.email)")
-                try await preconfigured.save(on: database)
+            // Skip if any users already exist (e.g., restored from backup)
+            let userCount = try await User.query(on: database).count()
+            if userCount > 0 {
+                logger.info("Database already has \(userCount) user(s), skipping preconfigured user creation.")
+                return
             }
+
+            logger.info("Creating preconfigured user: \(preconfigured.email)")
+            try await preconfigured.save(on: database)
         }
 
         func revert(on database: Database) async throws {
