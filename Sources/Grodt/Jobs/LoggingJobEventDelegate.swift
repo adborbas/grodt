@@ -1,3 +1,4 @@
+import Foundation
 import Queues
 
 struct LoggingJobEventDelegate: AsyncJobEventDelegate {
