@@ -75,11 +75,3 @@ class AccountRoute: RouteCollection {
         return .noContent
     }
 }
-
-struct UpdateMonthlyEmailConfigDTO: Content {
-    let isEnabled: Bool
-    let senderEmail: String?
-    let senderName: String?
-    let apiKey: String?
-    let apiSecret: String?
-}
