@@ -4,10 +4,17 @@ import Fluent
 protocol UserRepository {
     func allUsers(with: Set<UserExpansion>) async throws -> [User]
     func user(for userID: User.IDValue, with: Set<UserExpansion>) async throws -> User?
+    func findByEmail(_ email: String) async throws -> User?
     @discardableResult
     func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws -> UserPreferences
     func setMailjetApiSecret(_ secret: String?, for user: User) async throws
     func getMailjetApiSecret(for user: User) async throws -> String?
+
+    // Profile updates
+    func updateName(_ name: String, for user: User) async throws
+    func updateEmail(_ email: String, for user: User) async throws
+    func updatePasswordHash(_ passwordHash: String, for user: User) async throws
+    func deleteAllTokens(for userID: User.IDValue) async throws
 }
 
 extension UserRepository {
@@ -78,5 +85,32 @@ class PostgresUserRepository: UserRepository {
             return nil
         }
         return try secretsEncryptor.decrypt(encryptedSecret)
+    }
+
+    func findByEmail(_ email: String) async throws -> User? {
+        return try await User.query(on: database)
+            .filter(\.$email == email)
+            .first()
+    }
+
+    func updateName(_ name: String, for user: User) async throws {
+        user.name = name
+        try await user.save(on: database)
+    }
+
+    func updateEmail(_ email: String, for user: User) async throws {
+        user.email = email
+        try await user.save(on: database)
+    }
+
+    func updatePasswordHash(_ passwordHash: String, for user: User) async throws {
+        user.passwordHash = passwordHash
+        try await user.save(on: database)
+    }
+
+    func deleteAllTokens(for userID: User.IDValue) async throws {
+        try await UserToken.query(on: database)
+            .filter(\.$user.$id == userID)
+            .delete()
     }
 }
