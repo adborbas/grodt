@@ -189,4 +189,177 @@ struct AccountRouteTests: RouteTestable {
             })
         }
     }
+
+    // MARK: - PATCH /account/profile/name
+
+    @Test func updateName_withAuth_returnsUpdatedUserInfo() async throws {
+        let expectedUserInfo = UserInfoDTO.stub(name: "New Name", email: "test@example.com")
+        let mockService = MockAccountService()
+        mockService.updateNameResult = .success(expectedUserInfo)
+
+        try await withTestApp(accountService: mockService) { app, token in
+            let requestBody = UpdateNameDTO(name: "New Name")
+
+            try await app.test(.PATCH, "\(basePath)/profile/name", beforeRequest: { req in
+                try req.content.encode(requestBody)
+                req.headers.bearerAuthorization = BearerAuthorization(token: token)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .ok)
+                let userInfo = try res.content.decode(UserInfoDTO.self)
+                #expect(userInfo.name == "New Name")
+            })
+        }
+    }
+
+    @Test func updateName_nameTooShort_returnsBadRequest() async throws {
+        let mockService = MockAccountService()
+
+        try await withTestApp(accountService: mockService) { app, token in
+            let requestBody = UpdateNameDTO(name: "Hi")
+
+            try await app.test(.PATCH, "\(basePath)/profile/name", beforeRequest: { req in
+                try req.content.encode(requestBody)
+                req.headers.bearerAuthorization = BearerAuthorization(token: token)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .badRequest)
+            })
+        }
+    }
+
+    @Test func updateName_withoutAuth_returnsUnauthorized() async throws {
+        try await withTestAppNoAuth { app in
+            let requestBody = UpdateNameDTO(name: "New Name")
+
+            try await app.test(.PATCH, "\(basePath)/profile/name", beforeRequest: { req in
+                try req.content.encode(requestBody)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .unauthorized)
+            })
+        }
+    }
+
+    // MARK: - PATCH /account/profile/email
+
+    @Test func updateEmail_withAuth_returnsUpdatedUserInfo() async throws {
+        let expectedUserInfo = UserInfoDTO.stub(name: "Test User", email: "new@example.com")
+        let mockService = MockAccountService()
+        mockService.updateEmailResult = .success(expectedUserInfo)
+
+        try await withTestApp(accountService: mockService) { app, token in
+            let requestBody = UpdateEmailDTO(email: "new@example.com", currentPassword: "password123")
+
+            try await app.test(.PATCH, "\(basePath)/profile/email", beforeRequest: { req in
+                try req.content.encode(requestBody)
+                req.headers.bearerAuthorization = BearerAuthorization(token: token)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .ok)
+                let userInfo = try res.content.decode(UserInfoDTO.self)
+                #expect(userInfo.email == "new@example.com")
+            })
+        }
+    }
+
+    @Test func updateEmail_invalidEmailFormat_returnsBadRequest() async throws {
+        let mockService = MockAccountService()
+
+        try await withTestApp(accountService: mockService) { app, token in
+            let requestBody = UpdateEmailDTO(email: "not-an-email", currentPassword: "password123")
+
+            try await app.test(.PATCH, "\(basePath)/profile/email", beforeRequest: { req in
+                try req.content.encode(requestBody)
+                req.headers.bearerAuthorization = BearerAuthorization(token: token)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .badRequest)
+            })
+        }
+    }
+
+    @Test func updateEmail_wrongPassword_returnsUnauthorized() async throws {
+        let mockService = MockAccountService()
+        mockService.updateEmailResult = .failure(Abort(.unauthorized, reason: "Current password is incorrect."))
+
+        try await withTestApp(accountService: mockService) { app, token in
+            let requestBody = UpdateEmailDTO(email: "new@example.com", currentPassword: "wrong_password")
+
+            try await app.test(.PATCH, "\(basePath)/profile/email", beforeRequest: { req in
+                try req.content.encode(requestBody)
+                req.headers.bearerAuthorization = BearerAuthorization(token: token)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .unauthorized)
+            })
+        }
+    }
+
+    @Test func updateEmail_withoutAuth_returnsUnauthorized() async throws {
+        try await withTestAppNoAuth { app in
+            let requestBody = UpdateEmailDTO(email: "new@example.com", currentPassword: "password123")
+
+            try await app.test(.PATCH, "\(basePath)/profile/email", beforeRequest: { req in
+                try req.content.encode(requestBody)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .unauthorized)
+            })
+        }
+    }
+
+    // MARK: - PATCH /account/profile/password
+
+    @Test func updatePassword_withAuth_returnsNoContent() async throws {
+        let mockService = MockAccountService()
+        mockService.updatePasswordResult = .success(())
+
+        try await withTestApp(accountService: mockService) { app, token in
+            let requestBody = UpdatePasswordDTO(currentPassword: "old_password", newPassword: "new_password123")
+
+            try await app.test(.PATCH, "\(basePath)/profile/password", beforeRequest: { req in
+                try req.content.encode(requestBody)
+                req.headers.bearerAuthorization = BearerAuthorization(token: token)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .noContent)
+            })
+        }
+    }
+
+    @Test func updatePassword_passwordTooShort_returnsBadRequest() async throws {
+        let mockService = MockAccountService()
+
+        try await withTestApp(accountService: mockService) { app, token in
+            let requestBody = UpdatePasswordDTO(currentPassword: "old_password", newPassword: "short")
+
+            try await app.test(.PATCH, "\(basePath)/profile/password", beforeRequest: { req in
+                try req.content.encode(requestBody)
+                req.headers.bearerAuthorization = BearerAuthorization(token: token)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .badRequest)
+            })
+        }
+    }
+
+    @Test func updatePassword_wrongCurrentPassword_returnsUnauthorized() async throws {
+        let mockService = MockAccountService()
+        mockService.updatePasswordResult = .failure(Abort(.unauthorized, reason: "Current password is incorrect."))
+
+        try await withTestApp(accountService: mockService) { app, token in
+            let requestBody = UpdatePasswordDTO(currentPassword: "wrong_password", newPassword: "new_password123")
+
+            try await app.test(.PATCH, "\(basePath)/profile/password", beforeRequest: { req in
+                try req.content.encode(requestBody)
+                req.headers.bearerAuthorization = BearerAuthorization(token: token)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .unauthorized)
+            })
+        }
+    }
+
+    @Test func updatePassword_withoutAuth_returnsUnauthorized() async throws {
+        try await withTestAppNoAuth { app in
+            let requestBody = UpdatePasswordDTO(currentPassword: "old_password", newPassword: "new_password123")
+
+            try await app.test(.PATCH, "\(basePath)/profile/password", beforeRequest: { req in
+                try req.content.encode(requestBody)
+            }, afterResponse: { res async throws in
+                #expect(res.status == .unauthorized)
+            })
+        }
+    }
 }
