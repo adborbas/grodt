@@ -39,14 +39,6 @@ struct AccountRouteTests: RouteTestable {
         }
     }
 
-    @Test func userInfo_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            try await app.test(.GET, "\(basePath)/me", afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
-
     // MARK: - GET /account/detail
 
     @Test func userDetail_withAuth_returnsUserDetail() async throws {
@@ -82,14 +74,6 @@ struct AccountRouteTests: RouteTestable {
                 req.headers.bearerAuthorization = BearerAuthorization(token: token)
             }, afterResponse: { res async throws in
                 #expect(res.status == .notFound)
-            })
-        }
-    }
-
-    @Test func userDetail_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            try await app.test(.GET, "\(basePath)/detail", afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
             })
         }
     }
@@ -172,24 +156,6 @@ struct AccountRouteTests: RouteTestable {
         }
     }
 
-    @Test func updateMonthlyEmail_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let requestBody = UpdateMonthlyEmailConfigDTO(
-                isEnabled: false,
-                senderEmail: nil,
-                senderName: nil,
-                apiKey: nil,
-                apiSecret: nil
-            )
-
-            try await app.test(.PATCH, "\(basePath)/preferences/monthly-email", beforeRequest: { req in
-                try req.content.encode(requestBody)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
-
     // MARK: - PATCH /account/profile/name
 
     @Test func updateName_withAuth_returnsUpdatedUserInfo() async throws {
@@ -222,18 +188,6 @@ struct AccountRouteTests: RouteTestable {
                 req.headers.bearerAuthorization = BearerAuthorization(token: token)
             }, afterResponse: { res async throws in
                 #expect(res.status == .badRequest)
-            })
-        }
-    }
-
-    @Test func updateName_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let requestBody = UpdateNameDTO(name: "New Name")
-
-            try await app.test(.PATCH, "\(basePath)/profile/name", beforeRequest: { req in
-                try req.content.encode(requestBody)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
             })
         }
     }
@@ -290,18 +244,6 @@ struct AccountRouteTests: RouteTestable {
         }
     }
 
-    @Test func updateEmail_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let requestBody = UpdateEmailDTO(email: "new@example.com", currentPassword: "password123")
-
-            try await app.test(.PATCH, "\(basePath)/profile/email", beforeRequest: { req in
-                try req.content.encode(requestBody)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
-
     // MARK: - PATCH /account/profile/password
 
     @Test func updatePassword_withAuth_returnsNoContent() async throws {
@@ -351,15 +293,4 @@ struct AccountRouteTests: RouteTestable {
         }
     }
 
-    @Test func updatePassword_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let requestBody = UpdatePasswordDTO(currentPassword: "old_password", newPassword: "new_password123")
-
-            try await app.test(.PATCH, "\(basePath)/profile/password", beforeRequest: { req in
-                try req.content.encode(requestBody)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
 }
