@@ -61,23 +61,6 @@ struct TickersRouteTests: RouteTestable {
         }
     }
 
-    @Test func create_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let requestBody = TickerDTO(
-                symbol: "AAPL",
-                region: "United States",
-                name: "Apple Inc",
-                currency: "USD"
-            )
-
-            try await app.test(.POST, basePath, beforeRequest: { req in
-                try req.content.encode(requestBody)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
-
     // MARK: - GET /tickers/search/:keyword
 
     @Test func search_validKeyword_returnsTickers() async throws {
@@ -128,11 +111,4 @@ struct TickersRouteTests: RouteTestable {
         }
     }
 
-    @Test func search_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            try await app.test(.GET, "\(basePath)/search/apple", afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
 }

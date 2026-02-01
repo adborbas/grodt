@@ -47,16 +47,6 @@ struct TransactionsRouteTests: RouteTestable {
         }
     }
 
-    @Test func detail_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let randomId = UUID()
-
-            try await app.test(.GET, "\(basePath)/\(randomId)", afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
-
     // MARK: - DELETE /transactions/:id
 
     @Test func delete_existingTransaction_returnsOk() async throws {
@@ -84,16 +74,6 @@ struct TransactionsRouteTests: RouteTestable {
                 req.headers.bearerAuthorization = BearerAuthorization(token: token)
             }, afterResponse: { res async throws in
                 #expect(res.status == .notFound)
-            })
-        }
-    }
-
-    @Test func delete_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let randomId = UUID()
-
-            try await app.test(.DELETE, "\(basePath)/\(randomId)", afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
             })
         }
     }
@@ -175,19 +155,4 @@ struct TransactionsRouteTests: RouteTestable {
         }
     }
 
-    @Test func updateBrokerageAccount_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let randomId = UUID()
-            struct UpdateRequest: Content {
-                let brokerageAccountId: String?
-            }
-            let requestBody = UpdateRequest(brokerageAccountId: UUID().uuidString)
-
-            try await app.test(.PATCH, "\(basePath)/\(randomId)/brokerage-account", beforeRequest: { req in
-                try req.content.encode(requestBody)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
 }

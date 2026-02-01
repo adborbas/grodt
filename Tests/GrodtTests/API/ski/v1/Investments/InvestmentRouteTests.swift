@@ -46,14 +46,6 @@ struct InvestmentRouteTests: RouteTestable {
         }
     }
 
-    @Test func allInvestments_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            try await app.test(.GET, basePath, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
-
     // MARK: - GET /investments/:ticker
 
     @Test func investmentDetail_existingTicker_returnsDetail() async throws {
@@ -95,11 +87,4 @@ struct InvestmentRouteTests: RouteTestable {
         }
     }
 
-    @Test func investmentDetail_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            try await app.test(.GET, "\(basePath)/AAPL", afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
 }

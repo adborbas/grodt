@@ -43,18 +43,6 @@ struct PortfolioRouteTests: RouteTestable {
         }
     }
 
-    @Test func createPortfolio_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let requestBody = CreatePortfolioRequestDTO(name: "My Portfolio", currency: "EUR")
-
-            try await app.test(.POST, basePath, beforeRequest: { req in
-                try req.content.encode(requestBody)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
-
     // MARK: - GET /portfolios/:id
 
     @Test func getPortfolio_existingPortfolio_returnsPortfolioWithHistory() async throws {

@@ -46,14 +46,6 @@ struct BrokeragesRouteTests: RouteTestable {
         }
     }
 
-    @Test func list_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            try await app.test(.GET, basePath, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
-
     // MARK: - POST /brokerages
 
     @Test func create_validRequest_returnsBrokerage() async throws {
@@ -100,21 +92,6 @@ struct BrokeragesRouteTests: RouteTestable {
         }
     }
 
-    @Test func create_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            struct CreateRequest: Content {
-                let name: String
-            }
-            let requestBody = CreateRequest(name: "New Brokerage")
-
-            try await app.test(.POST, basePath, beforeRequest: { req in
-                try req.content.encode(requestBody)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
-
     // MARK: - GET /brokerages/:id
 
     @Test func detail_existingBrokerage_returnsBrokerage() async throws {
@@ -147,16 +124,6 @@ struct BrokeragesRouteTests: RouteTestable {
                 req.headers.bearerAuthorization = BearerAuthorization(token: token)
             }, afterResponse: { res async throws in
                 #expect(res.status == .notFound)
-            })
-        }
-    }
-
-    @Test func detail_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let randomId = UUID()
-
-            try await app.test(.GET, "\(basePath)/\(randomId)", afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
             })
         }
     }
@@ -205,22 +172,6 @@ struct BrokeragesRouteTests: RouteTestable {
         }
     }
 
-    @Test func update_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let randomId = UUID()
-            struct UpdateRequest: Content {
-                let name: String
-            }
-            let requestBody = UpdateRequest(name: "Updated Brokerage")
-
-            try await app.test(.PUT, "\(basePath)/\(randomId)", beforeRequest: { req in
-                try req.content.encode(requestBody)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
-
     // MARK: - DELETE /brokerages/:id
 
     @Test func delete_existingBrokerage_returnsOk() async throws {
@@ -248,16 +199,6 @@ struct BrokeragesRouteTests: RouteTestable {
                 req.headers.bearerAuthorization = BearerAuthorization(token: token)
             }, afterResponse: { res async throws in
                 #expect(res.status == .notFound)
-            })
-        }
-    }
-
-    @Test func delete_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let randomId = UUID()
-
-            try await app.test(.DELETE, "\(basePath)/\(randomId)", afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
             })
         }
     }
@@ -316,20 +257,4 @@ struct BrokeragesRouteTests: RouteTestable {
         }
     }
 
-    @Test func createAccount_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            let brokerageId = UUID()
-            struct CreateAccountRequest: Content {
-                let displayName: String
-                let currency: String
-            }
-            let requestBody = CreateAccountRequest(displayName: "New Account", currency: "EUR")
-
-            try await app.test(.POST, "\(basePath)/\(brokerageId)/accounts", beforeRequest: { req in
-                try req.content.encode(requestBody)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
 }

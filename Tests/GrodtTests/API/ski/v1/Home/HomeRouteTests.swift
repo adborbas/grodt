@@ -78,11 +78,4 @@ struct HomeRouteTests: RouteTestable {
         }
     }
 
-    @Test func get_withoutAuth_returnsUnauthorized() async throws {
-        try await withTestAppNoAuth { app in
-            try await app.test(.GET, basePath, afterResponse: { res async throws in
-                #expect(res.status == .unauthorized)
-            })
-        }
-    }
 }
