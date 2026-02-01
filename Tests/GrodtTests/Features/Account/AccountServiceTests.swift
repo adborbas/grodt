@@ -17,7 +17,7 @@ struct AccountServiceTests {
         let mockMapper = MockUserDTOMapper()
         mockMapper.userInfoResult = expectedUserInfo
 
-        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
+        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper, logger: Logger(label: "test"))
 
         let result = try await service.userInfo(for: userID)
 
@@ -30,7 +30,7 @@ struct AccountServiceTests {
         mockRepository.userResult = .success(nil)
 
         let mockMapper = MockUserDTOMapper()
-        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
+        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper, logger: Logger(label: "test"))
 
         await #expect(throws: Abort.self) {
             _ = try await service.userInfo(for: UUID())
@@ -50,7 +50,7 @@ struct AccountServiceTests {
         let mockMapper = MockUserDTOMapper()
         mockMapper.userDetailResult = .success(expectedDetail)
 
-        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
+        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper, logger: Logger(label: "test"))
 
         let result = try await service.userDetail(for: userID)
 
@@ -63,7 +63,7 @@ struct AccountServiceTests {
         mockRepository.userResult = .success(nil)
 
         let mockMapper = MockUserDTOMapper()
-        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
+        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper, logger: Logger(label: "test"))
 
         await #expect(throws: Abort.self) {
             _ = try await service.userDetail(for: UUID())
@@ -77,7 +77,7 @@ struct AccountServiceTests {
         mockRepository.userResult = .success(nil)
 
         let mockMapper = MockUserDTOMapper()
-        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
+        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper, logger: Logger(label: "test"))
 
         let config = UpdateMonthlyEmailConfigDTO(
             isEnabled: true,
@@ -100,7 +100,7 @@ struct AccountServiceTests {
         mockRepository.userResult = .success(user)
 
         let mockMapper = MockUserDTOMapper()
-        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
+        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper, logger: Logger(label: "test"))
 
         let config = UpdateMonthlyEmailConfigDTO(
             isEnabled: true,
@@ -124,7 +124,7 @@ struct AccountServiceTests {
         mockRepository.setMonthlyEmailConfigResult = .failure(Abort(.internalServerError))
 
         let mockMapper = MockUserDTOMapper()
-        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
+        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper, logger: Logger(label: "test"))
 
         let config = UpdateMonthlyEmailConfigDTO(
             isEnabled: true,
@@ -153,7 +153,7 @@ struct AccountServiceTests {
         let mockMapper = MockUserDTOMapper()
         mockMapper.preferencesResult = .success(expectedPreferences)
 
-        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
+        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper, logger: Logger(label: "test"))
 
         let config = UpdateMonthlyEmailConfigDTO(
             isEnabled: true,
@@ -185,7 +185,7 @@ struct AccountServiceTests {
         let mockMapper = MockUserDTOMapper()
         mockMapper.preferencesResult = .success(expectedPreferences)
 
-        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
+        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper, logger: Logger(label: "test"))
 
         let config = UpdateMonthlyEmailConfigDTO(
             isEnabled: false,
