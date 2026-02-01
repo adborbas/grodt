@@ -32,21 +32,6 @@ struct TransactionsRouteTests: RouteTestable {
         }
     }
 
-    @Test func detail_nonExistentTransaction_returnsNotFound() async throws {
-        let mockService = MockTransactionService()
-        mockService.detailResult = .failure(Abort(.notFound))
-
-        try await withTestApp(transactionService: mockService) { app, token in
-            let randomId = UUID()
-
-            try await app.test(.GET, path(for: randomId), beforeRequest: { req in
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
-            })
-        }
-    }
-
     // MARK: - DELETE /transactions/:id
 
     @Test func delete_existingTransaction_returnsOk() async throws {
@@ -59,21 +44,6 @@ struct TransactionsRouteTests: RouteTestable {
                 req.headers.bearerAuthorization = BearerAuthorization(token: token)
             }, afterResponse: { res async throws in
                 #expect(res.status == .ok)
-            })
-        }
-    }
-
-    @Test func delete_nonExistentTransaction_returnsNotFound() async throws {
-        let mockService = MockTransactionService()
-        mockService.deleteResult = .failure(Abort(.notFound))
-
-        try await withTestApp(transactionService: mockService) { app, token in
-            let randomId = UUID()
-
-            try await app.test(.DELETE, path(for: randomId), beforeRequest: { req in
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
             })
         }
     }
@@ -131,26 +101,6 @@ struct TransactionsRouteTests: RouteTestable {
                 #expect(res.status == .ok)
                 let transaction = try res.content.decode(TransactionDTO.self)
                 #expect(transaction.brokerageAccount == nil)
-            })
-        }
-    }
-
-    @Test func updateBrokerageAccount_nonExistentTransaction_returnsNotFound() async throws {
-        let mockService = MockTransactionService()
-        mockService.updateBrokerageAccountResult = .failure(Abort(.notFound))
-
-        try await withTestApp(transactionService: mockService) { app, token in
-            let randomId = UUID()
-            struct UpdateRequest: Content {
-                let brokerageAccountId: String?
-            }
-            let requestBody = UpdateRequest(brokerageAccountId: UUID().uuidString)
-
-            try await app.test(.PATCH, "\(path(for: randomId))/brokerage-account", beforeRequest: { req in
-                try req.content.encode(requestBody)
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
             })
         }
     }

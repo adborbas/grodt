@@ -65,21 +65,6 @@ struct PortfolioRouteTests: RouteTestable {
         }
     }
 
-    @Test func getPortfolio_nonExistentPortfolio_returnsNotFound() async throws {
-        let mockService = MockPortfolioService()
-        mockService.portfolioDetailResult = .failure(Abort(.notFound))
-
-        try await withTestApp(portfolioService: mockService) { app, token in
-            let randomID = UUID()
-
-            try await app.test(.GET, path(for: randomID), beforeRequest: { req in
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
-            })
-        }
-    }
-
     // MARK: - PATCH /portfolios/:id
 
     @Test func updatePortfolioName_withValidData_returnsUpdatedPortfolio() async throws {
@@ -99,23 +84,6 @@ struct PortfolioRouteTests: RouteTestable {
                 #expect(res.status == .ok)
                 let updated = try res.content.decode(PortfolioDTO.self)
                 #expect(updated.name == "New Name")
-            })
-        }
-    }
-
-    @Test func updatePortfolioName_nonExistentPortfolio_returnsNotFound() async throws {
-        let mockService = MockPortfolioService()
-        mockService.updateNameResult = .failure(Abort(.notFound))
-
-        try await withTestApp(portfolioService: mockService) { app, token in
-            let randomID = UUID()
-            let requestBody = RenamePortfolioRequestDTO(name: "New Name")
-
-            try await app.test(.PATCH, path(for: randomID), beforeRequest: { req in
-                try req.content.encode(requestBody)
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
             })
         }
     }

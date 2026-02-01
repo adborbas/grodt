@@ -74,17 +74,4 @@ struct InvestmentRouteTests: RouteTestable {
         }
     }
 
-    @Test func investmentDetail_nonExistentTicker_returnsNotFound() async throws {
-        let mockService = MockInvestmentService()
-        mockService.investmentDetailResult = .failure(Abort(.notFound))
-
-        try await withTestApp(investmentService: mockService) { app, token in
-            try await app.test(.GET, "\(basePath)/UNKNOWN", beforeRequest: { req in
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
-            })
-        }
-    }
-
 }

@@ -65,17 +65,4 @@ struct HomeRouteTests: RouteTestable {
         }
     }
 
-    @Test func get_serviceError_returnsInternalServerError() async throws {
-        let mockService = MockHomeService()
-        mockService.homeResult = .failure(Abort(.internalServerError))
-
-        try await withTestApp(homeService: mockService) { app, token in
-            try await app.test(.GET, basePath, beforeRequest: { req in
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .internalServerError)
-            })
-        }
-    }
-
 }

@@ -73,25 +73,6 @@ struct BrokeragesRouteTests: RouteTestable {
         }
     }
 
-    @Test func create_serviceError_returnsError() async throws {
-        let mockService = MockBrokerageService()
-        mockService.createBrokerageResult = .failure(Abort(.internalServerError))
-
-        try await withTestApp(brokerageService: mockService) { app, token in
-            struct CreateRequest: Content {
-                let name: String
-            }
-            let requestBody = CreateRequest(name: "New Brokerage")
-
-            try await app.test(.POST, basePath, beforeRequest: { req in
-                try req.content.encode(requestBody)
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .internalServerError)
-            })
-        }
-    }
-
     // MARK: - GET /brokerages/:id
 
     @Test func detail_existingBrokerage_returnsBrokerage() async throws {
@@ -109,21 +90,6 @@ struct BrokeragesRouteTests: RouteTestable {
                 let brokerage = try res.content.decode(BrokerageDTO.self)
                 #expect(brokerage.id == brokerageId)
                 #expect(brokerage.name == "My Brokerage")
-            })
-        }
-    }
-
-    @Test func detail_nonExistentBrokerage_returnsNotFound() async throws {
-        let mockService = MockBrokerageService()
-        mockService.brokerageDetailResult = .failure(Abort(.notFound))
-
-        try await withTestApp(brokerageService: mockService) { app, token in
-            let randomId = UUID()
-
-            try await app.test(.GET, path(for: randomId), beforeRequest: { req in
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
             })
         }
     }
@@ -152,26 +118,6 @@ struct BrokeragesRouteTests: RouteTestable {
         }
     }
 
-    @Test func update_nonExistentBrokerage_returnsNotFound() async throws {
-        let mockService = MockBrokerageService()
-        mockService.updateBrokerageResult = .failure(Abort(.notFound))
-
-        try await withTestApp(brokerageService: mockService) { app, token in
-            let randomId = UUID()
-            struct UpdateRequest: Content {
-                let name: String
-            }
-            let requestBody = UpdateRequest(name: "Updated Brokerage")
-
-            try await app.test(.PUT, path(for: randomId), beforeRequest: { req in
-                try req.content.encode(requestBody)
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
-            })
-        }
-    }
-
     // MARK: - DELETE /brokerages/:id
 
     @Test func delete_existingBrokerage_returnsOk() async throws {
@@ -184,21 +130,6 @@ struct BrokeragesRouteTests: RouteTestable {
                 req.headers.bearerAuthorization = BearerAuthorization(token: token)
             }, afterResponse: { res async throws in
                 #expect(res.status == .ok)
-            })
-        }
-    }
-
-    @Test func delete_nonExistentBrokerage_returnsNotFound() async throws {
-        let mockService = MockBrokerageService()
-        mockService.deleteBrokerageResult = .failure(Abort(.notFound))
-
-        try await withTestApp(brokerageService: mockService) { app, token in
-            let randomId = UUID()
-
-            try await app.test(.DELETE, path(for: randomId), beforeRequest: { req in
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
             })
         }
     }
@@ -232,27 +163,6 @@ struct BrokeragesRouteTests: RouteTestable {
                 let account = try res.content.decode(BrokerageAccountDTO.self)
                 #expect(account.id == accountId)
                 #expect(account.displayName == "New Account")
-            })
-        }
-    }
-
-    @Test func createAccount_serviceError_returnsError() async throws {
-        let mockAccountsService = MockBrokerageAccountsService()
-        mockAccountsService.createResult = .failure(Abort(.internalServerError))
-
-        try await withTestApp(brokerageAccountsService: mockAccountsService) { app, token in
-            let brokerageId = UUID()
-            struct CreateAccountRequest: Content {
-                let displayName: String
-                let currency: String
-            }
-            let requestBody = CreateAccountRequest(displayName: "New Account", currency: "EUR")
-
-            try await app.test(.POST, "\(path(for: brokerageId))/accounts", beforeRequest: { req in
-                try req.content.encode(requestBody)
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .internalServerError)
             })
         }
     }

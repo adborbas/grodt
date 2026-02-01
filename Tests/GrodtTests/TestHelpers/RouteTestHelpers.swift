@@ -32,15 +32,6 @@ func withTestApp(
     }
 }
 
-func withTestAppNoAuth(_ body: (Application) async throws -> Void) async throws {
-    let app = try await makeApp()
-    defer { Task { try? await app.asyncShutdown() } }
-
-    try await XCTVaporContext.$emitWarningIfCurrentTestInfoIsAvailable.withValue(false) {
-        try await body(app)
-    }
-}
-
 func makeApp(
     portfolioService: PortfolioServicing = MockPortfolioService(),
     transactionService: TransactionServicing = MockTransactionService(),

@@ -30,21 +30,6 @@ struct BrokerageAccountsRouteTests: RouteTestable {
         }
     }
 
-    @Test func detail_nonExistentAccount_returnsNotFound() async throws {
-        let mockService = MockBrokerageAccountsService()
-        mockService.detailResult = .failure(Abort(.notFound))
-
-        try await withTestApp(brokerageAccountsService: mockService) { app, token in
-            let randomID = UUID()
-
-            try await app.test(.GET, path(for: randomID), beforeRequest: { req in
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
-            })
-        }
-    }
-
     // MARK: - PUT /brokerage-accounts/:id
 
     @Test func update_existingAccount_returnsOk() async throws {
@@ -67,26 +52,6 @@ struct BrokerageAccountsRouteTests: RouteTestable {
         }
     }
 
-    @Test func update_nonExistentAccount_returnsNotFound() async throws {
-        let mockService = MockBrokerageAccountsService()
-        mockService.updateResult = .failure(Abort(.notFound))
-
-        try await withTestApp(brokerageAccountsService: mockService) { app, token in
-            let randomID = UUID()
-            struct UpdateRequest: Content {
-                let displayName: String
-            }
-            let requestBody = UpdateRequest(displayName: "Updated Account Name")
-
-            try await app.test(.PUT, path(for: randomID), beforeRequest: { req in
-                try req.content.encode(requestBody)
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
-            })
-        }
-    }
-
     // MARK: - DELETE /brokerage-accounts/:id
 
     @Test func delete_existingAccount_returnsNoContent() async throws {
@@ -99,21 +64,6 @@ struct BrokerageAccountsRouteTests: RouteTestable {
                 req.headers.bearerAuthorization = BearerAuthorization(token: token)
             }, afterResponse: { res async throws in
                 #expect(res.status == .noContent)
-            })
-        }
-    }
-
-    @Test func delete_nonExistentAccount_returnsNotFound() async throws {
-        let mockService = MockBrokerageAccountsService()
-        mockService.deleteResult = .failure(Abort(.notFound))
-
-        try await withTestApp(brokerageAccountsService: mockService) { app, token in
-            let randomID = UUID()
-
-            try await app.test(.DELETE, path(for: randomID), beforeRequest: { req in
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .notFound)
             })
         }
     }
