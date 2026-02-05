@@ -53,9 +53,7 @@ struct AccountRouteTests: RouteTestable {
         let expectedDetail = UserDetailDTO.stub(
             name: "Jane Doe",
             email: "jane@example.com",
-            preferences: UserPreferencesDTO.stub(
-                monthlyEmail: MonthlyEmailConfigDTO.stub(isEnabled: true)
-            )
+            preferences: UserPreferencesDTO.stub(isMonthlyEmailEnabled: true)
         )
         let mockService = MockAccountService()
         mockService.userDetailResult = .success(expectedDetail)
@@ -68,7 +66,7 @@ struct AccountRouteTests: RouteTestable {
                 let detail = try res.content.decode(UserDetailDTO.self)
                 #expect(detail.name == "Jane Doe")
                 #expect(detail.email == "jane@example.com")
-                #expect(detail.preferences.monthlyEmail.isEnabled == true)
+                #expect(detail.preferences.isMonthlyEmailEnabled == true)
             })
         }
     }
@@ -97,53 +95,55 @@ struct AccountRouteTests: RouteTestable {
     // MARK: - PATCH /account/preferences/monthly-email
 
     @Test func updateMonthlyEmail_disableConfig_returnsUpdatedPreferences() async throws {
-        let expectedPreferences = UserPreferencesDTO.stub(
-            monthlyEmail: MonthlyEmailConfigDTO.stub(isEnabled: false)
-        )
+        let expectedPreferences = UserPreferencesDTO.stub(isMonthlyEmailEnabled: false)
         let mockService = MockAccountService()
-        mockService.updateMonthlyEmailConfigResult = .success(expectedPreferences)
+        mockService.setMonthlyEmailEnabledResult = .success(expectedPreferences)
 
         try await withTestApp(accountService: mockService) { app, token in
-            let requestBody = MonthlyEmailConfigDTO(isEnabled: false)
+            struct RequestBody: Content {
+                let isEnabled: Bool
+            }
 
             try await app.test(.PATCH, "\(basePath)/preferences/monthly-email", beforeRequest: { req in
-                try req.content.encode(requestBody)
+                try req.content.encode(RequestBody(isEnabled: false))
                 req.headers.bearerAuthorization = BearerAuthorization(token: token)
             }, afterResponse: { res async throws in
                 #expect(res.status == .ok)
                 let preferences = try res.content.decode(UserPreferencesDTO.self)
-                #expect(preferences.monthlyEmail.isEnabled == false)
+                #expect(preferences.isMonthlyEmailEnabled == false)
             })
         }
     }
 
     @Test func updateMonthlyEmail_enableConfig_returnsUpdatedPreferences() async throws {
-        let expectedPreferences = UserPreferencesDTO.stub(
-            monthlyEmail: MonthlyEmailConfigDTO.stub(isEnabled: true)
-        )
+        let expectedPreferences = UserPreferencesDTO.stub(isMonthlyEmailEnabled: true)
         let mockService = MockAccountService()
-        mockService.updateMonthlyEmailConfigResult = .success(expectedPreferences)
+        mockService.setMonthlyEmailEnabledResult = .success(expectedPreferences)
 
         try await withTestApp(accountService: mockService) { app, token in
-            let requestBody = MonthlyEmailConfigDTO(isEnabled: true)
+            struct RequestBody: Content {
+                let isEnabled: Bool
+            }
 
             try await app.test(.PATCH, "\(basePath)/preferences/monthly-email", beforeRequest: { req in
-                try req.content.encode(requestBody)
+                try req.content.encode(RequestBody(isEnabled: true))
                 req.headers.bearerAuthorization = BearerAuthorization(token: token)
             }, afterResponse: { res async throws in
                 #expect(res.status == .ok)
                 let preferences = try res.content.decode(UserPreferencesDTO.self)
-                #expect(preferences.monthlyEmail.isEnabled == true)
+                #expect(preferences.isMonthlyEmailEnabled == true)
             })
         }
     }
 
     @Test func updateMonthlyEmail_withoutAuth_returnsUnauthorized() async throws {
         try await withTestAppNoAuth { app in
-            let requestBody = MonthlyEmailConfigDTO(isEnabled: false)
+            struct RequestBody: Content {
+                let isEnabled: Bool
+            }
 
             try await app.test(.PATCH, "\(basePath)/preferences/monthly-email", beforeRequest: { req in
-                try req.content.encode(requestBody)
+                try req.content.encode(RequestBody(isEnabled: false))
             }, afterResponse: { res async throws in
                 #expect(res.status == .unauthorized)
             })

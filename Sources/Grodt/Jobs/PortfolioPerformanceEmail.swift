@@ -26,7 +26,7 @@ class PortfolioPerformanceEmail {
     private func sendUpdateForUser(_ user: User) async {
         do {
             let preferences = user.requiredPreferences
-            guard preferences.monthlyEmail.isEnabled else { return }
+            guard preferences.isMonthlyEmailEnabled else { return }
 
             let userID = try user.requireID()
             let portfolios = try await portfolioService.allPortfolios(userID: userID)

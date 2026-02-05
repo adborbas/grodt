@@ -5,7 +5,7 @@ protocol UserRepository {
     func allUsers(with: Set<UserExpansion>) async throws -> [User]
     func user(for userID: User.IDValue, with: Set<UserExpansion>) async throws -> User?
     @discardableResult
-    func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws -> UserPreferences
+    func setMonthlyEmailEnabled(_ enabled: Bool, for user: User) async throws -> UserPreferences
 }
 
 extension UserRepository {
@@ -56,9 +56,9 @@ class PostgresUserRepository: UserRepository {
     }
 
     @discardableResult
-    func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws -> UserPreferences {
+    func setMonthlyEmailEnabled(_ enabled: Bool, for user: User) async throws -> UserPreferences {
         try await user.$preferences.load(on: database)
-        user.preferences!.data.monthlyEmail = config
+        user.preferences!.data.isMonthlyEmailEnabled = enabled
         try await user.preferences!.save(on: database)
         return user.preferences!
     }

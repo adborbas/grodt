@@ -26,7 +26,7 @@ import FluentSQLiteDriver
 
         // Then
         #expect(fetched != nil)
-        #expect(fetched?.data.monthlyEmail.isEnabled == false)
+        #expect(fetched?.data.isMonthlyEmailEnabled == false)
     }
 
     @Test func userPreferencesMigration_enforcesUniqueUserConstraint() async throws {
@@ -126,7 +126,7 @@ import FluentSQLiteDriver
             .filter(\.$user.$id == user1.id!)
             .first()
         #expect(user1Prefs != nil)
-        #expect(user1Prefs?.data.monthlyEmail.isEnabled == false)
+        #expect(user1Prefs?.data.isMonthlyEmailEnabled == false)
 
         let user2Secrets = try await UserSecret.query(on: app.db)
             .filter(\.$user.$id == user2.id!)
@@ -143,7 +143,7 @@ import FluentSQLiteDriver
 
         try await UserPreferences(
             userID: user.id!,
-            data: UserPreferencesPayload(monthlyEmail: .init(isEnabled: true))
+            data: UserPreferencesPayload(isMonthlyEmailEnabled: true)
         ).save(on: app.db)
 
         try await UserSecret(
@@ -162,7 +162,7 @@ import FluentSQLiteDriver
         let prefs = try await UserPreferences.query(on: app.db)
             .filter(\.$user.$id == user.id!)
             .first()
-        #expect(prefs?.data.monthlyEmail.isEnabled == true)
+        #expect(prefs?.data.isMonthlyEmailEnabled == true)
     }
 
     @Test func backfillUserSettings_handlesEmptyUserTable() async throws {

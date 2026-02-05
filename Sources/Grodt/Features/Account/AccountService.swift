@@ -26,14 +26,12 @@ class AccountService: AccountServicing {
         return try await userDataMapper.userDetail(from: user)
     }
 
-    func updateMonthlyEmailConfig(_ newConfig: MonthlyEmailConfigDTO,
-                                   for userID: User.IDValue) async throws -> UserPreferencesDTO {
+    func setMonthlyEmailEnabled(_ enabled: Bool, for userID: User.IDValue) async throws -> UserPreferencesDTO {
         guard let user = try await userRepository.user(for: userID) else {
             throw Abort(.notFound)
         }
 
-        let newMonthlyEmailConfig = UserPreferencesPayload.MonthlyEmailConfig(isEnabled: newConfig.isEnabled)
-        let updatedPreferences = try await userRepository.setMonthlyEmailConfig(newMonthlyEmailConfig, for: user)
+        let updatedPreferences = try await userRepository.setMonthlyEmailEnabled(enabled, for: user)
 
         return userDataMapper.preferences(from: updatedPreferences)
     }

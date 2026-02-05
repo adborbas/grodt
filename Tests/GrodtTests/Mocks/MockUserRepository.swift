@@ -4,10 +4,10 @@ import Foundation
 final class MockUserRepository: UserRepository, @unchecked Sendable {
     var userResult: Result<User?, Error> = .success(nil)
     var allUsersResult: Result<[User], Error> = .success([])
-    var setMonthlyEmailConfigResult: Result<UserPreferences, Error> = .success(UserPreferences.stub())
+    var setMonthlyEmailEnabledResult: Result<UserPreferences, Error> = .success(UserPreferences.stub())
 
-    private(set) var setMonthlyEmailConfigCalled = false
-    private(set) var setMonthlyEmailConfigCalledWith: UserPreferencesPayload.MonthlyEmailConfig?
+    private(set) var setMonthlyEmailEnabledCalled = false
+    private(set) var setMonthlyEmailEnabledCalledWith: Bool?
 
     func allUsers(with: Set<UserExpansion>) async throws -> [User] {
         try allUsersResult.get()
@@ -18,9 +18,9 @@ final class MockUserRepository: UserRepository, @unchecked Sendable {
     }
 
     @discardableResult
-    func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws -> UserPreferences {
-        setMonthlyEmailConfigCalled = true
-        setMonthlyEmailConfigCalledWith = config
-        return try setMonthlyEmailConfigResult.get()
+    func setMonthlyEmailEnabled(_ enabled: Bool, for user: User) async throws -> UserPreferences {
+        setMonthlyEmailEnabledCalled = true
+        setMonthlyEmailEnabledCalledWith = enabled
+        return try setMonthlyEmailEnabledResult.get()
     }
 }

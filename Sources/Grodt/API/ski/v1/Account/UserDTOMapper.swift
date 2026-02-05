@@ -18,8 +18,6 @@ final class UserDTOMapper: UserDTOMapping, @unchecked Sendable {
     }
 
     private func preferencesDTO(from payload: UserPreferencesPayload) -> UserPreferencesDTO {
-        return UserPreferencesDTO(
-            monthlyEmail: MonthlyEmailConfigDTO(isEnabled: payload.monthlyEmail.isEnabled)
-        )
+        return UserPreferencesDTO(isMonthlyEmailEnabled: payload.isMonthlyEmailEnabled)
     }
 }

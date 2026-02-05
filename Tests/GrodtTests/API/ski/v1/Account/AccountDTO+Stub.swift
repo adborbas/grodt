@@ -21,16 +21,8 @@ extension UserDetailDTO {
 
 extension UserPreferencesDTO {
     static func stub(
-        monthlyEmail: MonthlyEmailConfigDTO = .stub()
+        isMonthlyEmailEnabled: Bool = false
     ) -> UserPreferencesDTO {
-        UserPreferencesDTO(monthlyEmail: monthlyEmail)
-    }
-}
-
-extension MonthlyEmailConfigDTO {
-    static func stub(
-        isEnabled: Bool = false
-    ) -> MonthlyEmailConfigDTO {
-        MonthlyEmailConfigDTO(isEnabled: isEnabled)
+        UserPreferencesDTO(isMonthlyEmailEnabled: isMonthlyEmailEnabled)
     }
 }
