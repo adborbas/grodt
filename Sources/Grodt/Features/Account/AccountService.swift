@@ -26,46 +26,13 @@ class AccountService: AccountServicing {
         return try await userDataMapper.userDetail(from: user)
     }
 
-    func updateMonthlyEmailConfig(_ newConfig: UpdateMonthlyEmailConfigDTO,
-                                   for userID: User.IDValue) async throws -> UserPreferencesDTO {
+    func setMonthlyEmailEnabled(_ enabled: Bool, for userID: User.IDValue) async throws -> UserPreferencesDTO {
         guard let user = try await userRepository.user(for: userID) else {
             throw Abort(.notFound)
         }
 
-        let newMonthlyEmailConfig: UserPreferencesPayload.MonthlyEmailConfig
+        let updatedPreferences = try await userRepository.setMonthlyEmailEnabled(enabled, for: user)
 
-        if !newConfig.isEnabled {
-            newMonthlyEmailConfig = .init(isEnabled: false,
-                                          configuration: nil)
-            try await userRepository.setMailjetApiSecret(nil, for: user)
-
-        } else {
-            guard let senderEmail = newConfig.senderEmail,
-                  let senderName = newConfig.senderName,
-                  let apiKey = newConfig.apiKey,
-                  let apiSecret = newConfig.apiSecret else {
-                throw Abort(.badRequest, reason: "Mailjet configuration missing.")
-            }
-
-            let mailjetConfiguration: UserPreferencesPayload.MonthlyEmailConfig.MailjetConfiguration =
-                .init(senderEmail: senderEmail,
-                      senderName: senderName,
-                      apiKey: apiKey)
-
-            newMonthlyEmailConfig = .init(isEnabled: true,
-                                          configuration: mailjetConfiguration)
-
-            try await userRepository.setMailjetApiSecret(apiSecret, for: user)
-        }
-
-        let updatedPreferences: UserPreferences
-        do {
-            updatedPreferences = try await userRepository.setMonthlyEmailConfig(newMonthlyEmailConfig, for: user)
-        } catch {
-            try await userRepository.setMailjetApiSecret(nil, for: user)
-            throw Abort(.internalServerError)
-        }
-
-        return try await userDataMapper.preferences(from: updatedPreferences, for: userID)
+        return userDataMapper.preferences(from: updatedPreferences)
     }
 }

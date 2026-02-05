@@ -61,40 +61,33 @@ extension UserPreferences {
 
 struct UserPreferencesPayload: Codable {
 
-    struct MonthlyEmailConfig: Codable {
-        struct MailjetConfiguration: Codable {
-            let senderEmail: String
-            let senderName: String
-            let apiKey: String
-        }
+    var isMonthlyEmailEnabled: Bool
 
-        let isEnabled: Bool
-        let configuration: MailjetConfiguration?
-
-        init(isEnabled: Bool,
-             configuration: MailjetConfiguration?) {
-            self.isEnabled = isEnabled
-            self.configuration = configuration
-        }
-    }
-
-    var monthlyEmail: MonthlyEmailConfig
-
-    init() {
-        self.monthlyEmail = MonthlyEmailConfig(isEnabled: false, configuration: nil)
-    }
-
-    init(monthlyEmail: MonthlyEmailConfig) {
-        self.monthlyEmail = monthlyEmail
+    init(isMonthlyEmailEnabled: Bool = false) {
+        self.isMonthlyEmailEnabled = isMonthlyEmailEnabled
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.monthlyEmail = try container.decodeIfPresent(MonthlyEmailConfig.self, forKey: .monthlyEmail)
-            ?? MonthlyEmailConfig(isEnabled: false, configuration: nil)
+        // Support both old nested format and new flat format for backwards compatibility
+        if let nested = try? container.nestedContainer(keyedBy: MonthlyEmailKeys.self, forKey: .monthlyEmail) {
+            self.isMonthlyEmailEnabled = try nested.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false
+        } else {
+            self.isMonthlyEmailEnabled = try container.decodeIfPresent(Bool.self, forKey: .isMonthlyEmailEnabled) ?? false
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(isMonthlyEmailEnabled, forKey: .isMonthlyEmailEnabled)
     }
 
     private enum CodingKeys: String, CodingKey {
         case monthlyEmail
+        case isMonthlyEmailEnabled
+    }
+
+    private enum MonthlyEmailKeys: String, CodingKey {
+        case isEnabled
     }
 }

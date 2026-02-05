@@ -26,7 +26,7 @@ import FluentSQLiteDriver
 
         // Then
         #expect(fetched != nil)
-        #expect(fetched?.data.monthlyEmail.isEnabled == false)
+        #expect(fetched?.data.isMonthlyEmailEnabled == false)
     }
 
     @Test func userPreferencesMigration_enforcesUniqueUserConstraint() async throws {
@@ -57,7 +57,7 @@ import FluentSQLiteDriver
         let user = try await createUser(on: app.db)
 
         // When
-        try await UserSecret(userID: user.id!, data: .init(mailjetApiSecret: "test-secret")).save(on: app.db)
+        try await UserSecret(userID: user.id!, data: .init()).save(on: app.db)
 
         let fetched = try await UserSecret.query(on: app.db)
             .filter(\.$user.$id == user.id!)
@@ -65,7 +65,6 @@ import FluentSQLiteDriver
 
         // Then
         #expect(fetched != nil)
-        #expect(fetched?.data.mailjetApiSecret == "test-secret")
     }
 
     @Test func userSecretMigration_enforcesUniqueUserConstraint() async throws {
@@ -127,13 +126,12 @@ import FluentSQLiteDriver
             .filter(\.$user.$id == user1.id!)
             .first()
         #expect(user1Prefs != nil)
-        #expect(user1Prefs?.data.monthlyEmail.isEnabled == false)
+        #expect(user1Prefs?.data.isMonthlyEmailEnabled == false)
 
         let user2Secrets = try await UserSecret.query(on: app.db)
             .filter(\.$user.$id == user2.id!)
             .first()
         #expect(user2Secrets != nil)
-        #expect(user2Secrets?.data.mailjetApiSecret == nil)
     }
 
     @Test func backfillUserSettings_doesNotDuplicateExistingSettings() async throws {
@@ -145,12 +143,12 @@ import FluentSQLiteDriver
 
         try await UserPreferences(
             userID: user.id!,
-            data: UserPreferencesPayload(monthlyEmail: .init(isEnabled: true, configuration: nil))
+            data: UserPreferencesPayload(isMonthlyEmailEnabled: true)
         ).save(on: app.db)
 
         try await UserSecret(
             userID: user.id!,
-            data: .init(mailjetApiSecret: "existing-secret")
+            data: .init()
         ).save(on: app.db)
 
         // When
@@ -164,12 +162,7 @@ import FluentSQLiteDriver
         let prefs = try await UserPreferences.query(on: app.db)
             .filter(\.$user.$id == user.id!)
             .first()
-        #expect(prefs?.data.monthlyEmail.isEnabled == true)
-
-        let secrets = try await UserSecret.query(on: app.db)
-            .filter(\.$user.$id == user.id!)
-            .first()
-        #expect(secrets?.data.mailjetApiSecret == "existing-secret")
+        #expect(prefs?.data.isMonthlyEmailEnabled == true)
     }
 
     @Test func backfillUserSettings_handlesEmptyUserTable() async throws {

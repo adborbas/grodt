@@ -4,6 +4,8 @@ import AlphaSwiftage
 struct AppContainer {
     // External services
     let alphavantage: AlphaVantageService
+    let mailSender: MailSending
+    let mailSenderAddress: MailAddress
 
     // Mappers
     let currencyDTOMapper: CurrencyDTOMapper
@@ -49,6 +51,21 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
     let alphavantage = try await AlphaVantageService(
         serviceType: .rapidAPI(apiKey: app.config.alphavantageAPIKey())
     )
+
+    let (mailSender, mailSenderAddress): (MailSending, MailAddress) = {
+        if let config = app.config.mailjet.config {
+            let sender = MailAddress(email: config.senderEmail, name: config.senderName)
+            return (MailjetMailSender(config: config), sender)
+        } else if app.environment == .development || app.environment == .testing {
+            app.logger.warning("Mailjet not configured - emails will be logged to console")
+            let sender = MailAddress(email: "noreply@localhost", name: "Grodt (Dev)")
+            return (ConsoleMailSender(logger: app.logger), sender)
+        } else {
+            app.logger.warning("Mailjet not configured - emails will be silently skipped")
+            let sender = MailAddress(email: "noreply@grodt.app", name: "Grodt")
+            return (NoOpMailSender(logger: app.logger), sender)
+        }
+    }()
 
     let currencyDTOMapper = CurrencyDTOMapper()
     let tickerDTOMapper = TickerDTOMapper()
@@ -128,10 +145,7 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
                                             dataMapper: portfolioDTOMapper)
     
     let accountService = AccountService(userRepository: userRepository,
-                                        userDataMapper: UserDTOMapper(
-                                            preferencesMapper: UserPreferencesDTOMapper(userRepository: userRepository)
-                                        )
-    )
+                                        userDataMapper: UserDTOMapper())
 
     let brokerageService = BrokerageService(
         brokerageRepository: brokerageRepository,
@@ -199,6 +213,8 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
 
     return AppContainer(
         alphavantage: alphavantage,
+        mailSender: mailSender,
+        mailSenderAddress: mailSenderAddress,
         currencyDTOMapper: currencyDTOMapper,
         tickerDTOMapper: tickerDTOMapper,
         loginResponseDTOMapper: loginResponseDTOMapper,
@@ -269,7 +285,9 @@ func scheduleMonthlyEmails(_ app: Application, _ container: AppContainer) throws
 
     let portfolioPerformanceEmail = PortfolioPerformanceEmail(
         portfolioService: container.portfolioService,
-        userRepository: container.userRepository
+        userRepository: container.userRepository,
+        mailSender: container.mailSender,
+        senderAddress: container.mailSenderAddress
     )
 
     let monthlyEmailJob = MonthlyEmailJob(portfolioPerformanceEmail: portfolioPerformanceEmail)

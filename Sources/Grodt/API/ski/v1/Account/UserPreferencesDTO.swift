@@ -1,3 +1,3 @@
 struct UserPreferencesDTO: ResponseDTO {
-    let monthlyEmail: MonthlyEmailConfigDTO
+    let isMonthlyEmailEnabled: Bool
 }

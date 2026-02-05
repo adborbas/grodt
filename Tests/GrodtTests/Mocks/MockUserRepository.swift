@@ -4,14 +4,10 @@ import Foundation
 final class MockUserRepository: UserRepository, @unchecked Sendable {
     var userResult: Result<User?, Error> = .success(nil)
     var allUsersResult: Result<[User], Error> = .success([])
-    var setMonthlyEmailConfigResult: Result<UserPreferences, Error> = .success(UserPreferences.stub())
-    var setMailjetApiSecretResult: Result<Void, Error> = .success(())
-    var getMailjetApiSecretResult: Result<String?, Error> = .success(nil)
+    var setMonthlyEmailEnabledResult: Result<UserPreferences, Error> = .success(UserPreferences.stub())
 
-    private(set) var setMonthlyEmailConfigCalled = false
-    private(set) var setMonthlyEmailConfigCalledWith: UserPreferencesPayload.MonthlyEmailConfig?
-    private(set) var setMailjetApiSecretCalled = false
-    private(set) var setMailjetApiSecretCalledWith: String?
+    private(set) var setMonthlyEmailEnabledCalled = false
+    private(set) var setMonthlyEmailEnabledCalledWith: Bool?
 
     func allUsers(with: Set<UserExpansion>) async throws -> [User] {
         try allUsersResult.get()
@@ -22,19 +18,9 @@ final class MockUserRepository: UserRepository, @unchecked Sendable {
     }
 
     @discardableResult
-    func setMonthlyEmailConfig(_ config: UserPreferencesPayload.MonthlyEmailConfig, for user: User) async throws -> UserPreferences {
-        setMonthlyEmailConfigCalled = true
-        setMonthlyEmailConfigCalledWith = config
-        return try setMonthlyEmailConfigResult.get()
-    }
-
-    func setMailjetApiSecret(_ secret: String?, for user: User) async throws {
-        setMailjetApiSecretCalled = true
-        setMailjetApiSecretCalledWith = secret
-        try setMailjetApiSecretResult.get()
-    }
-
-    func getMailjetApiSecret(for user: User) async throws -> String? {
-        try getMailjetApiSecretResult.get()
+    func setMonthlyEmailEnabled(_ enabled: Bool, for user: User) async throws -> UserPreferences {
+        setMonthlyEmailEnabledCalled = true
+        setMonthlyEmailEnabledCalledWith = enabled
+        return try setMonthlyEmailEnabledResult.get()
     }
 }

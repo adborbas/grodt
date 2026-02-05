@@ -36,16 +36,12 @@ class AccountRoute: RouteCollection {
     }
 
     func updateMonthlyEmail(req: Request) async throws -> UserPreferencesDTO {
-        let userID = try req.requireUserID()
-        let newConfig = try req.content.decode(UpdateMonthlyEmailConfigDTO.self)
-        return try await service.updateMonthlyEmailConfig(newConfig, for: userID)
-    }
-}
+        struct UpdateMonthlyEmailRequest: Content {
+            let isEnabled: Bool
+        }
 
-struct UpdateMonthlyEmailConfigDTO: Content {
-    let isEnabled: Bool
-    let senderEmail: String?
-    let senderName: String?
-    let apiKey: String?
-    let apiSecret: String?
+        let userID = try req.requireUserID()
+        let body = try req.content.decode(UpdateMonthlyEmailRequest.self)
+        return try await service.setMonthlyEmailEnabled(body.isEnabled, for: userID)
+    }
 }

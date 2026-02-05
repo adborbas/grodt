@@ -48,7 +48,7 @@ struct AccountServiceTests {
         mockRepository.userResult = .success(user)
 
         let mockMapper = MockUserDTOMapper()
-        mockMapper.userDetailResult = .success(expectedDetail)
+        mockMapper.userDetailResult = expectedDetail
 
         let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
 
@@ -70,136 +70,59 @@ struct AccountServiceTests {
         }
     }
 
-    // MARK: - updateMonthlyEmailConfig
+    // MARK: - setMonthlyEmailEnabled
 
-    @Test func updateMonthlyEmailConfig_nonExistentUser_throwsNotFound() async throws {
+    @Test func setMonthlyEmailEnabled_nonExistentUser_throwsNotFound() async throws {
         let mockRepository = MockUserRepository()
         mockRepository.userResult = .success(nil)
 
         let mockMapper = MockUserDTOMapper()
         let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
 
-        let config = UpdateMonthlyEmailConfigDTO(
-            isEnabled: true,
-            senderEmail: "sender@example.com",
-            senderName: "Sender",
-            apiKey: "api-key",
-            apiSecret: "api-secret"
-        )
-
         await #expect(throws: Abort.self) {
-            _ = try await service.updateMonthlyEmailConfig(config, for: UUID())
+            _ = try await service.setMonthlyEmailEnabled(true, for: UUID())
         }
     }
 
-    @Test func updateMonthlyEmailConfig_enableWithMissingFields_throwsBadRequest() async throws {
+    @Test func setMonthlyEmailEnabled_enable_setsConfigAndReturnsPreferences() async throws {
         let userID = UUID()
         let user = User.stub(id: userID)
 
         let mockRepository = MockUserRepository()
         mockRepository.userResult = .success(user)
 
+        let expectedPreferences = UserPreferencesDTO.stub(isMonthlyEmailEnabled: true)
+
         let mockMapper = MockUserDTOMapper()
+        mockMapper.preferencesResult = expectedPreferences
+
         let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
 
-        let config = UpdateMonthlyEmailConfigDTO(
-            isEnabled: true,
-            senderEmail: nil,
-            senderName: nil,
-            apiKey: nil,
-            apiSecret: nil
-        )
+        let result = try await service.setMonthlyEmailEnabled(true, for: userID)
 
-        await #expect(throws: Abort.self) {
-            _ = try await service.updateMonthlyEmailConfig(config, for: userID)
-        }
+        #expect(result.isMonthlyEmailEnabled == true)
+        #expect(mockRepository.setMonthlyEmailEnabledCalled)
+        #expect(mockRepository.setMonthlyEmailEnabledCalledWith == true)
     }
 
-    @Test func updateMonthlyEmailConfig_repositoryError_rollsBackAndThrows() async throws {
-        let userID = UUID()
-        let user = User.stub(id: userID)
-
-        let mockRepository = MockUserRepository()
-        mockRepository.userResult = .success(user)
-        mockRepository.setMonthlyEmailConfigResult = .failure(Abort(.internalServerError))
-
-        let mockMapper = MockUserDTOMapper()
-        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
-
-        let config = UpdateMonthlyEmailConfigDTO(
-            isEnabled: true,
-            senderEmail: "sender@example.com",
-            senderName: "Sender",
-            apiKey: "api-key",
-            apiSecret: "api-secret"
-        )
-
-        await #expect(throws: Abort.self) {
-            _ = try await service.updateMonthlyEmailConfig(config, for: userID)
-        }
-    }
-
-    @Test func updateMonthlyEmailConfig_enableWithAllFields_setsConfigAndReturnsPreferences() async throws {
+    @Test func setMonthlyEmailEnabled_disable_setsConfigAndReturnsPreferences() async throws {
         let userID = UUID()
         let user = User.stub(id: userID)
 
         let mockRepository = MockUserRepository()
         mockRepository.userResult = .success(user)
 
-        let expectedPreferences = UserPreferencesDTO.stub(
-            monthlyEmail: .stub(isEnabled: true, configuration: .stub())
-        )
+        let expectedPreferences = UserPreferencesDTO.stub(isMonthlyEmailEnabled: false)
 
         let mockMapper = MockUserDTOMapper()
-        mockMapper.preferencesResult = .success(expectedPreferences)
+        mockMapper.preferencesResult = expectedPreferences
 
         let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
 
-        let config = UpdateMonthlyEmailConfigDTO(
-            isEnabled: true,
-            senderEmail: "sender@example.com",
-            senderName: "Sender",
-            apiKey: "api-key",
-            apiSecret: "api-secret"
-        )
+        let result = try await service.setMonthlyEmailEnabled(false, for: userID)
 
-        let result = try await service.updateMonthlyEmailConfig(config, for: userID)
-
-        #expect(result.monthlyEmail.isEnabled == true)
-        #expect(mockRepository.setMonthlyEmailConfigCalled)
-        #expect(mockRepository.setMonthlyEmailConfigCalledWith?.isEnabled == true)
-        #expect(mockRepository.setMailjetApiSecretCalledWith == "api-secret")
-    }
-
-    @Test func updateMonthlyEmailConfig_disable_clearsSecretAndReturnsPreferences() async throws {
-        let userID = UUID()
-        let user = User.stub(id: userID)
-
-        let mockRepository = MockUserRepository()
-        mockRepository.userResult = .success(user)
-
-        let expectedPreferences = UserPreferencesDTO.stub(
-            monthlyEmail: .stub(isEnabled: false)
-        )
-
-        let mockMapper = MockUserDTOMapper()
-        mockMapper.preferencesResult = .success(expectedPreferences)
-
-        let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
-
-        let config = UpdateMonthlyEmailConfigDTO(
-            isEnabled: false,
-            senderEmail: nil,
-            senderName: nil,
-            apiKey: nil,
-            apiSecret: nil
-        )
-
-        let result = try await service.updateMonthlyEmailConfig(config, for: userID)
-
-        #expect(result.monthlyEmail.isEnabled == false)
-        #expect(mockRepository.setMonthlyEmailConfigCalled)
-        #expect(mockRepository.setMonthlyEmailConfigCalledWith?.isEnabled == false)
-        #expect(mockRepository.setMailjetApiSecretCalledWith == nil)
+        #expect(result.isMonthlyEmailEnabled == false)
+        #expect(mockRepository.setMonthlyEmailEnabledCalled)
+        #expect(mockRepository.setMonthlyEmailEnabledCalledWith == false)
     }
 }
