@@ -6,14 +6,17 @@ class PortfolioPerformanceEmail {
     private let userRepository: PostgresUserRepository
     private let portfolioService: PortfolioService
     private let mailSender: MailSending
+    private let senderAddress: MailAddress
     private let logger = Logger(label: "PortfolioPerformanceEmail")
 
     init(portfolioService: PortfolioService,
          userRepository: PostgresUserRepository,
-         mailSender: MailSending) {
+         mailSender: MailSending,
+         senderAddress: MailAddress) {
         self.portfolioService = portfolioService
         self.userRepository = userRepository
         self.mailSender = mailSender
+        self.senderAddress = senderAddress
     }
 
     func sendMonthlyUpdates() async throws {
@@ -36,7 +39,7 @@ class PortfolioPerformanceEmail {
             let htmlContent = buildHTMLEmail(portfolios: portfolios, userName: user.name)
 
             let message = MailMessage(
-                from: MailAddress(email: "system", name: "Grodt"),
+                from: senderAddress,
                 to: MailAddress(email: user.email, name: user.name),
                 subject: "Your Monthly Portfolio Performance Update",
                 htmlBody: htmlContent
@@ -45,7 +48,7 @@ class PortfolioPerformanceEmail {
             try await mailSender.send(message)
             logger.info("Monthly email sent to \(user.email)")
         } catch {
-            logger.error("Failed to send email to \(user.email): \(error.localizedDescription)")
+            logger.error("Failed to send email to \(user.email): \(error)")
         }
     }
 

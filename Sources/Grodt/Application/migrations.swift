@@ -46,6 +46,11 @@ func migrations(_ app: Application) throws {
 
     app.migrations.add(BackfillUserSettings())
 
+    // Clean up old per-user Mailjet credentials (RFC-02: System Email Service)
+    if app.environment != .testing {
+        app.migrations.add(CleanupMailjetCredentials())
+    }
+
     // Seed development data (only in development environment)
     if app.environment == .development {
         app.migrations.add(SeedDevelopmentData())

@@ -1,7 +1,7 @@
 import Foundation
 import Logging
 
-final class ConsoleMailSender: MailSending, @unchecked Sendable {
+final class ConsoleMailSender: MailSending, Sendable {
     private let logger: Logger
 
     init(logger: Logger) {
