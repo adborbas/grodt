@@ -4,6 +4,7 @@ import AlphaSwiftage
 struct AppContainer {
     // External services
     let alphavantage: AlphaVantageService
+    let mailSender: MailSending
 
     // Mappers
     let currencyDTOMapper: CurrencyDTOMapper
@@ -49,6 +50,18 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
     let alphavantage = try await AlphaVantageService(
         serviceType: .rapidAPI(apiKey: app.config.alphavantageAPIKey())
     )
+
+    let mailSender: MailSending = {
+        if let config = app.config.mailjet.config {
+            return MailjetMailSender(config: config)
+        } else if app.environment == .development || app.environment == .testing {
+            app.logger.warning("Mailjet not configured - emails will be logged to console")
+            return ConsoleMailSender(logger: app.logger)
+        } else {
+            app.logger.warning("Mailjet not configured - emails will be silently skipped")
+            return NoOpMailSender(logger: app.logger)
+        }
+    }()
 
     let currencyDTOMapper = CurrencyDTOMapper()
     let tickerDTOMapper = TickerDTOMapper()
@@ -199,6 +212,7 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
 
     return AppContainer(
         alphavantage: alphavantage,
+        mailSender: mailSender,
         currencyDTOMapper: currencyDTOMapper,
         tickerDTOMapper: tickerDTOMapper,
         loginResponseDTOMapper: loginResponseDTOMapper,
@@ -269,7 +283,8 @@ func scheduleMonthlyEmails(_ app: Application, _ container: AppContainer) throws
 
     let portfolioPerformanceEmail = PortfolioPerformanceEmail(
         portfolioService: container.portfolioService,
-        userRepository: container.userRepository
+        userRepository: container.userRepository,
+        mailSender: container.mailSender
     )
 
     let monthlyEmailJob = MonthlyEmailJob(portfolioPerformanceEmail: portfolioPerformanceEmail)

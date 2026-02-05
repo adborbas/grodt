@@ -36,18 +36,45 @@ struct AppConfiguration {
     struct PreconfiguredUser {
         @OptionalEnvironmentVariable(key: "DEFAULT_USER_NAME")
         var name: String?
-        
+
         @OptionalEnvironmentVariable(key: "DEFAULT_USER_EMAIL")
         var email: String?
-        
+
         @OptionalEnvironmentVariable(key: "DEFAULT_USER_PASSWORD")
         var password: String?
     }
-    
+
+    struct Mailjet {
+        @OptionalEnvironmentVariable(key: "MAILJET_API_KEY")
+        var apiKey: String?
+
+        @OptionalEnvironmentVariable(key: "MAILJET_API_SECRET")
+        var apiSecret: String?
+
+        @OptionalEnvironmentVariable(key: "MAILJET_SENDER_EMAIL")
+        var senderEmail: String?
+
+        @OptionalEnvironmentVariable(key: "MAILJET_SENDER_NAME")
+        var senderName: String?
+
+        var config: MailjetConfig? {
+            guard let apiKey, let apiSecret, let senderEmail, let senderName else {
+                return nil
+            }
+            return MailjetConfig(
+                apiKey: apiKey,
+                apiSecret: apiSecret,
+                senderEmail: senderEmail,
+                senderName: senderName
+            )
+        }
+    }
+
     private let app: Application
     let postgres = Postgres()
     let redis = Redis()
-    
+    let mailjet = Mailjet()
+
     @OptionalEnvironmentVariable(key: "PORT")
     var port: Int?
     
