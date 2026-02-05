@@ -104,13 +104,7 @@ struct AccountRouteTests: RouteTestable {
         mockService.updateMonthlyEmailConfigResult = .success(expectedPreferences)
 
         try await withTestApp(accountService: mockService) { app, token in
-            let requestBody = UpdateMonthlyEmailConfigDTO(
-                isEnabled: false,
-                senderEmail: nil,
-                senderName: nil,
-                apiKey: nil,
-                apiSecret: nil
-            )
+            let requestBody = UpdateMonthlyEmailConfigDTO(isEnabled: false)
 
             try await app.test(.PATCH, "\(basePath)/preferences/monthly-email", beforeRequest: { req in
                 try req.content.encode(requestBody)
@@ -131,13 +125,7 @@ struct AccountRouteTests: RouteTestable {
         mockService.updateMonthlyEmailConfigResult = .success(expectedPreferences)
 
         try await withTestApp(accountService: mockService) { app, token in
-            let requestBody = UpdateMonthlyEmailConfigDTO(
-                isEnabled: true,
-                senderEmail: "sender@example.com",
-                senderName: "Sender Name",
-                apiKey: "api-key",
-                apiSecret: "api-secret"
-            )
+            let requestBody = UpdateMonthlyEmailConfigDTO(isEnabled: true)
 
             try await app.test(.PATCH, "\(basePath)/preferences/monthly-email", beforeRequest: { req in
                 try req.content.encode(requestBody)
@@ -150,37 +138,9 @@ struct AccountRouteTests: RouteTestable {
         }
     }
 
-    @Test func updateMonthlyEmail_whenServiceThrowsBadRequest_returnsBadRequest() async throws {
-        let mockService = MockAccountService()
-        mockService.updateMonthlyEmailConfigResult = .failure(Abort(.badRequest, reason: "Mailjet configuration missing."))
-
-        try await withTestApp(accountService: mockService) { app, token in
-            let requestBody = UpdateMonthlyEmailConfigDTO(
-                isEnabled: true,
-                senderEmail: nil,
-                senderName: nil,
-                apiKey: nil,
-                apiSecret: nil
-            )
-
-            try await app.test(.PATCH, "\(basePath)/preferences/monthly-email", beforeRequest: { req in
-                try req.content.encode(requestBody)
-                req.headers.bearerAuthorization = BearerAuthorization(token: token)
-            }, afterResponse: { res async throws in
-                #expect(res.status == .badRequest)
-            })
-        }
-    }
-
     @Test func updateMonthlyEmail_withoutAuth_returnsUnauthorized() async throws {
         try await withTestAppNoAuth { app in
-            let requestBody = UpdateMonthlyEmailConfigDTO(
-                isEnabled: false,
-                senderEmail: nil,
-                senderName: nil,
-                apiKey: nil,
-                apiSecret: nil
-            )
+            let requestBody = UpdateMonthlyEmailConfigDTO(isEnabled: false)
 
             try await app.test(.PATCH, "\(basePath)/preferences/monthly-email", beforeRequest: { req in
                 try req.content.encode(requestBody)

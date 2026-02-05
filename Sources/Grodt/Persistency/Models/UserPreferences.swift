@@ -62,26 +62,26 @@ extension UserPreferences {
 struct UserPreferencesPayload: Codable {
 
     struct MonthlyEmailConfig: Codable {
-        struct MailjetConfiguration: Codable {
-            let senderEmail: String
-            let senderName: String
-            let apiKey: String
+        let isEnabled: Bool
+
+        init(isEnabled: Bool) {
+            self.isEnabled = isEnabled
         }
 
-        let isEnabled: Bool
-        let configuration: MailjetConfiguration?
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false
+        }
 
-        init(isEnabled: Bool,
-             configuration: MailjetConfiguration?) {
-            self.isEnabled = isEnabled
-            self.configuration = configuration
+        private enum CodingKeys: String, CodingKey {
+            case isEnabled
         }
     }
 
     var monthlyEmail: MonthlyEmailConfig
 
     init() {
-        self.monthlyEmail = MonthlyEmailConfig(isEnabled: false, configuration: nil)
+        self.monthlyEmail = MonthlyEmailConfig(isEnabled: false)
     }
 
     init(monthlyEmail: MonthlyEmailConfig) {
@@ -91,7 +91,7 @@ struct UserPreferencesPayload: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.monthlyEmail = try container.decodeIfPresent(MonthlyEmailConfig.self, forKey: .monthlyEmail)
-            ?? MonthlyEmailConfig(isEnabled: false, configuration: nil)
+            ?? MonthlyEmailConfig(isEnabled: false)
     }
 
     private enum CodingKeys: String, CodingKey {

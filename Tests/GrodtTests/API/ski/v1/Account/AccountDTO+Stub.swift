@@ -29,25 +29,8 @@ extension UserPreferencesDTO {
 
 extension MonthlyEmailConfigDTO {
     static func stub(
-        isEnabled: Bool = false,
-        configuration: MailjetConfigurationDTO? = nil
+        isEnabled: Bool = false
     ) -> MonthlyEmailConfigDTO {
-        MonthlyEmailConfigDTO(isEnabled: isEnabled, configuration: configuration)
-    }
-}
-
-extension MailjetConfigurationDTO {
-    static func stub(
-        senderEmail: String = "sender@example.com",
-        senderName: String = "Sender Name",
-        apiKey: String = "test-api-key",
-        apiSecret: String = "test-api-secret"
-    ) -> MailjetConfigurationDTO {
-        MailjetConfigurationDTO(
-            senderEmail: senderEmail,
-            senderName: senderName,
-            apiKey: apiKey,
-            apiSecret: apiSecret
-        )
+        MonthlyEmailConfigDTO(isEnabled: isEnabled)
     }
 }

@@ -141,10 +141,7 @@ func buildAppContainer(_ app: Application) async throws -> AppContainer {
                                             dataMapper: portfolioDTOMapper)
     
     let accountService = AccountService(userRepository: userRepository,
-                                        userDataMapper: UserDTOMapper(
-                                            preferencesMapper: UserPreferencesDTOMapper(userRepository: userRepository)
-                                        )
-    )
+                                        userDataMapper: UserDTOMapper())
 
     let brokerageService = BrokerageService(
         brokerageRepository: brokerageRepository,

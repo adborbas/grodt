@@ -52,11 +52,11 @@ final class MailjetMailSender: MailSending, @unchecked Sendable {
         case .networkError:
             return .serviceUnavailable
         case .apiError(let responseError):
-            if responseError.errorMessage?.lowercased().contains("invalid") == true {
+            let message = responseError.message.lowercased()
+            if message.contains("invalid") {
                 return .invalidRecipient
             }
-            if responseError.errorMessage?.lowercased().contains("quota") == true ||
-               responseError.errorMessage?.lowercased().contains("limit") == true {
+            if message.contains("quota") || message.contains("limit") {
                 return .quotaExceeded
             }
             return .unknown(error)
