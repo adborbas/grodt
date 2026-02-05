@@ -79,7 +79,7 @@ struct AccountServiceTests {
         let mockMapper = MockUserDTOMapper()
         let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
 
-        let config = UpdateMonthlyEmailConfigDTO(isEnabled: true)
+        let config = MonthlyEmailConfigDTO(isEnabled: true)
 
         await #expect(throws: Abort.self) {
             _ = try await service.updateMonthlyEmailConfig(config, for: UUID())
@@ -102,7 +102,7 @@ struct AccountServiceTests {
 
         let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
 
-        let config = UpdateMonthlyEmailConfigDTO(isEnabled: true)
+        let config = MonthlyEmailConfigDTO(isEnabled: true)
 
         let result = try await service.updateMonthlyEmailConfig(config, for: userID)
 
@@ -127,7 +127,7 @@ struct AccountServiceTests {
 
         let service = AccountService(userRepository: mockRepository, userDataMapper: mockMapper)
 
-        let config = UpdateMonthlyEmailConfigDTO(isEnabled: false)
+        let config = MonthlyEmailConfigDTO(isEnabled: false)
 
         let result = try await service.updateMonthlyEmailConfig(config, for: userID)
 

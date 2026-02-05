@@ -26,7 +26,7 @@ class AccountService: AccountServicing {
         return try await userDataMapper.userDetail(from: user)
     }
 
-    func updateMonthlyEmailConfig(_ newConfig: UpdateMonthlyEmailConfigDTO,
+    func updateMonthlyEmailConfig(_ newConfig: MonthlyEmailConfigDTO,
                                    for userID: User.IDValue) async throws -> UserPreferencesDTO {
         guard let user = try await userRepository.user(for: userID) else {
             throw Abort(.notFound)

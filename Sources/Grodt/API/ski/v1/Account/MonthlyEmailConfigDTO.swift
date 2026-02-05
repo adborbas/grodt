@@ -1,3 +1,5 @@
-struct MonthlyEmailConfigDTO: Codable {
+import Vapor
+
+struct MonthlyEmailConfigDTO: Content {
     let isEnabled: Bool
 }

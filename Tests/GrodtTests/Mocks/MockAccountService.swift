@@ -14,7 +14,7 @@ final class MockAccountService: AccountServicing, @unchecked Sendable {
         try userDetailResult.get()
     }
 
-    func updateMonthlyEmailConfig(_ newConfig: UpdateMonthlyEmailConfigDTO,
+    func updateMonthlyEmailConfig(_ newConfig: MonthlyEmailConfigDTO,
                                    for userID: User.IDValue) async throws -> UserPreferencesDTO {
         try updateMonthlyEmailConfigResult.get()
     }

@@ -104,7 +104,7 @@ struct AccountRouteTests: RouteTestable {
         mockService.updateMonthlyEmailConfigResult = .success(expectedPreferences)
 
         try await withTestApp(accountService: mockService) { app, token in
-            let requestBody = UpdateMonthlyEmailConfigDTO(isEnabled: false)
+            let requestBody = MonthlyEmailConfigDTO(isEnabled: false)
 
             try await app.test(.PATCH, "\(basePath)/preferences/monthly-email", beforeRequest: { req in
                 try req.content.encode(requestBody)
@@ -125,7 +125,7 @@ struct AccountRouteTests: RouteTestable {
         mockService.updateMonthlyEmailConfigResult = .success(expectedPreferences)
 
         try await withTestApp(accountService: mockService) { app, token in
-            let requestBody = UpdateMonthlyEmailConfigDTO(isEnabled: true)
+            let requestBody = MonthlyEmailConfigDTO(isEnabled: true)
 
             try await app.test(.PATCH, "\(basePath)/preferences/monthly-email", beforeRequest: { req in
                 try req.content.encode(requestBody)
@@ -140,7 +140,7 @@ struct AccountRouteTests: RouteTestable {
 
     @Test func updateMonthlyEmail_withoutAuth_returnsUnauthorized() async throws {
         try await withTestAppNoAuth { app in
-            let requestBody = UpdateMonthlyEmailConfigDTO(isEnabled: false)
+            let requestBody = MonthlyEmailConfigDTO(isEnabled: false)
 
             try await app.test(.PATCH, "\(basePath)/preferences/monthly-email", beforeRequest: { req in
                 try req.content.encode(requestBody)
