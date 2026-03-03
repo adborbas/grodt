@@ -99,10 +99,17 @@ struct PostgresPortfolioDailyPerformanceRepository: DailyPerformanceRepository {
             var values: [SQLQueryString] = []
             for point in batch {
                 let dateStr = ISO8601DateFormatter().string(from: point.date.date)
-                values.append("\(literal: UUID().uuidString), \(literal: ownerID.uuidString), \(literal: dateStr)::date, \(unsafeRaw: point.invested.description), \(unsafeRaw: point.realized.description), \(unsafeRaw: point.currentValue.description)")
+                values.append("\(literal: UUID().uuidString), \(literal: ownerID.uuidString), \(literal: dateStr), \(unsafeRaw: point.invested.description), \(unsafeRaw: point.realized.description), \(unsafeRaw: point.currentValue.description)")
             }
 
-            let valuesList = SQLQueryString(values.map { "(\($0))" }.joined(separator: ", "))
+            var valuesList: SQLQueryString = ""
+            for (index, value) in values.enumerated() {
+                if index > 0 {
+                    valuesList = "\(valuesList), (\(value))"
+                } else {
+                    valuesList = "(\(value))"
+                }
+            }
 
             try await sql.raw("""
                 INSERT INTO historical_portfolio_performance_daily (id, portfolio_id, date, invested, realized, current_value)
